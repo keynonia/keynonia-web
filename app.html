@@ -1311,9 +1311,10 @@ async function cargarPerfil() {
 
   await cargarOrganizacionesReales()
 
-  // Participante de una org existente también tiene acceso completo
   // WEB: acceso solo si pertenece a al menos una org
   tieneAcceso = orgs.length > 0
+  // WEB: si pertenece a una org, desbloquear todas las features sin importar suscripción propia
+  if (tieneAcceso) { esSuscrito = true; esPro = true }
   if (orgs.length === 0) {
     // Mostrar pantalla de acceso denegado
     document.getElementById('app').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:32px;text-align:center;gap:16px">' +
