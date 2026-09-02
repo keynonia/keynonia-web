@@ -1259,7 +1259,7 @@ window.instalarLoopMidiDesdeHerramientas = async function() {
 
 window.omitirLoopMidiWelcome = async function() {
   cerrarModal('modal-bienvenida')
-  try { // web: no marcar_loopmidi_omitido } catch(e) {}
+  // web: no marcar_loopmidi_omitido
   iniciarTour()
 }
 
@@ -5017,9 +5017,7 @@ window.repImprimir = function(){
     a.href = URL.createObjectURL(blob);
     a.download = 'tonos.html';
     a.click();
-    if (false) { // bloque original desactivado
-    showToast('Error al abrir para imprimir: ' + e, '#e74c3c')
-  })
+    // bloque original desactivado en web
 }
 
 // ═══════════════════════════════════════════
