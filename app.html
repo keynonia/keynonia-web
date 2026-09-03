@@ -630,6 +630,10 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 #modal-terminos{z-index:9600!important}
 /* FIX v7: eliminar transform en app-body (agrupaba capas GPU incorrectamente en iOS Safari) */
 .app-body{transform:none!important;-webkit-transform:none!important;will-change:auto!important}
+/* FIX v8: tab-content como position:fixed — los scroll GPU layers quedan atrapados
+   dentro de los bounds fijos (entre header y nav). No pueden escapar al nav ni paneles. */
+.tab-content{position:fixed!important;top:var(--header-h)!important;left:0!important;right:0!important;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))!important;display:none!important;overflow-y:auto!important;-webkit-overflow-scrolling:auto!important;z-index:0!important}
+.tab-content.active{display:block!important}
 </style>
 </head>
 <body>
