@@ -599,6 +599,12 @@ input, textarea, [contenteditable] {
 .bottom-nav{position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:500!important}
 /* FIX: padding-bottom para que contenido sea visible sobre nav fijo */
 .tab-content{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 20px)!important}
+/* FIX v3: revert nav a flex flow + isolation stacking context — evita que capas scroll cubran el nav */
+.app-body{z-index:0!important;isolation:isolate!important}
+.bottom-nav{position:relative!important;bottom:auto!important;left:auto!important;right:auto!important;z-index:10!important;flex-shrink:0!important}
+.tab-content{padding-bottom:20px!important}
+/* FIX táctil: eliminar delay 300ms en móvil */
+button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-back,.user-avatar,.btn-crear-rep{touch-action:manipulation}
 </style>
 </head>
 <body>
