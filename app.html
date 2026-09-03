@@ -595,6 +595,10 @@ input, textarea, [contenteditable] {
   -webkit-user-select: text !important;
   user-select: text !important;
 }
+/* FIX: nav siempre encima de capas GPU scroll (position:fixed garantiza compositor layer propio) */
+.bottom-nav{position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:500!important}
+/* FIX: padding-bottom para que contenido sea visible sobre nav fijo */
+.tab-content{padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px) + 20px)!important}
 </style>
 </head>
 <body>
