@@ -37,18 +37,18 @@
   --accent:#2B6EFF;--accent2:#1C53E6;--text:#e8eaed;--text2:#9aa0a6;
   --nav-h:64px;--header-h:54px;--ic:#ffffff;
 }
-body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;height:var(--real-vh,100dvh);display:flex;flex-direction:column;overflow:hidden}
-.app-header{height:var(--header-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;overflow:hidden}
+.app-header{position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;height:var(--header-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:200}
 .app-logo{display:flex;align-items:center;gap:10px}
 .app-logo img{width:28px;height:28px;border-radius:6px}
 .app-logo span{font-weight:700;font-size:1rem;color:var(--text)}
 .user-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;color:#fff;cursor:pointer;flex-shrink:0;overflow:hidden}
 .user-avatar img{width:100%;height:100%;object-fit:cover}
-.app-body{flex:1;overflow:hidden;position:relative}
-.tab-content{display:none;height:100%;overflow-y:auto;padding:20px}
+.app-body{position:fixed;top:calc(env(safe-area-inset-top,0px) + var(--header-h));bottom:calc(env(safe-area-inset-bottom,0px) + var(--nav-h));left:0;right:0;overflow:hidden}
+.tab-content{display:none;height:100%;overflow-y:auto;padding:20px;box-sizing:border-box}
 .tab-content.active{display:block}
 /* NAV */
-.bottom-nav{height:var(--nav-h);background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:stretch;flex-shrink:0}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);padding-bottom:env(safe-area-inset-bottom,0px);background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:stretch;z-index:200}
 .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:transparent;border:none;cursor:pointer;font-family:'Poppins',sans-serif;font-size:.62rem;font-weight:600;transition:all .2s;padding:8px 4px;position:relative;color:var(--text2)}
 .nav-btn:hover{color:var(--text)}
 .nav-btn.active{color:var(--accent)}
@@ -5902,6 +5902,116 @@ aplicarNavegacionPendiente()
       Este modo requiere un DAW + loopMIDI configurado en tu equipo. Para probarlo necesitas una organización activa.
     </div>
     <div id="rep-demo-lista"></div>
+  </div>
+</div>
+
+<!-- PANEL REPRODUCTOR -->
+<div class="panel" id="panel-reproductor">
+  <div class="rep-header">
+    <div class="rep-hdr-top">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="panel-back" onclick="cerrarReproductor()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+          Volver
+        </button>
+        <button class="rep-btn" id="rep-anterior-btn" onclick="repAnteriorCancion()" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;vertical-align:-2px"><path d="M15 18l-6-6 6-6"/></svg>
+          Anterior
+        </button>
+      </div>
+      <button class="rep-btn" id="rep-siguiente-btn" onclick="repSiguienteCancion()" style="display:none">
+        Siguiente
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px;vertical-align:-2px"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="rep-hdr-top">
+      <div class="rep-hdr-left">
+        <div class="rep-song-title" id="rep-song-title">Cargando...</div>
+        <div class="rep-song-artist" id="rep-song-artist"></div>
+        <div class="rep-song-meta" id="rep-song-meta"></div>
+      </div>
+      <div class="rep-hdr-right">
+        <span class="rep-midi-chip" id="rep-midi-chip" title="MIDI desconectado"><span class="rep-midi-dot"></span><span>MIDI</span></span>
+        <button class="rep-btn" id="rep-ton-btn" onclick="repAbrirSelectorTono()">C</button>
+        <button class="rep-btn rep-capo-ind" id="rep-capo-ind" tabindex="-1">Capo</button>
+        <button class="rep-btn" id="rep-pref-btn" onclick="repAbrirPreferencias()">⚙ Preferencias</button>
+        <button class="rep-btn" id="rep-reportar-error-btn" onclick="abrirAvisoReportarError()" style="display:none" title="Reportar Error en Canción">⚠</button>
+      </div>
+    </div>
+  </div>
+  <div class="rep-secs-wrap"><div class="rep-secs-row" id="rep-secs-row"></div></div>
+  <div class="rep-scroll-area" id="rep-scroll-area">
+    <div class="rep-container">
+      <div class="rep-lyrics-content" id="rep-lyrics-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- SELECTOR TONALIDAD REPRODUCTOR -->
+<div class="rep-floating" id="rep-ton-sel">
+  <div class="rep-floating-hdr"><span class="rep-floating-lbl">Tonalidad</span><button class="rep-ready-btn" onclick="repAplicarTono()">Aplicar</button></div>
+  <div class="rep-ton-grid" id="rep-ton-grid"></div>
+  <div class="rep-capo-wrap">
+    <div class="rep-capo-lbl">Capo</div>
+    <div class="rep-capo-row" id="rep-cp-buttons"></div>
+    <div class="rep-cp-note-row" id="rep-cp-notes"></div>
+  </div>
+</div>
+
+<!-- PREFERENCIAS REPRODUCTOR -->
+<div class="rep-floating" id="rep-pref-panel">
+  <div class="rep-floating-hdr"><span class="rep-floating-lbl">Preferencias</span></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Visualizar</span><button class="rep-pref-toggle active" id="rep-pref-lyr" onclick="repTogglePref('showL')">Letra</button><button class="rep-pref-toggle active" id="rep-pref-chd" onclick="repTogglePref('showC')">Acordes</button><button class="rep-pref-toggle active" id="rep-pref-dm" onclick="repTogglePref('showDM')">DM</button></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Tamaño ambos</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarAmbos(-0.05)">&#8722;</button><span class="rep-step-val">±</span><button class="rep-step-btn" onclick="repAjustarAmbos(0.05)">+</button></div></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Tamaño letra</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('lyrSz',-0.05)">&#8722;</button><span class="rep-step-val" id="rep-ls-val">1.00</span><button class="rep-step-btn" onclick="repAjustarPref('lyrSz',0.05)">+</button></div></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Tamaño acorde</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('chdSz',-0.05)">&#8722;</button><span class="rep-step-val" id="rep-cs-val">0.88</span><button class="rep-step-btn" onclick="repAjustarPref('chdSz',0.05)">+</button></div></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Interlineado</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('lineH',-0.1)">&#8722;</button><span class="rep-step-val" id="rep-lh-val">1.1</span><button class="rep-step-btn" onclick="repAjustarPref('lineH',0.1)">+</button></div></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Columnas</span><div class="rep-col-group"><button class="rep-col-btn active" id="rep-col1-btn" onclick="repSetCols(1)">1</button><button class="rep-col-btn" id="rep-col2-btn" onclick="repSetCols(2)">2</button><button class="rep-col-btn" id="rep-col3-btn" onclick="repSetCols(3)">3</button></div></div>
+</div>
+
+<!-- MODAL AGREGAR CANCIÓN DESDE CATÁLOGO -->
+<div class="modal-overlay" id="modal-agregar-cancion">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title">¿Deseas agregar "<span id="agregar-cancion-titulo"></span>" a tu lista de Canciones?</div>
+    <div style="display:flex;justify-content:center;gap:32px;margin-top:22px">
+      <span style="color:var(--text);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarModal('modal-agregar-cancion')">No</span>
+      <span style="color:var(--accent);cursor:pointer;font-weight:600;font-size:.9rem" onclick="confirmarAgregarCancion()">Agregar</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ELIMINAR CANCIÓN -->
+<div class="modal-overlay" id="modal-eliminar-cancion">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title">¿Deseas eliminar "<span id="eliminar-cancion-titulo"></span>" de tu lista de Canciones?</div>
+    <div style="display:flex;justify-content:center;gap:32px;margin-top:22px">
+      <span style="color:var(--text);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarModal('modal-eliminar-cancion')">No</span>
+      <span style="color:#e74c3c;cursor:pointer;font-weight:600;font-size:.9rem" onclick="confirmarEliminarCancion()">Eliminar</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL YA LA TIENES -->
+<div class="modal-overlay" id="modal-ya-tiene-cancion">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title">Ya tienes esta canción</div>
+    <div style="display:flex;justify-content:center;margin-top:22px">
+      <span style="color:var(--accent);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarModal('modal-ya-tiene-cancion')">OK</span>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL ARTISTAS (Ver Todos) -->
+<div class="panel" id="panel-artistas">
+  <div class="panel-header">
+    <button class="panel-back" onclick="cerrarPanel('panel-artistas')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </button>
+    <span class="panel-title">Artistas</span>
+  </div>
+  <div class="panel-body">
+    <div class="artists-grid" id="artistas-grid-completo"></div>
   </div>
 </div>
 
