@@ -617,6 +617,17 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .tab-content{position:relative!important;z-index:0!important}
 /* WEB: tour deshabilitado — el blocker nunca debe capturar eventos táctiles */
 #tour-blocker,#tour-spotlight,#tour-tooltip{display:none!important;pointer-events:none!important}
+/* FIX v6: clip-path corta capas GPU compositor al borde de app-body (iOS Safari + Android Chrome) */
+.app-body{clip-path:inset(0)!important;-webkit-clip-path:inset(0)!important}
+/* z-index muy alto para nav, paneles y modals — por encima de cualquier capa scroll compuesta */
+.bottom-nav{z-index:9000!important}
+.panel{z-index:9100!important}
+.rep-view{z-index:9100!important}
+.modal-overlay{z-index:9200!important}
+.dropdown-menu{z-index:9300!important}
+.tono-selector{z-index:9400!important}
+.dt-overlay{z-index:9500!important}
+#modal-terminos{z-index:9600!important}
 </style>
 </head>
 <body>
@@ -2737,7 +2748,6 @@ async function cargarRepertorios() {
 
   if (error) { showToast('EnVivo error: ' + error.message, '#e74c3c'); repertoriosCache = []; renderRepertorios(); return }
   if (!data) { showToast('EnVivo: data null', '#e74c3c'); repertoriosCache = []; renderRepertorios(); return }
-  showToast('EnVivo: ' + data.length + ' repertorios org=' + (orgActivo ? orgActivo.id.slice(0,8) : 'N/A'), '#888')
 
   for (var i = 0; i < data.length; i++) {
     const { data: canciones } = await supabase
