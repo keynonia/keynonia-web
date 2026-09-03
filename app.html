@@ -612,6 +612,11 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 /* Panels y modals: GPU layer propio garantizado, siempre encima del scroll */
 .panel{will-change:transform!important}
 .modal-overlay{will-change:transform!important}
+/* FIX v5: contención total de capas GPU de scroll dentro de app-body */
+.app-body{contain:layout paint!important}
+.tab-content{position:relative!important;z-index:0!important}
+/* WEB: tour deshabilitado — el blocker nunca debe capturar eventos táctiles */
+#tour-blocker,#tour-spotlight,#tour-tooltip{display:none!important;pointer-events:none!important}
 </style>
 </head>
 <body>
@@ -6054,5 +6059,9 @@ aplicarNavegacionPendiente()
   </div>
 </div>
 <script src="https://app.lemonsqueezy.com/js/lemon.js" defer></script>
+<script>
+/* WEB: deshabilitar tour de onboarding — llamar verificarTerminos directamente */
+iniciarTour = function() { try { verificarTerminos() } catch(e) {} }
+</script>
 </body>
 </html>
