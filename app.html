@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -21,6 +21,14 @@
     });
   }
 </script>
+<script>
+  // iOS Safari viewport height fix
+  function _fixVh() {
+    document.documentElement.style.setProperty('--real-vh', window.innerHeight + 'px')
+  }
+  _fixVh()
+  window.addEventListener('resize', _fixVh)
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@200;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -29,7 +37,7 @@
   --accent:#2B6EFF;--accent2:#1C53E6;--text:#e8eaed;--text2:#9aa0a6;
   --nav-h:64px;--header-h:54px;--ic:#ffffff;
 }
-body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);height:100vh;height:100dvh;height:var(--real-vh,100dvh);display:flex;flex-direction:column;overflow:hidden}
 .app-header{height:var(--header-h);background:var(--bg2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
 .app-logo{display:flex;align-items:center;gap:10px}
 .app-logo img{width:28px;height:28px;border-radius:6px}
@@ -697,7 +705,7 @@ input, textarea, [contenteditable] {
     <div id="rep-empty" style="text-align:center;padding:10px 0">
       <div class="empty-state" style="margin-bottom:20px">
         <div class="es-icon"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0,512)scale(0.1,-0.1)" fill="currentColor"><path d="M1089 4827c-56-37-79-95-79-204l0-93-118 0c-202 0-318-44-443-169-86-86-140-179-164-286-23-98-23-3051 0-3141 52-203 200-361 405-430 52-18 99-19 832-19 769 0 777 0 804 21 53 39 69 71 69 134 0 63-16 95-69 134-27 21-39 21-784 26-845 6-793 1-869 77-21 21-48 57-58 78-19 39-20 69-23 1063l-2 1022 1969 0 1970 0 3-262c3-256 4-264 27-301 31-51 91-81 149-74 50 5 87 29 120 77 22 33 22 37 22 374 1 918-1 1161-11 1209-6 29-29 90-50 136-31 67-54 98-116 160-127 127-243 171-444 171l-117 0-4 103c-4 116-20 156-78 194-63 43-167 23-213-41-19-26-23-48-27-141l-5-110-532-3-531-2-4 109c-2 92-6 114-24 138-73 98-195 98-268 0-18-24-22-46-24-138l-4-109-531 2-532 3-5 110c-4 93-8 115-27 141-46 64-149 84-214 41zm-79-699c0-110 12-149 59-191 54-49 106-56 169-25 76 37 92 71 92 194l0 104 535 0 535 0 0-95c0-76 4-104 20-134 57-113 223-113 280 0 16 30 20 58 20 134l0 95 535 0 535 0 0-104c0-123 16-157 92-194 63-31 115-24 169 25 47 42 59 81 59 191l0 82 108 0c128 0 186-22 245-90 64-75 67-96 67-447l0-313-1970 0-1970 0 0 313c0 351 3 372 67 447 59 68 117 90 246 90l107 0 0-82zM3472 2595c-163-30-363-117-492-214-84-63-214-199-269-280-64-94-137-253-167-366-35-132-44-355-21-490 41-233 144-438 306-608 228-240 523-367 852-367 192 0 355 38 524 123 276 138 491 387 589 682 75 229 75 504 0 730-35 105-112 254-173 335-62 82-198 214-276 267-134 90-308 161-463 188-103 18-310 18-410 0zm378-319c167-35 308-112 431-235 167-168 249-364 249-601 0-237-82-433-249-601-167-166-364-248-597-249-180 0-329 44-474 141-189 127-319 318-366 539-18 84-18 256 0 340 70 331 329 592 661 665 80 18 264 18 345 1zM3615 2066c-37-17-70-52-84-89-17-45-14-499 3-542 19-45 301-382 335-399 69-36 134-27 188 26 42 40 58 94 43 147-12 44-17 52-155 216l-100 120-5 217c-5 236-7 242-72 291-34 25-113 32-153 13z"/></g></svg></div>
-        <p>No hay repertorios creados</p>
+        <p id="rep-empty-msg">No hay repertorios creados</p>
       </div>
       <button class="btn-crear-rep solo-admin cuenta-solo-admin-oculto" onclick="abrirModalRepertorio()">＋ Crear Repertorio</button>
     </div>
@@ -1367,6 +1375,38 @@ async function cargarPerfil() {
 }
 
 async function cargarOrganizacionesReales() {
+  // ── Procesar invitaciones pendientes para el email del usuario ──
+  const userEmail = currentUser.email
+  if (userEmail) {
+    const { data: invsPendientes } = await supabase
+      .from('invitaciones')
+      .select('id, organizacion_id')
+      .eq('correo_invitado', userEmail)
+      .eq('usado', false)
+      .gt('expires_at', new Date().toISOString())
+
+    if (invsPendientes && invsPendientes.length > 0) {
+      for (var inv of invsPendientes) {
+        const { data: yaMiembro } = await supabase
+          .from('miembros')
+          .select('id')
+          .eq('organizacion_id', inv.organizacion_id)
+          .eq('user_id', currentUser.id)
+          .maybeSingle()
+
+        if (!yaMiembro) {
+          await supabase.from('miembros').insert({
+            organizacion_id: inv.organizacion_id,
+            user_id: currentUser.id,
+            rol: 'participante'
+          })
+        }
+        await supabase.from('invitaciones').delete().eq('id', inv.id)
+      }
+    }
+  }
+
+  // ── Cargar membresías reales ──
   const { data: miembros, error } = await supabase
     .from('miembros')
     .select('id, rol, organizacion_id, organizaciones(id, nombre)')
@@ -2690,6 +2730,9 @@ async function cargarRepertorios() {
 // ─── RENDER LISTA REPERTORIOS ───
 function renderRepertorios() {
   if (repertoriosCache.length === 0) {
+    var esAdmin = !!(orgs.find(function(o){ return o.activa }) && orgs.find(function(o){ return o.activa }).rol === 'administrador')
+    var msgEl = document.getElementById('rep-empty-msg')
+    if (msgEl) msgEl.textContent = esAdmin ? 'No hay repertorios creados' : 'El administrador aún no ha creado repertorios'
     document.getElementById('rep-empty').style.display = 'block'
     document.getElementById('rep-list').style.display = 'none'
     return
@@ -4596,7 +4639,11 @@ window.abrirReproductor = async function(cancionId, repertorioIdOrigen){
 }
 
 window.abrirReproductorCatalogo = async function(cancionId){
-  if (!tieneAcceso) { abrirModal('modal-suscripcion'); return }
+  if (!tieneAcceso) {
+    // WEB: modal-suscripcion no existe, mostrar toast
+    showToast('Necesitas pertenecer a una organización para ver canciones')
+    return
+  }
   await repAbrirCore(cancionId, 'canciones', true, null)
 }
 
