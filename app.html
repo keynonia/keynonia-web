@@ -605,6 +605,13 @@ input, textarea, [contenteditable] {
 .tab-content{padding-bottom:20px!important}
 /* FIX táctil: eliminar delay 300ms en móvil */
 button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-back,.user-avatar,.btn-crear-rep{touch-action:manipulation}
+/* FIX v4: clausurar capas GPU de scroll dentro de app-body para que nunca cubran nav ni panels */
+.app-body{height:calc(100dvh - var(--header-h) - var(--nav-h) - env(safe-area-inset-bottom,0px))!important;flex:none!important;overflow:hidden!important;overflow:clip!important}
+.bottom-nav{position:fixed!important;bottom:0!important;left:0!important;right:0!important;z-index:500!important}
+.tab-content{padding-bottom:20px!important;touch-action:pan-y!important}
+/* Panels y modals: GPU layer propio garantizado, siempre encima del scroll */
+.panel{will-change:transform!important}
+.modal-overlay{will-change:transform!important}
 </style>
 </head>
 <body>
