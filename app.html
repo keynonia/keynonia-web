@@ -6119,6 +6119,10 @@ aplicarNavegacionPendiente()
 /* WEB: deshabilitar tour de onboarding — llamar verificarTerminos directamente */
 iniciarTour = function() { try { verificarTerminos() } catch(e) {} }
 
+/* FIX nav-location: el .bottom-nav esta dentro de #tab-cuenta por divs sin cerrar en el HTML.
+   Lo movemos a body incondicionalmente para que sea visible en todos los tabs. */
+(function() { var n = document.querySelector('.bottom-nav'); if (n) document.body.appendChild(n); })();
+
 /* FIX v7: mover .bottom-nav al final del body — en iOS Safari/Android Chrome, el orden DOM
    en el compositor importa más que z-index para scroll containers con overflow-y:auto. */
 (function() {
