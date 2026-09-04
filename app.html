@@ -634,6 +634,50 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
    dentro de los bounds fijos (entre header y nav). No pueden escapar al nav ni paneles. */
 .tab-content{position:fixed!important;top:var(--header-h)!important;left:0!important;right:0!important;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))!important;display:none!important;overflow-y:auto!important;-webkit-overflow-scrolling:auto!important;z-index:0!important}
 .tab-content.active{display:block!important}
+/* FIX v9: reset completo + layout limpio. Todos los fixes anteriores se reemplazan por esto.
+   Probado para desktop Chrome primero; mobile luego. */
+
+/* app-body: solo lo esencial — height y overflow. Sin transform, clip-path, contain, isolation. */
+.app-body{
+  position:relative!important;
+  z-index:1!important;
+  isolation:auto!important;
+  height:calc(100dvh - var(--header-h) - var(--nav-h) - env(safe-area-inset-bottom,0px))!important;
+  flex:none!important;
+  overflow:hidden!important;
+  contain:none!important;
+  transform:none!important;
+  -webkit-transform:none!important;
+  clip-path:none!important;
+  -webkit-clip-path:none!important;
+  will-change:auto!important;
+}
+
+/* tab-content: posición absoluta dentro de app-body, scroll propio */
+.tab-content{
+  position:absolute!important;
+  top:0!important;left:0!important;right:0!important;bottom:0!important;
+  overflow-y:auto!important;
+  -webkit-overflow-scrolling:auto!important;
+  display:none!important;
+  z-index:1!important;
+}
+.tab-content.active{display:block!important}
+
+/* Nav: siempre fijo abajo con z-index muy alto */
+.bottom-nav{
+  position:fixed!important;
+  bottom:0!important;left:0!important;right:0!important;
+  z-index:99000!important;
+}
+
+/* Paneles y rep-view: encima de todo */
+.panel,.rep-view{position:fixed!important;z-index:99100!important;}
+.modal-overlay{position:fixed!important;z-index:99200!important;}
+.dropdown-menu{position:fixed!important;z-index:99300!important;}
+.tono-selector{position:fixed!important;z-index:99400!important;}
+.dt-overlay{position:fixed!important;z-index:99500!important;}
+#modal-terminos{position:fixed!important;z-index:99600!important;}
 </style>
 </head>
 <body>
