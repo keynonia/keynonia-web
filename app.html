@@ -621,6 +621,8 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 #modal-terminos{z-index:9600!important}
 /* FIX v7: eliminar transform en app-body (agrupaba capas GPU incorrectamente en iOS Safari) */
 .app-body{transform:none!important;-webkit-transform:none!important;will-change:auto!important}
+/* FIX detalles: paneles flotantes (Tonalidad/Preferencias) por encima del reproductor */
+.rep-floating{z-index:99110!important}
 /* FIX v8: tab-content como position:fixed — los scroll GPU layers quedan atrapados
    dentro de los bounds fijos (entre header y nav). No pueden escapar al nav ni paneles. */
 .tab-content{position:fixed!important;top:var(--header-h)!important;left:0!important;right:0!important;bottom:calc(var(--nav-h) + env(safe-area-inset-bottom,0px))!important;display:none!important;overflow-y:auto!important;-webkit-overflow-scrolling:auto!important;z-index:0!important}
@@ -5893,6 +5895,64 @@ aplicarNavegacionPendiente()
     <div style="display:flex;justify-content:center;gap:32px;margin-top:22px">
       <span style="color:var(--text);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarModal('modal-eliminar-catalogo')">No</span>
       <span style="color:#e74c3c;cursor:pointer;font-weight:600;font-size:.9rem" onclick="confirmarEliminarCatalogo()">Eliminar</span>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ENLACES ADICIONALES (CANCION) -->
+<div class="modal-overlay" id="modal-enlaces">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Enlaces adicionales</div>
+    <div id="enlaces-list" style="margin-bottom:14px;min-height:40px"></div>
+    <div id="enlaces-form-admin" style="display:none">
+      <input class="modal-input" id="enlace-titulo" placeholder="Titulo (ej: YouTube, Spotify...)"/>
+      <input class="modal-input" id="enlace-url" placeholder="URL (https://...)"/>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="cerrarEnlaces()">Cancelar</button>
+        <button class="btn-confirm" onclick="agregarEnlace()">Agregar</button>
+      </div>
+    </div>
+    <div id="enlaces-form-viewer" style="display:none">
+      <div class="modal-actions" style="margin-top:0">
+        <button class="btn-confirm" style="flex:1" onclick="cerrarEnlaces()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONALES DEL REPERTORIO -->
+<div class="modal-overlay" id="modal-rep-adicionales">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-title">Adicionales del Repertorio</div>
+    <div id="rep-adicionales-list" style="margin-bottom:14px;min-height:40px"></div>
+    <div id="rep-adicionales-form-admin" style="display:none">
+      <input class="modal-input" id="rep-adicional-titulo" placeholder="Titulo (ej: Proyecto Ableton, Playlist...)"/>
+      <input class="modal-input" id="rep-adicional-url" placeholder="URL (https://...)"/>
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="cerrarModal('modal-rep-adicionales')">Cancelar</button>
+        <button class="btn-confirm" onclick="agregarEnlaceRep()">Agregar</button>
+      </div>
+    </div>
+    <div id="rep-adicionales-form-viewer" style="display:none">
+      <div class="modal-actions" style="margin-top:0">
+        <button class="btn-confirm" style="flex:1" onclick="cerrarModal('modal-rep-adicionales')">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOTIFICAR A MUSICOS -->
+<div class="modal-overlay" id="modal-notificar">
+  <div class="modal">
+    <div class="modal-title">Notificar a musicos</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;text-align:center">Se enviara una notificacion a todos los participantes de tu organizacion.</p>
+    <textarea class="modal-input" id="notif-msg" rows="3" style="resize:none" placeholder="Mensaje personalizado (opcional)"></textarea>
+    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.8rem;color:var(--text2)">
+      Mensaje predeterminado: <span id="notif-default" style="color:var(--text)"></span>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-notificar')">Cancelar</button>
+      <button class="btn-confirm" onclick="enviarNotificacion()">Enviar</button>
     </div>
   </div>
 </div>
