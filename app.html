@@ -125,6 +125,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .rep-song-count svg{width:13px;height:13px;flex-shrink:0}
 .rep-divider{border:none;border-top:1px solid var(--border);margin:8px 0}
 .rep-meta-row{display:flex;align-items:center;gap:14px;font-size:.75rem;color:var(--text2)}
+.rep-desc-linea{font-size:.75rem;color:var(--text2);margin-top:6px;line-height:1.4;font-style:italic;word-break:break-word;white-space:normal}
 .rep-meta-row span{display:flex;align-items:center;gap:5px;white-space:nowrap}
 .rep-meta-row svg{width:13px;height:13px;flex-shrink:0}
 .rep-menu{color:var(--text2);font-size:1.3rem;cursor:pointer;padding:4px 8px;flex-shrink:0}
@@ -2865,8 +2866,8 @@ function renderRepertorios() {
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
             ${rep.horario ? esc(rep.horario) : 'Sin hora'}
           </span>
-          ${rep.descripcion ? `<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0">${esc(rep.descripcion)}</span>` : ''}
         </div>
+        ${rep.descripcion ? `<div class="rep-desc-linea">${esc(rep.descripcion)}</div>` : ''}
       </div>
       <div class="rep-menu" onclick="toggleDropdown(event, '${rep.id}', ${esAdmin})">⋯</div>
     `
