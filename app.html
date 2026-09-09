@@ -1465,35 +1465,42 @@ async function cargarPerfil() {
 }
 
 async function cargarOrganizacionesReales() {
-  // ── Procesar invitaciones pendientes para el email del usuario ──
-  const userEmail = currentUser.email
-  if (userEmail) {
-    const { data: invsPendientes } = await supabase
-      .from('invitaciones')
-      .select('id, organizacion_id')
-      .eq('correo_invitado', userEmail)
-      .eq('usado', false)
-      .gt('expires_at', new Date().toISOString())
+  // ── FIX CRITICO: asegurar que exista el perfil del usuario ──
+  // (antes el perfil solo se creaba en la app de escritorio; los usuarios
+  //  que se registraban por la web quedaban sin fila en `profiles`)
+  try {
+    const { data: perfilExistente } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', currentUser.id)
+      .maybeSingle()
 
-    if (invsPendientes && invsPendientes.length > 0) {
-      for (var inv of invsPendientes) {
-        const { data: yaMiembro } = await supabase
-          .from('miembros')
-          .select('id')
-          .eq('organizacion_id', inv.organizacion_id)
-          .eq('user_id', currentUser.id)
-          .maybeSingle()
-
-        if (!yaMiembro) {
-          await supabase.from('miembros').insert({
-            organizacion_id: inv.organizacion_id,
-            user_id: currentUser.id,
-            rol: 'participante'
-          })
-        }
-        await supabase.from('invitaciones').delete().eq('id', inv.id)
-      }
+    if (!perfilExistente) {
+      const meta = currentUser.user_metadata || {}
+      const nombrePerfil = meta.nombre || meta.full_name || meta.name ||
+        (currentUser.email ? currentUser.email.split('@')[0] : 'Usuario')
+      const fotoPerfil = meta.avatar_url || meta.picture || null
+      await supabase.from('profiles').insert({
+        id: currentUser.id,
+        nombre: nombrePerfil,
+        correo: currentUser.email,
+        foto_url: fotoPerfil
+      })
     }
+  } catch (e) {
+    console.warn('[perfil] no se pudo asegurar el perfil:', e)
+  }
+
+  // ── FIX CRITICO: aceptar invitaciones pendientes via RPC ──
+  // El insert directo con rol 'participante' era rechazado por RLS
+  // (la politica exige rol = 'miembro') y luego la invitacion se
+  // borraba igual, dejando al usuario sin organizacion y sin invitacion.
+  // `aceptar_invitacion_pendiente()` es SECURITY DEFINER: inserta el
+  // miembro correctamente y marca la invitacion como usada.
+  try {
+    await supabase.rpc('aceptar_invitacion_pendiente')
+  } catch (e) {
+    console.warn('[invitacion] no se pudo aceptar la invitacion pendiente:', e)
   }
 
   // ── Cargar membresías reales ──
