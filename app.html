@@ -4933,18 +4933,19 @@ function repDesconectarControladorIndividual(){
 var repGlobalChannel = null
 var repUltimaAccionGlobal = { accion: null, hora: 0 }
 var repGlobalInput = null
+// FIX ESTABILIDAD: si el canal Realtime se cae (wifi inestable, etc.) antes
+// no se detectaba nunca — el chip seguía diciendo "conectado" para siempre
+// y había que cerrar toda la app para recuperarse. Ahora se detecta y se
+// reconecta solo, sin tocar el dispositivo MIDI físico ya abierto.
+var repGlobalActivo = false
+var repGlobalReconnectTimer = null
+var repGlobalReconnectIntentos = 0
 
-async function repConectarModoGlobal(repertorioId){
-  repSetMidiStatus('', 'Conectando Controlador Global...')
-
-  var orgActivo = orgs.find(function(o){ return o.activa })
-  if(!orgActivo){ repSetMidiStatus('error', 'Sin organización activa'); return }
-
-  // 1. Todos se suscriben al canal de este repertorio, para recibir los saltos de sección
-  repGlobalChannel = supabase.channel('repertorio-control-' + repertorioId, {
+function repGlobalConectarCanal(repertorioId){
+  var canal = supabase.channel('repertorio-control-' + repertorioId, {
     config: { broadcast: { self: true } }
   })
-  repGlobalChannel.on('broadcast', { event: 'nav' }, function(msg){
+  canal.on('broadcast', { event: 'nav' }, function(msg){
     var accion = msg.payload && msg.payload.accion
     var ahora = Date.now()
     if(accion === repUltimaAccionGlobal.accion && (ahora - repUltimaAccionGlobal.hora) < 350){
@@ -4956,9 +4957,46 @@ async function repConectarModoGlobal(repertorioId){
     else if(accion === 'siguiente') repSiguienteCancion()
     else if(accion === 'anterior') repAnteriorCancion()
   })
-  repGlobalChannel.subscribe(function(estado){
-    if(estado === 'SUBSCRIBED') repSetMidiStatus('connected', 'Controlador Global conectado')
+  canal.subscribe(function(estado){
+    if(estado === 'SUBSCRIBED'){
+      repGlobalReconnectIntentos = 0
+      if(repGlobalReconnectTimer){ clearTimeout(repGlobalReconnectTimer); repGlobalReconnectTimer = null }
+      repSetMidiStatus('connected', 'Controlador Global conectado')
+    } else if(estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT' || estado === 'CLOSED'){
+      repGlobalProgramarReconexion(repertorioId)
+    }
   })
+  repGlobalChannel = canal
+}
+
+function repGlobalProgramarReconexion(repertorioId){
+  if(!repGlobalActivo) return
+  if(repGlobalReconnectTimer) return // ya hay un reintento programado
+  repGlobalReconnectIntentos++
+  var espera = Math.min(2000 * repGlobalReconnectIntentos, 15000) // backoff hasta 15s
+  repSetMidiStatus('error', 'Conexión perdida, reconectando…')
+  repGlobalReconnectTimer = setTimeout(async function(){
+    repGlobalReconnectTimer = null
+    if(repGlobalChannel){
+      var canalViejo = repGlobalChannel
+      repGlobalChannel = null
+      try { await supabase.removeChannel(canalViejo) } catch(e){}
+    }
+    if(repGlobalActivo) repGlobalConectarCanal(repertorioId)
+  }, espera)
+}
+
+async function repConectarModoGlobal(repertorioId){
+  repSetMidiStatus('', 'Conectando Controlador Global...')
+
+  var orgActivo = orgs.find(function(o){ return o.activa })
+  if(!orgActivo){ repSetMidiStatus('error', 'Sin organización activa'); return }
+
+  repGlobalActivo = true
+  repGlobalReconnectIntentos = 0
+
+  // 1. Todos se suscriben al canal de este repertorio, para recibir los saltos de sección
+  repGlobalConectarCanal(repertorioId)
 
   // 2. Solo el Administrador o su delegado conectan el dispositivo físico y transmiten
   const { data: org } = await supabase.from('organizaciones')
@@ -5001,6 +5039,9 @@ async function repConectarModoGlobal(repertorioId){
 }
 
 async function repDesconectarGlobal(){
+  repGlobalActivo = false
+  repGlobalReconnectIntentos = 0
+  if(repGlobalReconnectTimer){ clearTimeout(repGlobalReconnectTimer); repGlobalReconnectTimer = null }
   repUltimaAccionGlobal = { accion: null, hora: 0 }
   if(repGlobalInput){
     repGlobalInput.onmidimessage = null
@@ -5057,15 +5098,23 @@ function repSetMidiStatus(state, title){
   }
 }
 
-async function repConectarModoDAW(repertorioId){
-  repSetMidiStatus('', 'Conectando modo DAW...')
+// FIX ESTABILIDAD: mismo problema que el Controlador Global — si el canal
+// Realtime se caía (wifi inestable en el evento en vivo), no había ninguna
+// detección ni reconexión. El chip quedaba en "conectado" para siempre
+// mientras las notas MIDI dejaban de sincronizar entre dispositivos, y la
+// única forma de arreglarlo era cerrar Ableton, loopMIDI y Keynonia y
+// volver a abrir todo. Ahora se detecta la caída y se reconecta solo,
+// sin tocar el dispositivo MIDI físico (loopMIDI "keynonia") ya abierto.
+var repDawActivo = false
+var repDawReconnectTimer = null
+var repDawReconnectIntentos = 0
 
-  // 1. Todos los dispositivos se suscriben al canal Realtime para recibir notas MIDI
+function repDawConectarCanal(repertorioId){
   var canalId = 'repertorio-daw-' + (repertorioId || 'demo')
-  repDawChannel = supabase.channel(canalId, {
+  var canal = supabase.channel(canalId, {
     config: { broadcast: { self: false } }
   })
-  repDawChannel.on('broadcast', { event: 'midi' }, function(msg){
+  canal.on('broadcast', { event: 'midi' }, function(msg){
     var nota = msg.payload && msg.payload.note
     if(typeof nota !== 'number') return
     var ahora = Date.now()
@@ -5073,9 +5122,42 @@ async function repConectarModoDAW(repertorioId){
     repDawUltimoNote = { note: nota, hora: ahora }
     repGoToMidiNote(nota)
   })
-  repDawChannel.subscribe(function(estado){
-    if(estado === 'SUBSCRIBED') repSetMidiStatus('connected', 'DAW conectado (en espera de notas)')
+  canal.subscribe(function(estado){
+    if(estado === 'SUBSCRIBED'){
+      repDawReconnectIntentos = 0
+      if(repDawReconnectTimer){ clearTimeout(repDawReconnectTimer); repDawReconnectTimer = null }
+      repSetMidiStatus('connected', 'DAW conectado (en espera de notas)')
+    } else if(estado === 'CHANNEL_ERROR' || estado === 'TIMED_OUT' || estado === 'CLOSED'){
+      repDawProgramarReconexion(repertorioId)
+    }
   })
+  repDawChannel = canal
+}
+
+function repDawProgramarReconexion(repertorioId){
+  if(!repDawActivo) return
+  if(repDawReconnectTimer) return // ya hay un reintento programado
+  repDawReconnectIntentos++
+  var espera = Math.min(2000 * repDawReconnectIntentos, 15000) // backoff hasta 15s
+  repSetMidiStatus('error', 'Conexión perdida, reconectando…')
+  repDawReconnectTimer = setTimeout(async function(){
+    repDawReconnectTimer = null
+    if(repDawChannel){
+      var canalViejo = repDawChannel
+      repDawChannel = null
+      try { await supabase.removeChannel(canalViejo) } catch(e){}
+    }
+    if(repDawActivo) repDawConectarCanal(repertorioId)
+  }, espera)
+}
+
+async function repConectarModoDAW(repertorioId){
+  repSetMidiStatus('', 'Conectando modo DAW...')
+  repDawActivo = true
+  repDawReconnectIntentos = 0
+
+  // 1. Todos los dispositivos se suscriben al canal Realtime para recibir notas MIDI
+  repDawConectarCanal(repertorioId)
 
   // 2. Si el dispositivo tiene loopMIDI "keynonia", lo escucha y transmite las notas
   try {
@@ -5105,6 +5187,9 @@ async function repConectarModoDAW(repertorioId){
 }
 
 async function repDesconectarDAW(){
+  repDawActivo = false
+  repDawReconnectIntentos = 0
+  if(repDawReconnectTimer){ clearTimeout(repDawReconnectTimer); repDawReconnectTimer = null }
   repDawUltimoNote = { note: -1, hora: 0 }
   if(repDawInput){
     repDawInput.onmidimessage = null
