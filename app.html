@@ -1263,6 +1263,59 @@ window.webLoginGoogle = async function() {
   }
 }
 
+// ── FIX ESTABILIDAD: recuperación tras pérdida silenciosa de sesión ──
+// Mismo problema detectado y corregido en la versión de escritorio: getSession()
+// por sí solo no detecta un refresh token invalidado del lado del servidor (la
+// sesión "parece" válida localmente aunque cada consulta real ya esté fallando).
+// Se verifica contra el servidor con una consulta real; si falla, se intenta
+// refrescar; si eso también falla, se cierra sesión y se manda a login solo,
+// en vez de dejar la app mostrando la librería vacía o el repertorio de prueba.
+let repRecargandoSesion = false
+async function repRecargarSesionSiHaceFalta(){
+  if (repRecargandoSesion || !currentUser) return
+  repRecargandoSesion = true
+  try {
+    const { error: pingError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', currentUser.id)
+      .maybeSingle()
+
+    if (pingError) {
+      var refresco = await supabase.auth.refreshSession()
+      if (refresco.error || !refresco.data || !refresco.data.session) {
+        try { await supabase.auth.signOut() } catch (e2) {}
+        window.location.reload()
+        return
+      }
+      currentUser = refresco.data.session.user
+
+      var segundoIntento = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', currentUser.id)
+        .maybeSingle()
+      if (segundoIntento.error) {
+        try { await supabase.auth.signOut() } catch (e3) {}
+        window.location.reload()
+        return
+      }
+    }
+
+    await cargarPerfil()
+  } catch (e) {
+    console.warn('[sesion] no se pudo revalidar la sesión:', e)
+  } finally {
+    repRecargandoSesion = false
+  }
+}
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible') repRecargarSesionSiHaceFalta()
+})
+window.addEventListener('focus', repRecargarSesionSiHaceFalta)
+setInterval(repRecargarSesionSiHaceFalta, 60000)
+// ────────────────────────────────────────────────────────────────────────────
+
 // ── Notificaciones push (solo versión web) ──────────────────────────────────
 // Aditivo: si el navegador no soporta push, o el usuario no da permiso, todo
 // queda igual que antes — no rompe nada existente.
