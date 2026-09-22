@@ -4453,6 +4453,17 @@ var REP_NORM={'Cb':'B','Db':'C#','D#':'Eb','Gb':'F#','G#':'Ab','A#':'Bb','Fb':'E
 var REP_CHROM=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
 var REP_CHROM_MINOR=['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','Abm','Am','Bbm','Bm']
 var REP_TYPE_CLS={'intro':'green','verso':'blue','precoro':'orange','coro':'red','puente':'purple','interludio':'green','instrumental':'green','refrain':'yellow','vamp':'yellow','repetir':'yellow','outro':'green','final':'green','custom':'sky'}
+// FIX TONALIDADES MENORES: en toda la base de datos (mis_canciones.tono, tono_override,
+// tonos_preferidos.tono) el tono de una canción en modo menor se guarda CON el sufijo "m"
+// incluido en el propio texto (ej: "C#m"), igual que en REP_CHROM_MINOR de arriba. Pero el
+// motor de transposición del reproductor (repTrTok/repTrText/repBuildCapo) compara esos
+// valores contra REP_CHROM, que solo tiene las notas sin "m" (["C","C#",...]) — por eso al
+// aplicar una tonalidad menor, REP_CHROM.indexOf(...) no encontraba coincidencia y no
+// transponía nada, y además el rótulo terminaba mostrando el sufijo dos veces (ej "C#mm"),
+// porque el "m" ya venía incluido en el valor y el código le agregaba OTRO "m" al mostrarlo.
+// Esta función normaliza a la nota "pelada" (sin "m") para uso INTERNO del reproductor —
+// nunca se usa para guardar en la base de datos, así que no cambia ningún dato existente.
+function repBaseKey(k){ return (k||'').replace(/m$/,'') }
 
 var repCancion = null
 var repCancionId = null
@@ -4592,15 +4603,15 @@ function repBuildTonGrid(){
   var keys = repScale==='minor' ? REP_CHROM_MINOR : REP_CHROM
   keys.forEach(function(k){
     var btn=document.createElement('button')
-    btn.className='rep-tk-btn'+(k===repPendKey?' active':'')
+    btn.className='rep-tk-btn'+(repBaseKey(k)===repPendKey?' active':'')
     btn.textContent=k
     btn.dataset.key=k
     btn.addEventListener('click',function(){
       grid.querySelectorAll('.rep-tk-btn').forEach(function(b){ b.classList.remove('active') })
       btn.classList.add('active')
-      repPendKey=k
+      repPendKey=repBaseKey(k)
       repHasPend=true
-      repBuildCapo(k)
+      repBuildCapo(repBaseKey(k))
     })
     grid.appendChild(btn)
   })
@@ -4869,7 +4880,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   }
 
   repCancion = cancion
-  repOrigKey = cancion.tono || 'C'
+  repOrigKey = repBaseKey(cancion.tono || 'C')
   repScale = cancion.escala || 'major'
   repCurKey = repOrigKey
   repCapoPos = 0
@@ -4899,7 +4910,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
       .maybeSingle()
 
     if(pref){
-      repCurKey = pref.tono || repOrigKey
+      repCurKey = repBaseKey(pref.tono) || repOrigKey
       repCapoPos = pref.capo || 0
       repPrefs.cols = pref.cols || 1
       repPrefs.lyrSz = pref.tamano_letra || 1.0
