@@ -2160,6 +2160,19 @@ function repSetupLibSearch(){
 var libSubTabActual = 'catalogo'
 var catalogoOrdenExtra = null
 
+// FIX PAGINACIÓN CATÁLOGO: cargarCatalogo() traía como máximo 50 canciones
+// (.limit(50)) sin ninguna forma de ver el resto — por eso solo se veían
+// "algunas" canciones del catálogo global aunque hubiera más aprobadas.
+// Ahora se carga por páginas y se pide la siguiente página automáticamente
+// al acercarse al final del scroll (scroll infinito), sin tocar la lógica
+// existente de búsqueda, orden ni las demás pestañas.
+var catalogoPageSize = 30
+var catalogoPage = 0
+var catalogoCargandoMas = false
+var catalogoNoHayMas = false
+var catalogoQueryActual = ''
+var catalogoYaTieneCache = null
+
 window.verTodasDescargadas = function() {
   catalogoOrdenExtra = 'descargas'
   origenFiltroArtista = null
@@ -2242,45 +2255,89 @@ function aplicarFiltroBusqueda(q, query, artistaIds) {
 }
 
 async function cargarCatalogo(query) {
+  catalogoQueryActual = query || ''
+  catalogoPage = 0
+  catalogoNoHayMas = false
+  catalogoCargandoMas = false
+  catalogoYaTieneCache = null
+  var list = document.getElementById('catalogo-list')
+  list.innerHTML = ''
+  repSetupCatalogoScroll()
+  await cargarPaginaCatalogo(true)
+}
+
+async function cargarPaginaCatalogo(esPrimeraPagina) {
+  if (catalogoCargandoMas || catalogoNoHayMas) return
+  catalogoCargandoMas = true
+
   var emptyState = document.getElementById('catalogo-empty')
   var emptyMsg = document.getElementById('catalogo-empty-msg')
   var list = document.getElementById('catalogo-list')
+  var query = catalogoQueryActual
 
-  var artistaIds = await obtenerArtistaIdsPorNombre(query)
+  try {
+    var artistaIds = await obtenerArtistaIdsPorNombre(query)
 
-  var q = supabase.from('canciones')
-    .select('id, titulo, tono, bpm, compas, portada_url, datos, escala, artista_id, descargas, artistas(nombre)')
-    .eq('aprobada', true)
-    .limit(50)
+    var desde = catalogoPage * catalogoPageSize
+    var hasta = desde + catalogoPageSize - 1
 
-  if (catalogoOrdenExtra === 'descargas') q = q.order('descargas', { ascending: false })
-  else q = q.order('created_at', { ascending: false })
+    var q = supabase.from('canciones')
+      .select('id, titulo, tono, bpm, compas, portada_url, datos, escala, artista_id, descargas, artistas(nombre)')
+      .eq('aprobada', true)
+      .range(desde, hasta)
 
-  q = aplicarFiltroBusqueda(q, query, artistaIds)
+    if (catalogoOrdenExtra === 'descargas') q = q.order('descargas', { ascending: false })
+    else q = q.order('created_at', { ascending: false })
 
-  const { data: canciones, error } = await q
+    q = aplicarFiltroBusqueda(q, query, artistaIds)
 
-  if (error || !canciones || canciones.length === 0) {
-    emptyState.style.display = 'block'
-    emptyMsg.innerHTML = query
-      ? 'No se encontraron canciones para "' + esc(query) + '".'
-      : 'El catálogo global aún no tiene canciones aprobadas.<br>Vuelve pronto para ver nuevas incorporaciones.'
-    list.innerHTML = ''
-    return
+    const { data: canciones, error } = await q
+
+    if (error) { catalogoNoHayMas = true; return }
+
+    if (esPrimeraPagina && (!canciones || canciones.length === 0)) {
+      emptyState.style.display = 'block'
+      emptyMsg.innerHTML = query
+        ? 'No se encontraron canciones para "' + esc(query) + '".'
+        : 'El catálogo global aún no tiene canciones aprobadas.<br>Vuelve pronto para ver nuevas incorporaciones.'
+      list.innerHTML = ''
+      catalogoNoHayMas = true
+      return
+    }
+
+    emptyState.style.display = 'none'
+
+    if (!canciones || canciones.length < catalogoPageSize) catalogoNoHayMas = true
+
+    var orgActivo = orgs.find(function(o){ return o.activa })
+    var esAdmin = orgActivo && orgActivo.rol === 'administrador'
+    if (!catalogoYaTieneCache) catalogoYaTieneCache = await obtenerYaTieneMap()
+    var yaTiene = catalogoYaTieneCache
+
+    ;(canciones || []).forEach(function(c) {
+      var artistaNombre = (c.artistas && c.artistas.nombre) || ''
+      var accionHtml = construirAccionCancion(c, yaTiene, esAdmin, artistaNombre)
+      var div = crearHGridItem(c, artistaNombre, function(){ abrirReproductorCatalogo(c.id) }, accionHtml)
+      list.appendChild(div)
+    })
+
+    catalogoPage++
+  } finally {
+    catalogoCargandoMas = false
   }
+}
 
-  emptyState.style.display = 'none'
-  var orgActivo = orgs.find(function(o){ return o.activa })
-  var esAdmin = orgActivo && orgActivo.rol === 'administrador'
-  list.innerHTML = ''
-
-  var yaTiene = await obtenerYaTieneMap()
-
-  canciones.forEach(function(c) {
-    var artistaNombre = (c.artistas && c.artistas.nombre) || ''
-    var accionHtml = construirAccionCancion(c, yaTiene, esAdmin, artistaNombre)
-    var div = crearHGridItem(c, artistaNombre, function(){ abrirReproductorCatalogo(c.id) }, accionHtml)
-    list.appendChild(div)
+var catalogoScrollSetup = false
+function repSetupCatalogoScroll(){
+  if (catalogoScrollSetup) return
+  catalogoScrollSetup = true
+  var cont = document.getElementById('tab-libreria')
+  if (!cont) return
+  cont.addEventListener('scroll', function(){
+    if (libSubTabActual !== 'catalogo') return
+    if (catalogoCargandoMas || catalogoNoHayMas) return
+    var faltan = cont.scrollHeight - cont.scrollTop - cont.clientHeight
+    if (faltan < 300) cargarPaginaCatalogo(false)
   })
 }
 
