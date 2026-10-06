@@ -159,6 +159,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .modal-overlay.active{display:flex}
 /* MODO DEMO */
 #envivo-demo{display:none}
+.envivo-spinner{width:34px;height:34px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto}
 .demo-rep-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .15s}
 .demo-rep-card:hover{border-color:var(--accent)}
 .demo-rep-icon{width:52px;height:52px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -183,6 +184,17 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .modal-input:focus{border-color:var(--accent)}
 .modal-input::placeholder{color:#3a3d45}
 .modal-actions{display:flex;gap:10px;margin-top:8px}
+/* NOTIFICAR SELECCIONADOS */
+.notif-lista{max-height:260px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border);border-radius:8px;margin-bottom:12px}
+.notif-fila{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.notif-fila:last-child{border-bottom:none}
+.notif-fila:hover{background:rgba(255,255,255,.03)}
+.notif-fila input{width:17px;height:17px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;margin:0}
+.notif-nombre{flex:1;font-size:.84rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.notif-tipo{font-size:.7rem;color:var(--text2);flex-shrink:0}
+.notif-vacio{font-size:.8rem;color:var(--text2);text-align:center;padding:16px}
+.btn-notif-sel{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--accent);border-radius:8px;color:var(--accent);cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;font-size:.84rem}
+.btn-notif-sel:disabled,.btn-notif-todos:disabled{opacity:.5;cursor:default}
 .btn-cancel{flex:1;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text2);cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;font-size:.88rem}
 .btn-confirm{flex:2;padding:12px;background:linear-gradient(180deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem}
 /* GUÍA */
@@ -438,6 +450,23 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .rep-pref-label{font-size:.75rem;color:var(--text2);min-width:88px;flex-shrink:0}
 .rep-pref-toggle{padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-family:'Poppins',sans-serif;font-weight:600;font-size:.73rem;transition:all .15s;flex:1;text-align:center}
 .rep-pref-toggle.active{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff;border-color:transparent}
+/* DIAGRAMAS DE ACORDES (guitarra / piano) */
+.acd-wrap{--acd-dot:var(--text);margin:0 0 18px;padding:12px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:10px}
+.acd-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.acd-titulo{font-size:.74rem;font-weight:700;letter-spacing:.06em;color:var(--text2);text-transform:uppercase}
+.acd-tabs{display:flex;gap:4px}
+.acd-tab{background:none;border:1px solid var(--border);border-radius:6px;color:var(--text2);font-family:'Poppins',sans-serif;font-size:.74rem;font-weight:600;padding:4px 10px;cursor:pointer}
+.acd-tab.active{background:var(--bg3);color:var(--text);border-color:var(--accent)}
+.acd-nota{font-size:.7rem;color:var(--text2)}
+.acd-grid{display:flex;flex-wrap:wrap;gap:14px 18px}
+.acd-item{display:flex;flex-direction:column;align-items:center;color:var(--text2);min-width:70px}
+.acd-clic{cursor:pointer}
+.acd-nombre{font-family:monospace;font-weight:700;font-size:.85rem;color:var(--text);margin-bottom:4px}
+.acd-sub{font-size:.65rem;color:var(--text2);margin-top:2px}
+.acd-pos{font-size:.65rem;color:var(--accent);margin-top:2px}
+.acd-nd-txt{font-size:.68rem;color:var(--text2);max-width:84px;text-align:center;padding:16px 0}
+.acd-msg{font-size:.78rem;color:var(--text2);padding:6px 0;display:flex;align-items:center;gap:8px}
+.acd-spin{width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;display:inline-block}
 .rep-step-ctrl{display:flex;align-items:center;gap:6px}
 .rep-step-btn{width:26px;height:26px;background:var(--bg3);border:1px solid var(--border);border-radius:5px;color:var(--text);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0}
 .rep-step-btn:disabled{opacity:.25;cursor:default}
@@ -782,6 +811,10 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
       <p>Crea y gestiona los repertorios de tu servicio</p>
     </div>
 
+    <div id="envivo-cargando" style="display:none;text-align:center;padding:50px 0">
+      <div class="envivo-spinner"></div>
+      <p style="font-size:.8rem;color:var(--text2);margin-top:14px">Cargando repertorios...</p>
+    </div>
 
 <!-- Demo para usuarios sin acceso a org -->
 <div id="envivo-demo" style="display:none">
@@ -1211,6 +1244,10 @@ let esSuscrito = false
 let esPro = false        // suscrito con plan Pro
 let orgsExtra = 0        // orgs adicionales compradas (Plan Organizaciones)
 let tieneAcceso = false  // suscrito O miembro de una org
+var accesoVerificado = false      // true cuando tieneAcceso ya se calculó con datos reales del servidor
+var repertoriosCacheOrgId = null  // organización a la que pertenece repertoriosCache
+var _orgsErrorRed = false         // la última carga de organizaciones falló por red
+var _reintentoPerfilTimer = null
 
 // ── PROTECCIÓN DE CONTENIDO ─────────────────────────────────────────────────
 ;(function() {
@@ -1530,17 +1567,33 @@ async function cargarPerfil() {
   const ca = document.getElementById('cuenta-avatar')
   if (foto) ca.innerHTML = `<img src="${foto}" alt="${nombre}"/>`
   else ca.textContent = nombre.charAt(0).toUpperCase()
-  const { data: profileData } = await supabase
+  const { data: profileData, error: profileError } = await supabase
     .from('profiles')
     .select('suscripcion_activa, plan_nivel, orgs_extra')
     .eq('id', currentUser.id)
     .maybeSingle()
+
+  // FIX CARGA EN VIVO: si la consulta falló (conexión inestable), NO se
+  // degrada el acceso. Se mantiene lo que había y se reintenta en unos segundos.
+  if (profileError) {
+    console.warn('[perfil] no se pudo leer la suscripción (red):', profileError.message)
+    programarReintentoPerfil()
+    return
+  }
+
   esSuscrito = !!(profileData && profileData.suscripcion_activa)
   esPro = esSuscrito && (profileData?.plan_nivel === 'pro')
   orgsExtra = (profileData?.orgs_extra) || 0
   // tieneAcceso se calcula después de cargar orgs (ver más abajo en cargarPerfil)
 
   await cargarOrganizacionesReales()
+
+  if (_orgsErrorRed && !accesoVerificado) {
+    // Aún no se pudo confirmar el acceso (falló la red): seguir con el círculo
+    // de carga y reintentar, en vez de mostrar "Acceso denegado" por error.
+    programarReintentoPerfil()
+    return
+  }
 
   // WEB: acceso solo si pertenece a al menos una org
   tieneAcceso = orgs.length > 0
@@ -1557,12 +1610,30 @@ async function cargarPerfil() {
     return
   }
 
+  var eraPrimeraVerificacion = !accesoVerificado
+  accesoVerificado = true
+  if (eraPrimeraVerificacion && enVivoEstaVisible()) cargarRepertorios()
+
   actualizarVisibilidadPorRol()
 
   // Si el tour ya fue completado, verificar términos aquí (safety net para usuarios que regresan)
   if (localStorage.getItem(tourKey())) {
     await verificarTerminos()
   }
+}
+
+function programarReintentoPerfil() {
+  if (_reintentoPerfilTimer) return
+  _reintentoPerfilTimer = setTimeout(async function(){
+    _reintentoPerfilTimer = null
+    if (!currentUser) return
+    try {
+      await cargarPerfil()
+      // Si Inicio se dibujó mientras no se sabía el acceso, se vuelve a cargar con los datos correctos
+      var tabInicio = document.getElementById('tab-inicio')
+      if (accesoVerificado && tabInicio && tabInicio.classList.contains('active')) cargarInicio()
+    } catch (e) { console.warn('[perfil] reintento falló:', e) }
+  }, 3000)
 }
 
 async function cargarOrganizacionesReales() {
@@ -1609,6 +1680,14 @@ async function cargarOrganizacionesReales() {
     .from('miembros')
     .select('id, rol, organizacion_id, organizaciones(id, nombre)')
     .eq('user_id', currentUser.id)
+
+  // FIX CARGA EN VIVO: si falló por red y ya teníamos organizaciones cargadas,
+  // se mantienen (antes se borraban y la app creía que el usuario no tenía equipo).
+  _orgsErrorRed = !!error
+  if (error && orgs.length > 0) {
+    console.warn('[orgs] no se pudieron recargar las organizaciones (red), se mantienen las anteriores:', error.message)
+    return
+  }
 
   if (error || !miembros || miembros.length === 0) {
     orgs = []
@@ -2730,7 +2809,12 @@ window.confirmarCancelacionSuscripcion = async function() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: currentUser.id })
     })
-    if (!res.ok) throw new Error('Error al cancelar suscripción')
+    if (!res.ok) {
+      // Mostrar el motivo real (ej: Mercado Pago no pudo cancelar, no se hizo ningún cambio)
+      var errJson = null
+      try { errJson = await res.json() } catch (e2) {}
+      throw new Error((errJson && errJson.error) || 'Error al cancelar suscripción')
+    }
     esSuscrito = false
     esPro = false
     tieneAcceso = orgs.some(function(o){ return o.activa })
@@ -2943,9 +3027,30 @@ async function renderRepDemoCard() {
   `
 }
 
+// FIX CARGA EN VIVO: mientras no se haya verificado el acceso, "En Vivo" muestra
+// un círculo girando en vez del repertorio de prueba. (Las variables
+// accesoVerificado y repertoriosCacheOrgId se declaran arriba, junto a tieneAcceso.)
+function mostrarCargandoEnVivo(si) {
+  var c = document.getElementById('envivo-cargando')
+  if (c) c.style.display = si ? 'block' : 'none'
+  if (si) {
+    document.getElementById('envivo-demo').style.display = 'none'
+    document.getElementById('rep-empty').style.display = 'none'
+    document.getElementById('rep-list').style.display = 'none'
+  }
+}
+
+function enVivoEstaVisible() {
+  var t = document.getElementById('tab-envivo')
+  return !!(t && t.classList.contains('active'))
+}
+
 async function cargarRepertorios() {
+  if (!accesoVerificado) { mostrarCargandoEnVivo(true); return }
+
   // Modo demo: solo si no tiene acceso (ni suscripción propia ni membresía en org)
   if (!tieneAcceso) {
+    mostrarCargandoEnVivo(false)
     document.getElementById('envivo-demo').style.display = 'block'
     document.getElementById('rep-empty').style.display = 'none'
     document.getElementById('rep-list').style.display = 'none'
@@ -2955,7 +3060,15 @@ async function cargarRepertorios() {
   document.getElementById('envivo-demo').style.display = 'none'
 
   var orgActivo = orgs.find(function(o){ return o.activa })
-  if (!orgActivo) return
+  if (!orgActivo) {
+    mostrarCargandoEnVivo(false)
+    document.getElementById('rep-empty').style.display = 'block'
+    return
+  }
+
+  // Solo se muestra el círculo si no hay nada que mostrar todavía de esta organización
+  var hayCachePrevio = repertoriosCacheOrgId === orgActivo.id && repertoriosCache.length > 0
+  if (!hayCachePrevio) mostrarCargandoEnVivo(true)
 
   const { data, error } = await supabase
     .from('repertorios')
@@ -2963,8 +3076,14 @@ async function cargarRepertorios() {
     .eq('organizacion_id', orgActivo.id)
     .order('fecha', { ascending: false })
 
-  if (error) { showToast('EnVivo error: ' + error.message, '#e74c3c'); repertoriosCache = []; renderRepertorios(); return }
-  if (!data) { showToast('EnVivo: data null', '#e74c3c'); repertoriosCache = []; renderRepertorios(); return }
+  if (error || !data) {
+    mostrarCargandoEnVivo(false)
+    // Si falló la red pero ya teníamos los repertorios de esta organización, se mantienen
+    if (hayCachePrevio) { renderRepertorios(); return }
+    if (error) showToast('EnVivo error: ' + error.message, '#e74c3c')
+    else showToast('EnVivo: data null', '#e74c3c')
+    repertoriosCache = []; renderRepertorios(); return
+  }
 
   for (var i = 0; i < data.length; i++) {
     const { data: canciones } = await supabase
@@ -2979,7 +3098,9 @@ async function cargarRepertorios() {
     })
   }
 
+  mostrarCargandoEnVivo(false)
   repertoriosCache = data
+  repertoriosCacheOrgId = orgActivo.id
   renderRepertorios()
 }
 
@@ -3088,6 +3209,104 @@ window.notificarMusicos = function() {
   document.getElementById('notif-default').textContent = `Disponible Repertorio "${rep.titulo}" ${fecha}`
   document.getElementById('notif-msg').value = ''
   abrirModal('modal-notificar')
+  cargarListaNotificar(_notifOrgId)
+}
+
+// ─── NOTIFICAR SELECCIONADOS ───
+// Lista de músicos y cantantes de la organización con un check por persona.
+// "Notificar seleccionados" envía solo a los marcados; "Notificar a todos"
+// marca a todos y envía a todo el equipo.
+var _notifMiembros = []
+var _notifEnviando = false
+
+async function cargarListaNotificar(orgId) {
+  var lista = document.getElementById('notif-lista')
+  if (!lista) return
+  _notifMiembros = []
+  lista.innerHTML = '<div class="notif-vacio">Cargando equipo...</div>'
+  if (!orgId) { lista.innerHTML = '<div class="notif-vacio">No hay organización activa.</div>'; return }
+
+  const { data, error } = await supabase
+    .from('miembros')
+    .select('id, user_id, apodo, tipo, profiles(nombre, correo)')
+    .eq('organizacion_id', orgId)
+
+  if (error || !data || data.length === 0) {
+    lista.innerHTML = '<div class="notif-vacio">No se pudo cargar el equipo. Igual puedes notificar a todos.</div>'
+    return
+  }
+
+  _notifMiembros = data.map(function(m){
+    var nombre = m.apodo || (m.profiles && (m.profiles.nombre || m.profiles.correo)) || 'Sin nombre'
+    var tipo = m.tipo === 'cantante' ? 'Cantante' : (m.tipo === 'musico' ? 'Músico' : '')
+    return { id: m.id, nombre: nombre, tipo: tipo }
+  }).sort(function(a, b){ return a.nombre.localeCompare(b.nombre, 'es') })
+
+  lista.innerHTML = ''
+  _notifMiembros.forEach(function(m){
+    var fila = document.createElement('label')
+    fila.className = 'notif-fila'
+    fila.innerHTML = '<input type="checkbox" class="notif-check" value="' + esc(m.id) + '"/>' +
+      '<span class="notif-nombre">' + esc(m.nombre) + '</span>' +
+      (m.tipo ? '<span class="notif-tipo">' + esc(m.tipo) + '</span>' : '')
+    lista.appendChild(fila)
+  })
+}
+
+function _notifIdsMarcados() {
+  return Array.prototype.slice.call(document.querySelectorAll('#notif-lista .notif-check'))
+    .filter(function(c){ return c.checked })
+    .map(function(c){ return c.value })
+}
+
+window.notificarSeleccionados = async function() {
+  var ids = _notifIdsMarcados()
+  if (ids.length === 0) { showToast('Marca al menos una persona para notificar.', '#e67e22'); return }
+  await _enviarNotificacionA(ids)
+}
+
+window.notificarATodos = async function() {
+  // Marcar visualmente a todos antes de enviar
+  document.querySelectorAll('#notif-lista .notif-check').forEach(function(c){ c.checked = true })
+  await new Promise(function(r){ setTimeout(r, 350) })
+  await _enviarNotificacionA(null)
+}
+
+async function _enviarNotificacionA(miembroIds) {
+  if (_notifEnviando) return
+  if (!_notifOrgId || !_notifTitulo) {
+    cerrarModal('modal-notificar')
+    showToast('Error: faltan datos del repertorio u organización.', '#e74c3c')
+    return
+  }
+  _notifEnviando = true
+  var btnSel = document.getElementById('btn-notif-sel')
+  var btnTodos = document.getElementById('btn-notif-todos')
+  if (btnSel) btnSel.disabled = true
+  if (btnTodos) btnTodos.disabled = true
+
+  var cuerpo = { org_id: _notifOrgId, titulo_repertorio: _notifTitulo }
+  if (miembroIds && miembroIds.length > 0) cuerpo.miembro_ids = miembroIds
+  var msgEl = document.getElementById('notif-msg')
+  var msg = msgEl ? msgEl.value.trim() : ''
+  if (msg) cuerpo.mensaje = msg
+
+  try {
+    const { data, error } = await supabase.functions.invoke('notificar-musicos', { body: cuerpo })
+    if (error) throw new Error(error.message || JSON.stringify(error))
+    cerrarModal('modal-notificar')
+    if (!data || data.enviados === 0) {
+      showToast(miembroIds ? 'Ninguna de las personas seleccionadas tiene notificaciones activas aún.' : 'Ningún músico tiene notificaciones activas aún.', '#888')
+    } else {
+      showToast('✓ Notificación enviada a ' + data.enviados + ' músico' + (data.enviados === 1 ? '' : 's') + '.', '#1DB89A')
+    }
+  } catch(e) {
+    showToast('Error al notificar: ' + e.message, '#e74c3c')
+  } finally {
+    _notifEnviando = false
+    if (btnSel) btnSel.disabled = false
+    if (btnTodos) btnTodos.disabled = false
+  }
 }
 
 window.eliminarRepActual = async function() {
@@ -4627,9 +4846,370 @@ function repUpdateDisplay(){
   })
   el.innerHTML=html
   el.className='rep-lyrics-content'+(repPrefs.cols===3?' three-col':repPrefs.cols===2?' two-col':'')+(repPrefs.showL && repPrefs.showC ? ' ambos-vis' : '')
+  acdActualizar()
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DIAGRAMAS DE ACORDES (guitarra / piano)
+// - Se activa desde Preferencias del reproductor (apagado por defecto, se
+//   recuerda en este equipo). Si está apagado no se carga ni se calcula nada.
+// - Detecta solos los acordes de la canción (ya transpuestos al tono actual).
+// - Guitarra: banco abierto chords-db (licencia MIT, © David Rubert), publicado
+//   en www.keynonia.com/acordes/guitarra/<Nota>.json. Se descarga solo el archivo de
+//   cada nota que la canción necesita y queda guardado en el equipo.
+//   Si un acorde no está en el banco se muestra "Diagrama no disponible":
+//   nunca se inventa una posición.
+// - Piano: se calcula con la fórmula de intervalos de cada acorde.
+// ═══════════════════════════════════════════════════════════════════════════
+// (con "www": keynonia.com sin www redirige y esa redirección no permite descargas desde la app)
+var ACD_URL_BASE = 'https://www.keynonia.com/acordes/guitarra/'
+var ACD_CACHE_PREFIX = 'keynonia_acd_v1_'
+var ACD_PREF_KEY = 'keynonia_diagramas_acordes'
+var ACD_PC = {'C':0,'B#':0,'C#':1,'Db':1,'D':2,'D#':3,'Eb':3,'E':4,'Fb':4,'E#':5,'F':5,'F#':6,'Gb':6,'G':7,'G#':8,'Ab':8,'A':9,'A#':10,'Bb':10,'B':11,'Cb':11}
+var ACD_ARCHIVO = ['C','Csharp','D','Eb','E','F','Fsharp','G','Ab','A','Bb','B']   // por clase de altura (0..11)
+var ACD_NOMBRE = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
+// Alias de escritura -> nombre de tipo usado por el banco (chords-db)
+var ACD_ALIAS = {
+  '':'major','maj':'major','M':'major',
+  'm':'minor','min':'minor','mi':'minor',
+  '7':'7','dom7':'7',
+  'maj7':'maj7','M7':'maj7','Maj7':'maj7','ma7':'maj7','Δ':'maj7','Δ7':'maj7','∆':'maj7','∆7':'maj7','7M':'maj7',
+  'm7':'m7','min7':'m7','mi7':'m7',
+  'dim':'dim','°':'dim','o':'dim',
+  'dim7':'dim7','°7':'dim7','o7':'dim7',
+  'm7b5':'m7b5','m7-5':'m7b5','ø':'m7b5','ø7':'m7b5','min7b5':'m7b5',
+  'aug':'aug','+':'aug','#5':'aug','+5':'aug',
+  'sus':'sus4','sus4':'sus4','4':'sus4',
+  'sus2':'sus2','2':'sus2',
+  'sus2sus4':'sus2sus4',
+  '7sus4':'7sus4','7sus':'7sus4','sus7':'7sus4','7sus2':'7sus4',
+  '5':'5',
+  '6':'6','m6':'m6','69':'69','m69':'m69',
+  '9':'9','m9':'m9','maj9':'maj9','M9':'maj9',
+  '11':'11','m11':'m11','maj11':'maj11',
+  '13':'13','maj13':'maj13','M13':'maj13',
+  '7b5':'7b5','7-5':'7b5',
+  'aug7':'aug7','7#5':'aug7','7+5':'aug7','+7':'aug7',
+  'aug9':'aug9','9#5':'aug9','9+5':'aug9',
+  '7b9':'7b9','7-9':'7b9','7#9':'7#9','7+9':'7#9',
+  '9b5':'9b5','9-5':'9b5','9#11':'9#11',
+  'mmaj7':'mmaj7','mM7':'mmaj7','mMaj7':'mmaj7','m/maj7':'mmaj7','minmaj7':'mmaj7',
+  'mmaj7b5':'mmaj7b5','mmaj9':'mmaj9','mM9':'mmaj9','mmaj11':'mmaj11',
+  'maj7b5':'maj7b5','maj7#5':'maj7#5','maj7+5':'maj7#5','maj7sus2':'maj7sus2',
+  'add9':'add9','add2':'add9','madd9':'madd9','madd2':'madd9','add11':'add11','add4':'add11',
+  'alt':'alt','7alt':'alt',
+  'b5':'b5','-5':'b5'
+}
+// Intervalos en semitonos desde la raíz (para el piano)
+var ACD_FORMULA = {
+  'major':[0,4,7],'minor':[0,3,7],'dim':[0,3,6],'dim7':[0,3,6,9],'aug':[0,4,8],
+  'sus2':[0,2,7],'sus4':[0,5,7],'sus2sus4':[0,2,5,7],'5':[0,7],'b5':[0,4,6],
+  '6':[0,4,7,9],'m6':[0,3,7,9],'69':[0,4,7,9,14],'m69':[0,3,7,9,14],
+  '7':[0,4,7,10],'maj7':[0,4,7,11],'m7':[0,3,7,10],'m7b5':[0,3,6,10],'mmaj7':[0,3,7,11],
+  '7sus4':[0,5,7,10],'7b5':[0,4,6,10],'aug7':[0,4,8,10],
+  '9':[0,4,7,10,14],'maj9':[0,4,7,11,14],'m9':[0,3,7,10,14],'mmaj9':[0,3,7,11,14],
+  '7b9':[0,4,7,10,13],'7#9':[0,4,7,10,15],'9b5':[0,4,6,10,14],'aug9':[0,4,8,10,14],
+  '11':[0,7,10,14,17],'m11':[0,3,7,10,14,17],'maj11':[0,4,7,11,14,17],'mmaj11':[0,3,7,11,14,17],
+  '9#11':[0,4,7,10,14,18],'13':[0,4,7,10,14,21],'maj13':[0,4,7,11,14,21],
+  'add9':[0,4,7,14],'madd9':[0,3,7,14],'add11':[0,4,7,17],
+  'maj7b5':[0,4,6,11],'maj7#5':[0,4,8,11],'maj7sus2':[0,2,7,11],'mmaj7b5':[0,3,6,11],
+  'alt':[0,4,8,10,15]
+}
+
+var acdBanco = {}        // archivo -> datos del banco ya cargados
+var acdPromesas = {}     // archivo -> promesa de descarga en curso
+var acdPosSel = {}       // acorde (forma) -> índice de posición elegida
+var acdUltimaFirma = ''
+var acdEstado = { activo: false, tab: 'guitarra' }
+try {
+  var _acdGuardado = JSON.parse(localStorage.getItem(ACD_PREF_KEY) || 'null')
+  if (_acdGuardado) {
+    acdEstado.activo = !!_acdGuardado.activo
+    acdEstado.tab = _acdGuardado.tab === 'piano' ? 'piano' : 'guitarra'
+  }
+} catch (e) {}
+
+function acdGuardarEstado(){
+  try { localStorage.setItem(ACD_PREF_KEY, JSON.stringify(acdEstado)) } catch (e) {}
+}
+
+// Separa un acorde escrito ("F#m7/C#") en raíz, tipo normalizado y bajo
+function acdParse(tok){
+  var t = (tok || '').trim().replace(/^\((.*)\)$/, '$1').replace('6/9', '69')
+  var m = /^([A-G](?:#|b)?)([^\/]*)(?:\/([A-G](?:#|b)?))?$/.exec(t)
+  if (!m) return null
+  var raw = m[2].replace(/[()\s]/g, '')
+  var suf = ACD_ALIAS.hasOwnProperty(raw) ? ACD_ALIAS[raw] : null
+  if (suf === null && /^M(?!aj)/.test(raw)) {
+    // "M9", "M7#5"... = mayor séptima
+    var alt = 'maj' + raw.slice(1)
+    if (ACD_ALIAS.hasOwnProperty(alt)) suf = ACD_ALIAS[alt]
+  }
+  if (suf === null && /^Maj/.test(raw)) {
+    var alt2 = 'maj' + raw.slice(3)
+    if (ACD_ALIAS.hasOwnProperty(alt2)) suf = ACD_ALIAS[alt2]
+  }
+  if (!(m[1] in ACD_PC)) return null
+  if (m[3] && !(m[3] in ACD_PC)) return null
+  return { texto: t, root: m[1], rawSuf: m[2], suf: suf, bass: m[3] || null }
+}
+
+// Lista de acordes únicos de la canción, en el orden en que aparecen, ya en el tono actual
+function acdExtraer(){
+  var vistos = {}, lista = []
+  var secciones = (repCancion && repCancion.datos && repCancion.datos.secciones) || []
+  secciones.forEach(function(sec){
+    var txt = repTrText(sec.contenido || '', repOrigKey, repCurKey)
+    var re = /\[([^\]]*)\]/g, mm
+    while ((mm = re.exec(txt)) !== null) {
+      mm[1].split(' ').forEach(function(tk){
+        tk = tk.trim()
+        if (!tk || vistos[tk]) return
+        if (!/^\(?[A-G]/.test(tk)) return
+        vistos[tk] = true
+        lista.push(tk)
+      })
+    }
+  })
+  return lista
+}
+
+function acdTransponer(nota, semis){
+  var pc = ACD_PC[nota]
+  if (pc === undefined) return nota
+  return ACD_NOMBRE[((pc + semis) % 12 + 12) % 12]
+}
+
+function acdCargarArchivo(archivo){
+  if (acdBanco[archivo]) return Promise.resolve(acdBanco[archivo])
+  if (acdPromesas[archivo]) return acdPromesas[archivo]
+  try {
+    var enCache = localStorage.getItem(ACD_CACHE_PREFIX + archivo)
+    if (enCache) { acdBanco[archivo] = JSON.parse(enCache); return Promise.resolve(acdBanco[archivo]) }
+  } catch (e) {}
+  acdPromesas[archivo] = fetch(ACD_URL_BASE + archivo + '.json')
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.text() })
+    .then(function(txt){
+      var datos = JSON.parse(txt)
+      acdBanco[archivo] = datos
+      try { localStorage.setItem(ACD_CACHE_PREFIX + archivo, txt) } catch (e) {}
+      delete acdPromesas[archivo]
+      return datos
+    })
+    .catch(function(err){ delete acdPromesas[archivo]; throw err })
+  return acdPromesas[archivo]
+}
+
+// Busca posiciones reales en el banco. Devuelve { pos:[...], exacto:bool } o null
+function acdBuscarGuitarra(root, suf, bass){
+  var datos = acdBanco[ACD_ARCHIVO[ACD_PC[root]]]
+  if (!datos || !suf) return null
+  if (bass) {
+    var pref = suf === 'major' ? '' : (suf === 'minor' ? 'm' : (suf === 'm9' ? 'm9' : null))
+    if (pref !== null) {
+      var pcB = ACD_PC[bass]
+      var nombresBajo = Object.keys(ACD_PC).filter(function(n){ return ACD_PC[n] === pcB })
+      for (var i = 0; i < nombresBajo.length; i++) {
+        var p = datos.suffixes[pref + '/' + nombresBajo[i]]
+        if (p && p.length) return { pos: acdOrdenar(p), exacto: true }
+      }
+    }
+  }
+  var base = datos.suffixes[suf]
+  if (base && base.length) return { pos: acdOrdenar(base), exacto: !bass }
+  return null
+}
+
+// Primero las posiciones más cercanas a la cejuela (las más conocidas, como en los cancioneros)
+function acdOrdenar(lista){
+  return lista.map(function(p, i){ return { p: p, i: i } })
+    .sort(function(a, b){ return (a.p.s - b.p.s) || (a.i - b.i) })
+    .map(function(x){ return x.p })
+}
+
+function acdSvgGuitarra(p){
+  var cuerdas = 6, sx = 11, fs = 14, x0 = 28, y0 = 18
+  var maxRel = 4
+  p.f.forEach(function(v){ if (v > maxRel) maxRel = v })
+  var w = x0 + sx * (cuerdas - 1) + 12, h = y0 + fs * maxRel + 18
+  var s = '<svg class="acd-svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '">'
+  // trastes
+  for (var f = 0; f <= maxRel; f++) {
+    var y = y0 + f * fs
+    var grosor = (f === 0 && p.s === 1) ? 3 : 1
+    s += '<line x1="' + x0 + '" y1="' + y + '" x2="' + (x0 + sx * (cuerdas - 1)) + '" y2="' + y + '" stroke="currentColor" stroke-width="' + grosor + '"/>'
+  }
+  // cuerdas
+  for (var c = 0; c < cuerdas; c++) {
+    var x = x0 + c * sx
+    s += '<line x1="' + x + '" y1="' + y0 + '" x2="' + x + '" y2="' + (y0 + fs * maxRel) + '" stroke="currentColor" stroke-width="1"/>'
+  }
+  if (p.s > 1) s += '<text x="' + (x0 - 8) + '" y="' + (y0 + fs * 0.5 + 3) + '" text-anchor="end" font-size="8" fill="currentColor">' + p.s + 'fr</text>'
+  // cejillas
+  var bajoCejilla = {}
+  ;(p.b || []).forEach(function(bv){
+    var ini = -1, fin = -1
+    for (var i = 0; i < cuerdas; i++) { if (p.f[i] === bv) { if (ini < 0) ini = i; fin = i } }
+    if (ini < 0 || fin <= ini) return
+    for (var j = ini; j <= fin; j++) if (p.f[j] === bv) bajoCejilla[j] = true
+    var yb = y0 + (bv - 0.5) * fs
+    s += '<rect x="' + (x0 + ini * sx - 4.5) + '" y="' + (yb - 4.5) + '" width="' + ((fin - ini) * sx + 9) + '" height="9" rx="4.5" fill="var(--acd-dot)"/>'
+  })
+  // puntos, X y O
+  for (var k = 0; k < cuerdas; k++) {
+    var xk = x0 + k * sx, v = p.f[k]
+    if (v === -1) s += '<text x="' + xk + '" y="' + (y0 - 5) + '" text-anchor="middle" font-size="9" fill="currentColor">×</text>'
+    else if (v === 0) s += '<circle cx="' + xk + '" cy="' + (y0 - 8) + '" r="3" fill="none" stroke="currentColor" stroke-width="1"/>'
+    else if (!bajoCejilla[k]) s += '<circle cx="' + xk + '" cy="' + (y0 + (v - 0.5) * fs) + '" r="4.4" fill="var(--acd-dot)"/>'
+  }
+  // dedos
+  for (var d = 0; d < cuerdas; d++) {
+    var dedo = p.d && p.d[d]
+    if (dedo && !bajoCejilla[d]) s += '<text x="' + (x0 + d * sx) + '" y="' + (y0 + fs * maxRel + 13) + '" text-anchor="middle" font-size="9" fill="currentColor">' + dedo + '</text>'
+  }
+  return s + '</svg>'
+}
+
+function acdSvgPiano(root, suf, bass){
+  var formula = ACD_FORMULA[suf]
+  if (!formula) return null
+  var r = ACD_PC[root], inicio = bass ? 12 : 0
+  var notas = formula.map(function(i){ return inicio + r + i })
+  notas = notas.map(function(n){ while (n >= inicio + 24) n -= 12; return n })
+  var marcadas = {}
+  notas.forEach(function(n){ marcadas[n] = 'n' })
+  if (bass) marcadas[ACD_PC[bass]] = 'b'
+  var octavas = bass ? 3 : 2
+  var ww = 11, wh = 44, bw = 7, bh = 27
+  var blancas = [0,2,4,5,7,9,11], negras = {1:0,3:1,6:3,8:4,10:5}
+  var w = octavas * 7 * ww + 1, s = '<svg class="acd-svg" width="' + w + '" height="' + (wh + 1) + '" viewBox="0 0 ' + w + ' ' + (wh + 1) + '">'
+  var puntos = ''
+  for (var o = 0; o < octavas; o++) {
+    blancas.forEach(function(pc, idx){
+      var x = (o * 7 + idx) * ww
+      s += '<rect x="' + (x + 0.5) + '" y="0.5" width="' + ww + '" height="' + wh + '" fill="#f5f5f5" stroke="#8a8a8a" stroke-width="1"/>'
+      var n = o * 12 + pc
+      if (marcadas[n]) puntos += '<circle cx="' + (x + 0.5 + ww / 2) + '" cy="' + (wh - 7) + '" r="3.4" fill="' + (marcadas[n] === 'b' ? 'var(--accent)' : '#222') + '"/>'
+    })
+  }
+  for (var o2 = 0; o2 < octavas; o2++) {
+    Object.keys(negras).forEach(function(pcTxt){
+      var pc = +pcTxt, x = (o2 * 7 + negras[pc] + 1) * ww - bw / 2 + 0.5
+      s += '<rect x="' + x + '" y="0.5" width="' + bw + '" height="' + bh + '" fill="#222" stroke="#222" stroke-width="1"/>'
+      var n = o2 * 12 + pc
+      if (marcadas[n]) puntos += '<circle cx="' + (x + bw / 2) + '" cy="' + (bh - 6) + '" r="2.8" fill="' + (marcadas[n] === 'b' ? 'var(--accent)' : '#fff') + '"/>'
+    })
+  }
+  return s + puntos + '</svg>'
+}
+
+function acdSyncUI(){
+  var btn = document.getElementById('rep-pref-diag')
+  if (btn) btn.classList.toggle('active', acdEstado.activo)
+  var tg = document.getElementById('acd-tab-guitarra'), tp = document.getElementById('acd-tab-piano')
+  if (tg) tg.classList.toggle('active', acdEstado.tab === 'guitarra')
+  if (tp) tp.classList.toggle('active', acdEstado.tab === 'piano')
+}
+
+window.acdToggleActivo = function(){
+  acdEstado.activo = !acdEstado.activo
+  acdGuardarEstado()
+  acdUltimaFirma = ''
+  acdActualizar()
+}
+
+window.acdSetTab = function(tab){
+  if (acdEstado.tab === tab) return
+  acdEstado.tab = tab
+  acdGuardarEstado()
+  acdUltimaFirma = ''
+  acdActualizar()
+}
+
+window.acdCiclarPos = function(clave, total){
+  acdPosSel[clave] = ((acdPosSel[clave] || 0) + 1) % total
+  acdUltimaFirma = ''
+  acdActualizar()
+}
+
+// Se llama cada vez que el reproductor redibuja la letra o cambia la cejilla.
+// Es barato: si está apagado o nada cambió, no hace nada.
+function acdActualizar(){
+  var cont = document.getElementById('rep-diagramas')
+  if (!cont) return
+  acdSyncUI()
+  if (!acdEstado.activo || !repCancion) { cont.style.display = 'none'; return }
+  cont.style.display = 'block'
+  var lista = acdExtraer()
+  var capo = (typeof repCapoPos === 'number') ? repCapoPos : 0
+  var firma = acdEstado.tab + '|' + capo + '|' + lista.join(',') + '|' + JSON.stringify(acdPosSel)
+  if (firma === acdUltimaFirma) return
+  acdUltimaFirma = firma
+  // Diferido: primero se muestra la canción, después los diagramas
+  setTimeout(function(){ acdRender(lista, capo, firma) }, 0)
+}
+
+async function acdRender(lista, capo, firma){
+  var grid = document.getElementById('acd-grid'), nota = document.getElementById('acd-nota')
+  if (!grid) return
+  if (lista.length === 0) { grid.innerHTML = '<div class="acd-msg">Esta canción no tiene acordes.</div>'; if (nota) nota.textContent = ''; return }
+  var esGuitarra = acdEstado.tab === 'guitarra'
+  if (nota) nota.textContent = (esGuitarra && capo > 0) ? 'Cejilla en traste ' + capo + ' · formas para tocar con cejilla' : ''
+
+  var items = lista.map(function(tk){
+    var ch = acdParse(tk)
+    if (!ch) return { tk: tk, ch: null }
+    var forma = ch
+    if (esGuitarra && capo > 0) {
+      forma = { texto: '', root: acdTransponer(ch.root, -capo), suf: ch.suf, rawSuf: ch.rawSuf, bass: ch.bass ? acdTransponer(ch.bass, -capo) : null }
+      forma.texto = forma.root + forma.rawSuf + (forma.bass ? '/' + forma.bass : '')
+    }
+    return { tk: tk, ch: ch, forma: forma }
+  })
+
+  if (esGuitarra) {
+    var archivos = {}
+    items.forEach(function(it){ if (it.forma && it.forma.suf) archivos[ACD_ARCHIVO[ACD_PC[it.forma.root]]] = true })
+    var faltan = Object.keys(archivos).filter(function(a){ return !acdBanco[a] })
+    if (faltan.length) {
+      grid.innerHTML = '<div class="acd-msg"><span class="acd-spin"></span> Cargando diagramas...</div>'
+      try { await Promise.all(faltan.map(acdCargarArchivo)) }
+      catch (e) {
+        if (firma !== acdUltimaFirma) return
+        grid.innerHTML = '<div class="acd-msg">No se pudieron cargar los diagramas. Revisa tu conexión e inténtalo de nuevo.</div>'
+        acdUltimaFirma = ''
+        return
+      }
+      if (firma !== acdUltimaFirma) return   // el usuario cambió algo mientras cargaba
+    }
+  }
+
+  var html = ''
+  items.forEach(function(it){
+    var nombre = '<div class="acd-nombre">' + esc(it.tk) + '</div>'
+    if (!it.ch || !it.ch.suf) { html += '<div class="acd-item acd-nd">' + nombre + '<div class="acd-nd-txt">Diagrama no disponible</div></div>'; return }
+    if (esGuitarra) {
+      var res = acdBuscarGuitarra(it.forma.root, it.forma.suf, it.forma.bass)
+      if (!res) { html += '<div class="acd-item acd-nd">' + nombre + '<div class="acd-nd-txt">Diagrama no disponible</div></div>'; return }
+      var clave = it.forma.texto
+      var idx = (acdPosSel[clave] || 0) % res.pos.length
+      var extra = ''
+      if (capo > 0) extra += '<div class="acd-sub">forma ' + esc(it.forma.texto) + '</div>'
+      if (!res.exacto) extra += '<div class="acd-sub">sin bajo ' + esc(it.forma.bass) + '</div>'
+      var pie = res.pos.length > 1 ? '<div class="acd-pos">' + (idx + 1) + '/' + res.pos.length + ' ›</div>' : ''
+      var click = res.pos.length > 1 ? ' onclick="acdCiclarPos(\'' + esc(clave).replace(/'/g, "\\'") + '\',' + res.pos.length + ')" title="Ver otra posición"' : ''
+      html += '<div class="acd-item' + (res.pos.length > 1 ? ' acd-clic' : '') + '"' + click + '>' + nombre + acdSvgGuitarra(res.pos[idx]) + extra + pie + '</div>'
+    } else {
+      var svg = acdSvgPiano(it.ch.root, it.ch.suf, it.ch.bass)
+      if (!svg) { html += '<div class="acd-item acd-nd">' + nombre + '<div class="acd-nd-txt">Diagrama no disponible</div></div>'; return }
+      html += '<div class="acd-item">' + nombre + svg + '</div>'
+    }
+  })
+  grid.innerHTML = html
 }
 
 function repUpdateCapoInd(){
+  acdActualizar()
   var ind=document.getElementById('rep-capo-ind')
   if(!ind) return
   if(repCapoPos===0){ ind.textContent='Capo'; ind.classList.remove('active') }
@@ -6210,15 +6790,19 @@ aplicarNavegacionPendiente()
 <!-- MODAL NOTIFICAR A MUSICOS -->
 <div class="modal-overlay" id="modal-notificar">
   <div class="modal">
-    <div class="modal-title">Notificar a musicos</div>
-    <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;text-align:center">Se enviara una notificacion a todos los participantes de tu organizacion.</p>
+    <div class="modal-title">Notificar a músicos</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:14px;text-align:center">Marca a quién quieres notificar, o notifica a todo el equipo.</p>
+    <div class="notif-lista" id="notif-lista"></div>
     <textarea class="modal-input" id="notif-msg" rows="3" style="resize:none" placeholder="Mensaje personalizado (opcional)"></textarea>
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:.8rem;color:var(--text2)">
       Mensaje predeterminado: <span id="notif-default" style="color:var(--text)"></span>
     </div>
     <div class="modal-actions">
+      <button class="btn-notif-sel" id="btn-notif-sel" onclick="notificarSeleccionados()">Notificar seleccionados</button>
+      <button class="btn-confirm btn-notif-todos" id="btn-notif-todos" style="flex:1" onclick="notificarATodos()">Notificar a todos</button>
+    </div>
+    <div class="modal-actions">
       <button class="btn-cancel" onclick="cerrarModal('modal-notificar')">Cancelar</button>
-      <button class="btn-confirm" onclick="enviarNotificacion()">Enviar</button>
     </div>
   </div>
 </div>
@@ -6416,6 +7000,10 @@ aplicarNavegacionPendiente()
   <div class="rep-secs-wrap"><div class="rep-secs-row" id="rep-secs-row"></div></div>
   <div class="rep-scroll-area" id="rep-scroll-area">
     <div class="rep-container">
+      <div class="acd-wrap" id="rep-diagramas" style="display:none">
+        <div class="acd-hdr"><span class="acd-titulo">Acordes</span><div class="acd-tabs"><button class="acd-tab" id="acd-tab-guitarra" onclick="acdSetTab('guitarra')">Guitarra</button><button class="acd-tab" id="acd-tab-piano" onclick="acdSetTab('piano')">Piano</button></div><span class="acd-nota" id="acd-nota"></span></div>
+        <div class="acd-grid" id="acd-grid"></div>
+      </div>
       <div class="rep-lyrics-content" id="rep-lyrics-content"></div>
     </div>
   </div>
@@ -6441,6 +7029,7 @@ aplicarNavegacionPendiente()
   <div class="rep-pref-row"><span class="rep-pref-label">Tamaño acorde</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('chdSz',-0.05)">&#8722;</button><span class="rep-step-val" id="rep-cs-val">0.88</span><button class="rep-step-btn" onclick="repAjustarPref('chdSz',0.05)">+</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Interlineado</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('lineH',-0.1)">&#8722;</button><span class="rep-step-val" id="rep-lh-val">1.1</span><button class="rep-step-btn" onclick="repAjustarPref('lineH',0.1)">+</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Columnas</span><div class="rep-col-group"><button class="rep-col-btn active" id="rep-col1-btn" onclick="repSetCols(1)">1</button><button class="rep-col-btn" id="rep-col2-btn" onclick="repSetCols(2)">2</button><button class="rep-col-btn" id="rep-col3-btn" onclick="repSetCols(3)">3</button></div></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Diagramas</span><button class="rep-pref-toggle" id="rep-pref-diag" onclick="acdToggleActivo()">Guitarra / Piano</button></div>
 </div>
 
 <!-- MODAL AGREGAR CANCIÓN DESDE CATÁLOGO -->
