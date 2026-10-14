@@ -1308,18 +1308,36 @@ window.webLoginGoogle = async function() {
 // refrescar; si eso también falla, se cierra sesión y se manda a login solo,
 // en vez de dejar la app mostrando la librería vacía o el repertorio de prueba.
 let repRecargandoSesion = false
+// FIX "LA APP ME SACA DE LA CANCIÓN": antes, cualquier falla de la consulta de
+// verificación (aunque fuera solo un corte de internet de un segundo, cambio de
+// wifi a datos, etc.) terminaba en cerrar sesión y recargar la página, sacando al
+// músico de la canción en pleno servicio. Ahora solo se cierra sesión cuando el
+// servidor confirma que la sesión es inválida; si es un problema de red, no se
+// hace nada y se vuelve a verificar en el siguiente ciclo.
+function repEsErrorDeRed(err, status){
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return true
+  if (status === 0) return true
+  if (!err) return false
+  if (err.name === 'AuthRetryableFetchError') return true
+  if (typeof err.status === 'number' && (err.status === 0 || err.status >= 500)) return true
+  var msg = String(err.message || err.name || '')
+  return /Failed to fetch|NetworkError|Load failed|network|timeout|fetch/i.test(msg)
+}
 async function repRecargarSesionSiHaceFalta(){
   if (repRecargandoSesion || !currentUser) return
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return
   repRecargandoSesion = true
   try {
-    const { error: pingError } = await supabase
+    const { error: pingError, status: pingStatus } = await supabase
       .from('profiles')
       .select('id')
       .eq('id', currentUser.id)
       .maybeSingle()
 
+    if (pingError && repEsErrorDeRed(pingError, pingStatus)) return   // solo red: no tocar la sesión
     if (pingError) {
       var refresco = await supabase.auth.refreshSession()
+      if (refresco.error && repEsErrorDeRed(refresco.error)) return  // solo red: reintentar en el próximo ciclo
       if (refresco.error || !refresco.data || !refresco.data.session) {
         try { await supabase.auth.signOut() } catch (e2) {}
         window.location.reload()
@@ -1332,6 +1350,7 @@ async function repRecargarSesionSiHaceFalta(){
         .select('id')
         .eq('id', currentUser.id)
         .maybeSingle()
+      if (segundoIntento.error && repEsErrorDeRed(segundoIntento.error, segundoIntento.status)) return
       if (segundoIntento.error) {
         try { await supabase.auth.signOut() } catch (e3) {}
         window.location.reload()
@@ -1696,13 +1715,19 @@ async function cargarOrganizacionesReales() {
     return
   }
 
+  // FIX: conservar la organización que el usuario tenía elegida (antes la revalidación
+  // automática de cada minuto volvía siempre a la primera organización)
+  var _orgActivaPrevia = (orgs.find(function(o){ return o.activa }) || {}).id || null
   orgs = miembros.map((m, i) => ({
     id: m.organizacion_id,
     nombre: m.organizaciones?.nombre || 'Sin nombre',
     rol: m.rol,
     activa: i === 0
   }))
-  orgActual = orgs[0]?.nombre || null
+  if (_orgActivaPrevia && orgs.some(function(o){ return o.id === _orgActivaPrevia })) {
+    orgs.forEach(function(o){ o.activa = (o.id === _orgActivaPrevia) })
+  }
+  orgActual = (orgs.find(function(o){ return o.activa }) || orgs[0] || {}).nombre || null
   renderOrgs()
 }
 
@@ -4777,6 +4802,9 @@ var repDawChannel = null
 var repDawInput = null
 var repDawUltimoNote = { note: -1, hora: 0 }
 var repPrefSaveTimer = null
+var repPrefCola = {}              // cancion_id -> { datos, intentos } pendientes de guardar
+var repPrefReintentoTimer = null
+var repPrefsCargadas = false      // true si las preferencias guardadas se leyeron bien (o no existían)
 
 function repNorm(b){ return REP_NORM[b] || b }
 function repTrTok(t,f,to){
@@ -5473,29 +5501,72 @@ function repAplicarPrefs(){
   document.getElementById('rep-col3-btn').classList.toggle('active', repPrefs.cols===3)
 }
 
+// FIX PREFERENCIAS (capo, tono, tamaños): antes el guardado esperaba 500 ms y
+// recién ahí leía qué canción estaba abierta. Si el músico cambiaba el capo y
+// pasaba a la canción siguiente (o cerraba el reproductor) antes de esos 500 ms,
+// el cambio se perdía o, peor, se guardaba en la canción equivocada con el tono
+// de la anterior. Además, si la sesión estaba por vencer, el guardado fallaba en
+// silencio. Ahora: se toma una "foto" de los valores en el momento del cambio,
+// se guarda en una cola por canción, se envía antes de cambiar/cerrar canción,
+// y si falla se refresca la sesión y se reintenta.
 async function repGuardarPreferencias(){
   if(!currentUser || !repCancionId || repModoPreview) return
+  // Si no se pudieron leer las preferencias guardadas (falla de red), no se
+  // guarda encima para no pisar el capo/tono/tamaños que el músico ya tenía.
+  if(!repPrefsCargadas) return
+  repPrefCola[repCancionId] = {
+    intentos: 0,
+    datos: {
+      user_id: currentUser.id,
+      cancion_id: repCancionId,
+      tono: repCurKey,
+      escala: repScale,
+      capo: repCapoPos,
+      cols: repPrefs.cols,
+      tamano_letra: repPrefs.lyrSz,
+      tamano_acorde: repPrefs.chdSz,
+      interlineado: repPrefs.lineH,
+      mostrar_letra: repPrefs.showL,
+      mostrar_acordes: repPrefs.showC,
+      mostrar_dm: repPrefs.showDM,
+      updated_at: new Date().toISOString()
+    }
+  }
   if(repPrefSaveTimer) clearTimeout(repPrefSaveTimer)
-  repPrefSaveTimer = setTimeout(async function(){
-    try {
-      await supabase.from('preferencias_cancion').upsert({
-        user_id: currentUser.id,
-        cancion_id: repCancionId,
-        tono: repCurKey,
-        escala: repScale,
-        capo: repCapoPos,
-        cols: repPrefs.cols,
-        tamano_letra: repPrefs.lyrSz,
-        tamano_acorde: repPrefs.chdSz,
-        interlineado: repPrefs.lineH,
-        mostrar_letra: repPrefs.showL,
-        mostrar_acordes: repPrefs.showC,
-        mostrar_dm: repPrefs.showDM,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'user_id,cancion_id' })
-    } catch(e) { console.warn('No se pudieron guardar preferencias:', e) }
-  }, 500)
+  repPrefSaveTimer = setTimeout(repFlushPreferencias, 500)
 }
+
+async function repUpsertPreferencias(datos){
+  try {
+    var r = await supabase.from('preferencias_cancion').upsert(datos, { onConflict: 'user_id,cancion_id' })
+    if(r.error){
+      try { await supabase.auth.refreshSession() } catch(e) {}
+      r = await supabase.from('preferencias_cancion').upsert(datos, { onConflict: 'user_id,cancion_id' })
+    }
+    if(r.error){ console.warn('No se pudieron guardar preferencias:', r.error.message); return false }
+    return true
+  } catch(e) { console.warn('No se pudieron guardar preferencias:', e); return false }
+}
+
+// Envía de inmediato todo lo pendiente (se llama al cambiar de canción y al cerrar)
+async function repFlushPreferencias(){
+  if(repPrefSaveTimer){ clearTimeout(repPrefSaveTimer); repPrefSaveTimer = null }
+  var ids = Object.keys(repPrefCola)
+  for(var i = 0; i < ids.length; i++){
+    var id = ids[i], item = repPrefCola[id]
+    if(!item) continue
+    delete repPrefCola[id]
+    var ok = await repUpsertPreferencias(item.datos)
+    if(!ok && !repPrefCola[id] && item.intentos < 10){
+      item.intentos++
+      repPrefCola[id] = item   // reintentar, salvo que ya haya un cambio más nuevo
+    }
+  }
+  if(Object.keys(repPrefCola).length && !repPrefReintentoTimer){
+    repPrefReintentoTimer = setTimeout(function(){ repPrefReintentoTimer = null; repFlushPreferencias() }, 5000)
+  }
+}
+window.addEventListener('pagehide', function(){ repFlushPreferencias() })
 
 var repModoPreview = false
 var repReportarCancionId = null
@@ -5517,6 +5588,8 @@ window.abrirReproductorCatalogo = async function(cancionId){
 }
 
 async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
+  repFlushPreferencias()   // FIX: guardar ya lo pendiente de la canción anterior
+  repPrefsCargadas = false
   repModoPreview = esPreview
   repRepertorioOrigenId = repertorioIdOrigen || null
   repCancionId = cancionId
@@ -5561,12 +5634,29 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   // Cargar preferencias guardadas de este usuario para esta canción
   // (solo aplica en Mis Canciones, no en vista previa del catálogo)
   if(currentUser && !esPreview){
-    const { data: pref } = await supabase
+    var prefRes = await supabase
       .from('preferencias_cancion')
       .select('*')
       .eq('user_id', currentUser.id)
       .eq('cancion_id', cancionId)
       .maybeSingle()
+    if(prefRes.error){
+      // FIX PREFERENCIAS: sesión por vencer o red inestable -> refrescar y reintentar una vez
+      try { await supabase.auth.refreshSession() } catch(e) {}
+      prefRes = await supabase
+        .from('preferencias_cancion')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .eq('cancion_id', cancionId)
+        .maybeSingle()
+    }
+    if(repCancionId !== cancionId) return   // el usuario ya abrió otra canción mientras cargaba
+    var pref = prefRes.data
+    if(prefRes.error){
+      showToast('No se pudieron cargar tus ajustes de esta canción (conexión). Vuelve a abrirla para no perder tu capo y tamaños.', '#e67e22')
+    } else {
+      repPrefsCargadas = true
+    }
 
     if(pref){
       repCurKey = repBaseKey(pref.tono) || repOrigKey
@@ -5615,6 +5705,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
 }
 
 window.cerrarReproductor = function(){
+  repFlushPreferencias()   // FIX: no perder el último cambio de capo/tono al cerrar
   document.getElementById('panel-reproductor').classList.remove('active')
   document.getElementById('rep-ton-sel').classList.remove('active')
   document.getElementById('rep-pref-panel').classList.remove('active')
