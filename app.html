@@ -4322,6 +4322,10 @@ window.abrirSelectorCanciones = async function() {
   cancionesSeleccionadas = {}
   actualizarBotonConfirmarSeleccion()
   abrirPanel('panel-seleccionar-canciones')
+  var _buscarSel = document.getElementById('seleccionar-canciones-buscar')
+  if (_buscarSel) _buscarSel.value = ''
+  var _sinRes = document.getElementById('seleccionar-canciones-sin-resultados')
+  if (_sinRes) _sinRes.style.display = 'none'
 
   var orgActivo = orgs.find(function(o){ return o.activa })
   var emptyState = document.getElementById('seleccionar-canciones-empty')
@@ -4348,8 +4352,26 @@ window.abrirSelectorCanciones = async function() {
     var artistaNombre = (c.artistas && c.artistas.nombre) || c.artista_nombre || ''
     var accionHtml = '<div class="seleccion-checkbox" id="check-' + c.id + '" onclick="event.stopPropagation();toggleSeleccionCancion(\'' + c.id + '\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></div>'
     var div = crearHGridItem(c, artistaNombre, function(){ toggleSeleccionCancion(c.id) }, accionHtml)
+    div.dataset.busqueda = normalizarTexto((c.titulo || '') + ' ' + artistaNombre)
     list.appendChild(div)
   })
+}
+
+// BUSCADOR "AGREGAR CANCIONES": filtra la lista ya cargada por título o artista
+// (sin tildes ni mayúsculas). Solo oculta/muestra; las canciones ya marcadas
+// siguen marcadas aunque queden ocultas por la búsqueda.
+window.filtrarSeleccionCanciones = function() {
+  var input = document.getElementById('seleccionar-canciones-buscar')
+  var q = normalizarTexto(input ? input.value : '')
+  var visibles = 0
+  document.querySelectorAll('#seleccionar-canciones-list > *').forEach(function(el){
+    var coincide = !q || (el.dataset.busqueda || '').indexOf(q) >= 0
+    el.style.display = coincide ? '' : 'none'
+    if (coincide) visibles++
+  })
+  var sin = document.getElementById('seleccionar-canciones-sin-resultados')
+  var total = document.querySelectorAll('#seleccionar-canciones-list > *').length
+  if (sin) sin.style.display = (q && total > 0 && visibles === 0) ? 'block' : 'none'
 }
 
 window.toggleSeleccionCancion = function(id) {
@@ -6689,6 +6711,13 @@ aplicarNavegacionPendiente()
   <div class="panel-body">
     <div id="seleccionar-canciones-empty" class="empty-state" style="display:none">
       <p>No tienes canciones en "Mis Canciones" todavía.</p>
+    </div>
+    <div class="search-bar" style="margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:var(--text2);flex-shrink:0"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+      <input type="text" id="seleccionar-canciones-buscar" placeholder="Buscar por título o artista..." autocomplete="off" oninput="filtrarSeleccionCanciones()"/>
+    </div>
+    <div id="seleccionar-canciones-sin-resultados" class="empty-state" style="display:none">
+      <p>No hay canciones que coincidan con tu búsqueda.</p>
     </div>
     <div class="hgrid-list-full" id="seleccionar-canciones-list"></div>
   </div>
