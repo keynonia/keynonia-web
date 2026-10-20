@@ -444,6 +444,8 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .rep-cp-btn{width:42px;height:34px;background:var(--bg3);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;border:none;transition:all .12s}
 .rep-cp-btn.active{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff}
 .rep-cp-note-row{display:flex;justify-content:center;gap:8px}
+.rep-tp-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:4px}
+.rep-tp-val{min-width:56px;height:34px;border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
 .rep-cp-note{width:42px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text2)}
 
 .rep-pref-row{display:flex;align-items:center;gap:6px;margin-bottom:13px}
@@ -2624,7 +2626,7 @@ window.confirmarEliminarCancion = async function() {
 
 window.editarCancion = function() {
   if (!songDropdownId) return
-  window.location.href = 'index.html?edit=' + songDropdownId
+  window.location.href = 'editor.html?edit=' + songDropdownId
 }
 
 // ═══ Menú catálogo global (Cuenta Maestra) ═══
@@ -2651,7 +2653,7 @@ window.toggleCatalogoDropdown = function(e, id, titulo) {
 
 window.editarCancionCatalogo = function() {
   if (!catalogoDropdownId) return
-  window.location.href = 'index.html?revisar=' + catalogoDropdownId
+  window.location.href = 'editor.html?revisar=' + catalogoDropdownId
 }
 
 window.abrirConfirmarEliminarCatalogo = function() {
@@ -2945,7 +2947,7 @@ function confirmar(mensaje, btnTexto) {
 
 window.abrirEditor = function() {
   if (!esSuscrito) { abrirModal('modal-suscripcion'); return }
-  window.location.href = 'index.html'
+  window.location.href = 'editor.html'
 }
 
 window.cerrarSesion = async function() {
@@ -3752,8 +3754,12 @@ function renderRepSongs() {
       : `<span class="rep-song-tono-display">${esc(tonoMostrado)}</span>`
     var tieneEnlaces = cancion.enlaces && cancion.enlaces.length > 0
     var puedeEditarEnlaces = esAdmin && esPro
-    var enlacesBtnHtml = (puedeEditarEnlaces || tieneEnlaces)
-      ? `<button class="rep-song-enlaces-btn" onclick="event.stopPropagation();abrirEnlaces('${rc.id}','${cancion.id}',${puedeEditarEnlaces})" title="Enlaces adicionales">⋯</button>`
+    // Los tres puntos ahora abren un menú: "Enlaces adicionales" y, para administradores,
+    // "Editar canción". Sin permiso de edición se comporta igual que antes (abre los enlaces).
+    var puedeEditarCancion = esAdmin
+    var verEnlaces = !!(puedeEditarEnlaces || tieneEnlaces)
+    var enlacesBtnHtml = (verEnlaces || puedeEditarCancion)
+      ? `<button class="rep-song-enlaces-btn" onclick="event.stopPropagation();abrirMenuCancionRep(event,'${rc.id}','${cancion.id}',${puedeEditarEnlaces},${verEnlaces},${puedeEditarCancion})" title="Más opciones">⋯</button>`
       : ''
 
     var extraHtml = ''
@@ -3822,6 +3828,44 @@ window.quitarCancionDelRepertorio = async function() {
 
 // ─── SELECTOR DE CANTANTE ───
 var cantanteDropdownEl = null
+
+// ─── MENÚ ⋯ DE CADA CANCIÓN DEL REPERTORIO ───
+var menuCancionRepEl = null
+window.abrirMenuCancionRep = function(e, rcId, cancionId, puedeEditarEnlaces, verEnlaces, puedeEditarCancion) {
+  e.stopPropagation()
+  if (!puedeEditarCancion) { abrirEnlaces(rcId, cancionId, puedeEditarEnlaces); return }
+  if (menuCancionRepEl) { menuCancionRepEl.remove(); menuCancionRepEl = null }
+  var dd = document.createElement('div')
+  dd.className = 'dropdown-menu active'
+  dd.style.zIndex = '900'
+  if (verEnlaces) {
+    var itEnl = document.createElement('div')
+    itEnl.className = 'dropdown-item'
+    itEnl.textContent = 'Enlaces adicionales'
+    itEnl.onclick = function(ev){ ev.stopPropagation(); dd.remove(); menuCancionRepEl = null; abrirEnlaces(rcId, cancionId, puedeEditarEnlaces) }
+    dd.appendChild(itEnl)
+  }
+  var itEd = document.createElement('div')
+  itEd.className = 'dropdown-item'
+  itEd.textContent = 'Editar canción'
+  itEd.onclick = function(ev){ ev.stopPropagation(); dd.remove(); menuCancionRepEl = null; editarCancionDesdeRepertorio(cancionId) }
+  dd.appendChild(itEd)
+  var rect = e.target.getBoundingClientRect()
+  dd.style.position = 'fixed'
+  dd.style.top = (rect.bottom + 4) + 'px'
+  dd.style.left = Math.max(8, Math.min(rect.right - 190, window.innerWidth - 200)) + 'px'
+  document.body.appendChild(dd)
+  menuCancionRepEl = dd
+  setTimeout(function(){
+    document.addEventListener('click', function cerrar(){ if (menuCancionRepEl === dd) { dd.remove(); menuCancionRepEl = null } document.removeEventListener('click', cerrar) })
+  }, 10)
+}
+
+// Abre el editor con la canción y, al guardar o volver, regresa a este mismo repertorio
+window.editarCancionDesdeRepertorio = function(cancionId) {
+  if (!cancionId || !repActualId) return
+  window.location.href = 'editor.html?edit=' + encodeURIComponent(cancionId) + '&volver=rep&rep=' + encodeURIComponent(repActualId)
+}
 
 window.abrirSelectorCantante = function(e, rcId) {
   e.stopPropagation()
@@ -4762,6 +4806,16 @@ function aplicarNavegacionPendiente() {
   if (!tabPendiente) return
   sessionStorage.removeItem('keynonia_open_tab')
   switchTab(tabPendiente)
+  // Volviendo del editor tras "Editar canción" en un repertorio: reabrir ese repertorio
+  var repPendiente = sessionStorage.getItem('keynonia_open_rep')
+  if (tabPendiente === 'envivo' && repPendiente) {
+    sessionStorage.removeItem('keynonia_open_rep')
+    ;(async function(){
+      for (var i = 0; i < 30 && !accesoVerificado; i++) { await new Promise(function(r){ setTimeout(r, 500) }) }
+      await cargarRepertorios()
+      if (repertoriosCache.some(function(r){ return r.id === repPendiente })) abrirRepView(repPendiente)
+    })()
+  }
   var libTabPendiente = sessionStorage.getItem('keynonia_open_lib_tab')
   if (libTabPendiente) {
     sessionStorage.removeItem('keynonia_open_lib_tab')
@@ -4795,6 +4849,11 @@ var repCurKey = 'C'
 var repPendKey = 'C'
 var repScale = 'major'
 var repCapoPos = 0
+// TRANSPOSE PIANO (-12..+12): solo anotación para el pianista; no cambia los acordes.
+// repUltimoAjuste decide qué muestra el indicador de afuera: 'capo' (como siempre)
+// o 'transpose' (muestra "+2" / "-3") según lo último que tocó el músico.
+var repTransposePos = 0
+var repUltimoAjuste = 'capo'
 var repHasPend = false
 var repActiveSec = null
 var repPrefs = {showL:true, showC:true, showDM:true, lineH:1.1, lyrSz:1.0, chdSz:1.08, cols:1}
@@ -5258,10 +5317,32 @@ async function acdRender(lista, capo, firma){
   grid.innerHTML = html
 }
 
+function repActualizarTransposeUI(){
+  var el=document.getElementById('rep-tp-val')
+  if(el) el.textContent=(repTransposePos>0?'+':'')+repTransposePos
+}
+
+window.repAjustarTranspose = function(delta){
+  var n = repTransposePos + delta
+  if(n < -12 || n > 12) return
+  repTransposePos = n
+  repUltimoAjuste = 'transpose'
+  repActualizarTransposeUI()
+  repUpdateCapoInd()
+  repGuardarPreferencias()
+}
+
 function repUpdateCapoInd(){
   acdActualizar()
   var ind=document.getElementById('rep-capo-ind')
   if(!ind) return
+  if(repUltimoAjuste==='transpose' && repTransposePos!==0){
+    ind.textContent=(repTransposePos>0?'+':'')+repTransposePos
+    ind.title='Transpose Piano'
+    ind.classList.add('active')
+    return
+  }
+  ind.title='Capo'
   if(repCapoPos===0){ ind.textContent='Capo'; ind.classList.remove('active') }
   else { ind.textContent='C'+repCapoPos; ind.classList.add('active') }
 }
@@ -5274,7 +5355,7 @@ function repBuildCapo(baseKey){
     var btn=document.createElement('button')
     btn.className='rep-cp-btn'+(repCapoPos===i?' active':'')
     btn.textContent=i===0?'Sin':String(i)
-    ;(function(ii){ btn.addEventListener('click',function(){ repCapoPos=ii; repBuildCapo(baseKey); repUpdateCapoInd(); repGuardarPreferencias() }) })(i)
+    ;(function(ii){ btn.addEventListener('click',function(){ repCapoPos=ii; repUltimoAjuste='capo'; repBuildCapo(baseKey); repUpdateCapoInd(); repGuardarPreferencias() }) })(i)
     cb.appendChild(btn)
     var note=document.createElement('div')
     note.className='rep-cp-note'
@@ -5522,6 +5603,8 @@ async function repGuardarPreferencias(){
       tono: repCurKey,
       escala: repScale,
       capo: repCapoPos,
+      transpose_piano: repTransposePos,
+      ultimo_ajuste: repUltimoAjuste,
       cols: repPrefs.cols,
       tamano_letra: repPrefs.lyrSz,
       tamano_acorde: repPrefs.chdSz,
@@ -5616,6 +5699,8 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repScale = cancion.escala || 'major'
   repCurKey = repOrigKey
   repCapoPos = 0
+  repTransposePos = 0
+  repUltimoAjuste = 'capo'
   repActiveSec = null
   repPrefs = {showL:true, showC:true, showDM:true, lineH:1.1, lyrSz:1.0, chdSz:0.88, cols:1}
 
@@ -5661,6 +5746,8 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
     if(pref){
       repCurKey = repBaseKey(pref.tono) || repOrigKey
       repCapoPos = pref.capo || 0
+      repTransposePos = pref.transpose_piano || 0
+      repUltimoAjuste = pref.ultimo_ajuste === 'transpose' ? 'transpose' : 'capo'
       repPrefs.cols = pref.cols || 1
       repPrefs.lyrSz = pref.tamano_letra || 1.0
       repPrefs.chdSz = pref.tamano_acorde || 1.08
@@ -5676,6 +5763,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repBuildSecs()
   repSetupSecsScroll()
   repBuildCapo(repCurKey)
+  repActualizarTransposeUI()
   repUpdateDisplay()
 
   document.getElementById('rep-anterior-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
@@ -6130,7 +6218,7 @@ window.repImprimir = function(){
     '</style></head><body>' +
     '<div class="ph-title">'+esc(repCancion.titulo)+'</div>' +
     (artistaNombre?'<div class="ph-artist">'+esc(artistaNombre)+'</div>':'') +
-    '<div class="ph-tono">Tono: '+esc(keyLbl)+(repCapoPos?' · Capo '+repCapoPos:'')+'</div>' +
+    '<div class="ph-tono">Tono: '+esc(keyLbl)+(repCapoPos?' · Capo '+repCapoPos:'')+(repTransposePos?' · Transpose '+(repTransposePos>0?'+':'')+repTransposePos:'')+'</div>' +
     '<hr/>' + '<div class="ph-body">' + body + '</div>' +
     '<script>window.addEventListener("load",function(){setTimeout(function(){window.print()},400)})</'+'script>' +
     '</body></html>'
@@ -6170,7 +6258,7 @@ window.analizarJsonRevision = function() {
   }
 
   sessionStorage.setItem('keynonia_revision_json', JSON.stringify(data))
-  window.location.href = 'index.html?revisar=1'
+  window.location.href = 'editor.html?revisar=1'
 }
 
 window.cerrarPanelRevision = function() {
@@ -7137,6 +7225,11 @@ aplicarNavegacionPendiente()
     <div class="rep-capo-lbl">Capo</div>
     <div class="rep-capo-row" id="rep-cp-buttons"></div>
     <div class="rep-cp-note-row" id="rep-cp-notes"></div>
+  </div>
+  <!-- TRANSPOSE PIANO: anotación personal del pianista (no cambia los acordes en pantalla) -->
+  <div class="rep-capo-wrap" style="margin-top:12px">
+    <div class="rep-capo-lbl">Transpose Piano</div>
+    <div class="rep-tp-row"><button class="rep-cp-btn" onclick="repAjustarTranspose(-1)" title="Bajar">&#8722;</button><div class="rep-tp-val" id="rep-tp-val">0</div><button class="rep-cp-btn" onclick="repAjustarTranspose(1)" title="Subir">+</button></div>
   </div>
 </div>
 
