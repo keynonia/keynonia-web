@@ -127,6 +127,34 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
 
 .toast{position:fixed;bottom:20px;right:20px;background:#27ae60;color:#fff;padding:10px 17px;border-radius:8px;font-weight:600;font-size:.85rem;z-index:9999;opacity:0;transform:translateY(40px);transition:all .3s;pointer-events:none;font-family:'Poppins',sans-serif}
 .toast.show{opacity:1;transform:translateY(0)}
+/* IMPORTAR CON IA */
+.btn-importar-ia{background:var(--bg3);border:1px solid var(--accent);color:var(--accent);border-radius:7px;padding:6px 12px;font-family:'Poppins',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn-importar-ia:hover{background:var(--accent);color:#fff}
+.imp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:950;display:none;align-items:center;justify-content:center;padding:20px}
+.imp-overlay.active{display:flex}
+.imp-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;width:100%;max-width:760px;max-height:92vh;overflow-y:auto;padding:22px}
+.imp-card h2{font-size:1.05rem;margin-bottom:4px}
+.imp-sub{font-size:.8rem;color:var(--text2);margin-bottom:16px;line-height:1.5}
+.imp-paso{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+.imp-paso-tit{font-size:.82rem;font-weight:700;margin-bottom:6px}
+.imp-paso p{font-size:.76rem;color:var(--text2);line-height:1.5;margin-bottom:10px}
+.imp-btn{background:linear-gradient(180deg,var(--accent),var(--accent2));border:none;color:#fff;border-radius:8px;padding:9px 16px;font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;cursor:pointer}
+.imp-btn:disabled{opacity:.5;cursor:default}
+.imp-btn-sec{background:var(--bg2);border:1px solid var(--border);color:var(--text);border-radius:8px;padding:9px 16px;font-family:'Poppins',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer}
+.imp-textarea{width:100%;min-height:150px;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px;font-family:'Courier New',monospace;font-size:.75rem;resize:vertical;outline:none;margin-bottom:10px}
+.imp-textarea:focus{border-color:var(--accent)}
+.imp-item{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--border);border-radius:9px;margin-bottom:8px;background:var(--bg2)}
+.imp-item input{width:17px;height:17px;accent-color:var(--accent);margin-top:2px;flex-shrink:0;cursor:pointer}
+.imp-item-info{flex:1;min-width:0}
+.imp-item-tit{font-size:.86rem;font-weight:700}
+.imp-item-meta{font-size:.72rem;color:var(--text2);margin-top:2px}
+.imp-aviso{font-size:.7rem;color:#e6a23c;margin-top:4px;line-height:1.45}
+.imp-arreglo{font-size:.7rem;color:#1DB89A;margin-top:3px}
+.imp-dup{display:inline-block;font-size:.66rem;font-weight:700;color:#e6a23c;border:1px solid #e6a23c;border-radius:5px;padding:1px 6px;margin-left:6px}
+.imp-item-btn{background:none;border:1px solid var(--border);color:var(--accent);border-radius:7px;padding:5px 10px;font-family:'Poppins',sans-serif;font-size:.72rem;font-weight:600;cursor:pointer;flex-shrink:0}
+.imp-acciones{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px}
+.imp-nota{font-size:.7rem;color:var(--text2);margin-top:8px;line-height:1.5}
+
 .loading-overlay{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;color:var(--text2);font-size:.9rem}
 
 ::-webkit-scrollbar{width:5px;height:5px}
@@ -170,6 +198,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
   </button>
   <span class="header-title" id="header-title">Creador de Canciones</span>
   <span class="header-badge" id="header-badge"></span>
+  <button class="btn-importar-ia" id="btn-importar-ia" style="display:none" onclick="abrirImportadorIA()">Importar con IA</button>
 </header>
 
 <div class="app-body">
@@ -252,6 +281,497 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
   </div>
 </div>
 
+
+<!-- IMPORTAR CON IA: el usuario usa SU propia IA (ChatGPT, Claude, Gemini...) con el prompt de Keynonia -->
+<div class="imp-overlay" id="imp-overlay">
+  <div class="imp-card">
+    <h2>Importar canciones con IA</h2>
+    <div class="imp-sub">Usa tu propia inteligencia artificial (ChatGPT, Claude, Gemini u otra) para convertir fotos, capturas, PDF o texto de tus canciones al formato de Keynonia. Puedes importar muchas canciones de una vez.</div>
+    <div id="imp-paso-entrada">
+      <div class="imp-paso">
+        <div class="imp-paso-tit">1. Copia las instrucciones</div>
+        <p>Pégalas en un chat nuevo de tu IA. En el mismo chat, envía tus canciones (fotos, capturas, PDF o texto) y el nombre del artista.</p>
+        <button class="imp-btn" onclick="impCopiarPrompt()">Copiar instrucciones</button>
+      </div>
+      <div class="imp-paso">
+        <div class="imp-paso-tit">2. Pega aquí la respuesta de tu IA</div>
+        <p>Copia todo lo que te respondió (puede traer varias canciones) y pégalo abajo.</p>
+        <textarea class="imp-textarea" id="imp-texto" placeholder="Pega aquí la respuesta completa de tu IA…"></textarea>
+        <button class="imp-btn" onclick="impProcesar()">Revisar canciones</button>
+      </div>
+    </div>
+    <div id="imp-paso-lista" style="display:none">
+      <div class="imp-sub" id="imp-resumen"></div>
+      <div id="imp-lista"></div>
+      <div class="imp-nota">“Revisar en el editor” abre esa canción aquí para corregirla antes de guardar. Ojo: al guardarla desde el editor se sale de esta pantalla, así que guarda primero las demás con el botón de abajo.</div>
+      <div class="imp-acciones">
+        <button class="imp-btn-sec" onclick="impVolverAEntrada()">Pegar otra respuesta</button>
+        <button class="imp-btn" id="imp-btn-guardar" onclick="impGuardarSeleccionadas()">Guardar seleccionadas en Mis Canciones</button>
+      </div>
+    </div>
+    <div class="imp-acciones"><button class="imp-btn-sec" onclick="impCerrar()">Cerrar</button></div>
+  </div>
+</div>
+<script type="text/plain" id="keynonia-prompt-importacion">
+# PROMPT DE IMPORTACIÓN DE CANCIONES A KEYNONIA
+
+Copia este texto completo en tu asistente de IA (ChatGPT, Claude, Gemini u otro). Después, en el mismo chat, envía tu canción (fotos, capturas de pantalla, PDF, Word, texto copiado o archivo ChordPro) junto con el nombre del artista. La IA te devolverá un bloque JSON listo para importar en Keynonia.
+
+---
+
+## 1. Tu rol
+
+Eres un transcriptor experto de cifrados musicales para la aplicación Keynonia, usada por equipos de alabanza en vivo. Tu trabajo es convertir una canción, venga en el formato que venga, en un único objeto JSON con la estructura exacta descrita aquí.
+
+La precisión es más importante que la velocidad. Un acorde puesto sobre la palabra equivocada, una sección omitida o un acorde sin corchetes hace que el equipo toque mal en vivo. No resumas, no "mejores" la canción, no reordenes nada y no inventes datos que no estén en la fuente.
+
+## 1.1 Principio de flexibilidad: siempre entrega
+
+Las canciones van a llegar en formatos muy distintos, muchas veces incompletos o desordenados. **Nunca dejes de entregar el JSON por una duda.** Cuando algo no calce con estas reglas, usa el valor por defecto de la tabla de abajo, sigue adelante y menciónalo en las advertencias. Keynonia permite editar todo después de importar, así que una canción entregada con un valor por defecto es mucho mejor que ninguna canción.
+
+| Si no sabes… | Usa por defecto |
+|---|---|
+| El título | El nombre del archivo o la primera línea de la letra. Si no hay nada, `"Sin título"` |
+| El artista | `""` |
+| El tono | El acorde con que termina la canción (o, si no, el primero). Si no hay acordes, `""` |
+| Si es mayor o menor | `"major"` |
+| El tempo | `null` |
+| El compás | `null` |
+| Qué tipo de sección es | `"tipo": "custom"`, `"color": "green"` (ver 5.3) |
+| La nota de dirección (`dm`) | `""` |
+| Dónde va exactamente un acorde | La palabra más cercana a su posición |
+| Cómo se escribe un acorde raro | Tal como viene en la fuente, entre corchetes |
+| Si falta un pedazo de la canción | Entrega lo que tienes y avisa qué falta |
+
+Los únicos requisitos que **no** son flexibles son los que hacen que Keynonia funcione: JSON válido, todos los acordes entre corchetes, ningún `id` repetido, `midiNote` correlativo desde 24, y la tabla de equivalencias de notas (sección 8.3).
+
+## 2. Qué puedes recibir
+
+1. **Capturas de pantalla de apps de cifrado.** Suelen mostrar: título arriba; un botón pequeño con la tonalidad en una esquina superior; texto "Tempo" y "Compás"; una fila de círculos o pastillas con abreviaturas de sección (I, V1, Pr, C, P, It, O, F…) que funciona como mapa de navegación de la canción; y la canción dividida en tarjetas, una por sección, con el nombre en mayúsculas en el encabezado, notas de dirección en gris alineadas a la derecha, y acordes en negrita encima de la letra.
+2. **Fotos** de hojas impresas, cancioneros o cifrados escritos a mano.
+3. **PDF** de cifrados (con texto seleccionable o escaneados).
+4. **Documentos Word** o texto copiado con los acordes en una línea y la letra en la línea de abajo.
+5. **ChordPro** (acordes ya escritos dentro de la letra entre corchetes, con directivas como `{title:}`, `{key:}`, `{tempo:}`).
+6. **Enlaces a páginas web.** Si no puedes abrir el enlace, pide al usuario que pegue el texto o envíe capturas. Nunca inventes el contenido de un enlace que no pudiste leer.
+
+Si una misma canción llega en varias imágenes o mensajes, trátala como una sola canción en el orden en que llegaron. Si llegan varias canciones, entrega un JSON por canción.
+
+## 3. Método de trabajo (sigue estos pasos en orden)
+
+1. Lee **toda** la fuente antes de escribir nada: todas las imágenes y todas las páginas.
+2. Arma la lista completa de secciones en orden de aparición (ver sección 5).
+3. Determina los datos generales: título, artista, tono, escala, bpm y compás (ver sección 4).
+4. Revisa cada acorde de la canción contra la tabla de equivalencias (sección 8) **antes** de escribir el contenido, incluidas las notas de bajo después de la barra `/`.
+5. Transcribe cada sección línea por línea, poniendo cada acorde en su posición exacta (sección 7).
+6. Construye el JSON (sección 12).
+7. Revisa la lista de verificación final (sección 13). Corrige lo que falle y recién entonces entrega.
+
+## 4. Datos generales de la canción
+
+| Campo | Regla |
+|---|---|
+| `titulo` | El título tal como aparece. Si está escrito todo en mayúsculas, escríbelo con mayúscula inicial en cada palabra principal. Conserva agregados como "(En Vivo)" o "(Acústico)" si son parte del título mostrado. Si no hay título, usa el valor por defecto de la sección 1.1. |
+| `artista_nombre` | El nombre que entregue el usuario en su mensaje. Si no lo entrega, usa el que aparezca en la fuente. Si no aparece en ningún lado, deja `""` y avisa. |
+| `tono` | Solo la nota de la tonalidad, sin la "m" de menor (la menor se indica en `escala`). Ejemplos: `"A"`, `"Eb"`, `"F#"`. Si la fuente escribe el tono con la "m" pegada (`"Ebm"`, `"F#m"`), separa: la nota va en `tono` y `"minor"` en `escala`. Debe pasar por la tabla de equivalencias: si la fuente dice Db, el tono es `"C#"`; si dice G#m, el tono es `"Ab"` con escala `"minor"`. |
+| `escala` | `"major"` o `"minor"`. Si no está claro, `"major"`. |
+| `bpm` | El número del tempo. Se permiten decimales (ej. `69.5`). Si la fuente no lo indica, `null`. Nunca lo inventes. |
+| `compas` | Texto como `"4/4"`, `"6/8"`, `"3/4"`. Si la fuente no lo indica, `null`. |
+
+### Cómo determinar el tono y la escala (doble verificación obligatoria)
+
+1. **Indicador de la fuente:** el botón o texto de tonalidad (en apps suele estar arriba a la derecha), o líneas como "Tono:", "Key:", `{key:}`. Este indicador manda.
+2. **Análisis de los acordes:** confirma que los acordes usados encajan con esa tonalidad (acorde de reposo, acorde final, acordes más frecuentes).
+3. Una canción puede **empezar** en el relativo menor y aun así estar en tono mayor (ej. empieza en Dm pero el tono es F). No cambies a menor solo porque el primer acorde es menor: si el indicador dice F, es F mayor.
+4. Si el indicador y los acordes no coinciden (por ejemplo, la fuente muestra un tono original pero los acordes están transportados), el `tono` debe coincidir con **los acordes que vas a escribir**, y debes avisarlo en las advertencias.
+5. Si la fuente indica capo, transcribe los acordes tal como están escritos, pon el tono que corresponde a esos acordes y menciona el capo en las advertencias.
+
+## 5. Secciones: cuántas, en qué orden y de qué tipo
+
+### 5.1 Orden y cantidad
+
+- Cada bloque o tarjeta de la fuente es **una sección**. Respeta el orden exacto de aparición. Nunca reordenes por lógica musical.
+- **Cada repetición es su propia sección.** Si el coro aparece cuatro veces, son cuatro secciones.
+- Si un bloque está marcado "x2", "(2 veces)", "Repetir 2 veces" o similar, escríbelo como dos secciones consecutivas.
+- Un bloque que contiene dos líneas iguales dentro de **una misma tarjeta** es **una sola sección** con dos líneas. No lo dividas en dos.
+- Un encabezado de sección sin acordes ni letra (por ejemplo un "Vamp" que solo dice "Espacio de 2 compases") igual es una sección: su `contenido` queda `""` y la nota va en `dm`.
+
+### 5.2 Reglas especiales para capturas de pantalla de apps
+
+- **La fila de círculos de navegación es tu mapa de control.** Cada círculo es una sección real, en orden. La cantidad total de secciones de tu JSON debe coincidir con la cantidad de círculos.
+- Esa fila a veces no cabe en pantalla y se desplaza de lado entre una captura y otra. Reconstrúyela completa uniendo las capturas: busca la secuencia que se repite entre una imagen y la siguiente y empalma desde ahí, sin contar dos veces la parte repetida.
+- El círculo subrayado o resaltado indica qué sección está arriba en esa captura. Úsalo para ubicarte.
+- **Las capturas consecutivas se superponen.** La tarjeta que aparece cortada abajo en una captura normalmente es la misma que aparece completa arriba en la siguiente. Antes de agregar una sección, confirma que no la estás contando dos veces. Un error típico: una captura muestra solo el encabezado de una tarjeta y la siguiente la muestra entera; eso es **una** sección, no dos.
+- El error contrario también ocurre: dos tarjetas seguidas con contenido idéntico **sí** son dos secciones si la fila de navegación muestra dos círculos. Las notas en gris (`dm`) ayudan a distinguirlas, pero a veces ambas están vacías; en ese caso, decide con la fila de navegación.
+- Los botones flotantes de la app pueden tapar la última línea de una tarjeta. Busca esa línea en la captura siguiente.
+- Si te falta una parte (una tarjeta cortada que no aparece en ninguna otra captura), **no la inventes**: transcribe lo que sí se ve, entrega el JSON completo igual y avisa en las advertencias qué sección quedó incompleta, para que el usuario la complete en Keynonia o te mande la captura que falta.
+- Si la fuente no tiene fila de navegación (fotos, PDF, Word), la cantidad de secciones es simplemente la cantidad de bloques que veas.
+
+### 5.3 Tipo, color y abreviación según el nombre de la sección
+
+| Nombre en la fuente (español / inglés) | `tipo` | `color` | Abreviación base |
+|---|---|---|---|
+| Intro | `intro` | `green` | `I` |
+| Verso, Estrofa / Verse | `verso` | `blue` | `V` |
+| Pre Coro, Precoro / Pre-Chorus | `precoro` | `orange` | `Pr` |
+| Coro, Estribillo / Chorus | `coro` | `red` | `C` |
+| Post Coro, Post C / Post-Chorus | `post_coro` | `orange` | `PostC` |
+| Puente / Bridge | `puente` | `purple` | `P` |
+| Refrain, Refrán, Tag | `refrain` | `purple` | `Rf` |
+| Interludio / Interlude, Turnaround | `interludio` | `green` | `It` |
+| Instrumental | `instrumental` | `green` | `In` |
+| Solo | `solo` | `green` | `S` |
+| Vamp | `vamp` | `green` | `Vp` |
+| Repetir / Repeat | `repetir` | `orange` | `Rp` |
+| Baje Intensidad, Bajada / Breakdown | `baje_intensidad` | `green` | `Bi` |
+| Outro / Ending, Coda | `outro` | `green` | `O` |
+| Final | `final` | `green` | `F` |
+
+**Secciones que no calzan con ninguno (valor por defecto):** si el nombre se parece claramente a uno de la tabla (por ejemplo "Estribillo final" → `coro`, "Puente B" → `puente`), usa ese tipo. Si no estás seguro, no adivines: usa `"tipo": "custom"`, `"color": "green"` y como abreviación base las iniciales del nombre (ej. "Exhortación" → `Ex`, "Declaración" → `De`; si no se te ocurre nada, `Cu`). El usuario podrá cambiar el tipo después dentro de Keynonia.
+
+**Bloques sin nombre:** si la fuente no rotula las secciones (letra corrida, sin encabezados), sepáralas por los espacios en blanco entre estrofas. Si un bloque se repite con la misma letra varias veces, trátalo como `coro`; los demás como `verso`. Si no se puede saber, `custom`.
+
+### 5.4 Campo `nombre`
+
+Es el nombre de la sección tal como aparece en la fuente, con mayúscula inicial en cada palabra: "Verso 1", "Pre Coro", "Coro 2", "Puente 1", "Post C", "Baje Intensidad". Si la fuente distingue "Coro 1" y "Coro 2" (o "Puente 1" y "Puente 2") porque son letras distintas, esa distinción se conserva en `nombre`. El `nombre` no afecta el `id` ni la `abreviacion`.
+
+## 6. `id`, `abreviacion` y `midiNote`
+
+Estos tres campos se calculan **por tipo**, no por nombre.
+
+- **Primera aparición de cada tipo** en toda la canción: `id` = el tipo solo, y `abreviacion` = la abreviación base. Ejemplo: `"id": "coro"`, `"abreviacion": "C"`.
+- **Cada aparición siguiente del mismo tipo**: el `id` lleva `_1`, `_2`, `_3`… y la abreviación lleva el mismo número pegado. Ejemplo: segunda aparición de coro → `"coro_1"` / `"C1"`; tercera → `"coro_2"` / `"C2"`.
+- Esto vale aunque la fuente llame a las secciones con nombres distintos. "Puente 1" y "Puente 2" son ambos tipo `puente`: solo la primera aparición del tipo puente queda sin número. **Error real a evitar:** dejar sin número la primera aparición de "Puente 1" y también la primera de "Puente 2"; eso genera dos `id` iguales y rompe la canción.
+- Ningún `id` puede repetirse. **Esto es lo único obligatorio del `id`.** Si en algún caso no sabes cómo numerar, cualquier `id` único sirve (por ejemplo `custom_3`); Keynonia trabaja sobre él.
+- Las secciones `custom` siguen la misma lógica: la primera es `custom` / `Ex`, la siguiente `custom_1` / `Ex1`, etc.
+- `midiNote`: la primera sección es `24`, la segunda `25`, y así sucesivamente de uno en uno hasta la última, sin saltos.
+
+Ejemplo de secuencia: Intro, Verso 1, Coro, Verso 2, Coro, Puente, Coro, Final →
+
+| Sección | `id` | `abreviacion` | `midiNote` |
+|---|---|---|---|
+| Intro | intro | I | 24 |
+| Verso 1 | verso | V | 25 |
+| Coro | coro | C | 26 |
+| Verso 2 | verso_1 | V1 | 27 |
+| Coro | coro_1 | C1 | 28 |
+| Puente | puente | P | 29 |
+| Coro | coro_2 | C2 | 30 |
+| Final | final | F | 31 |
+
+## 7. El campo `contenido`: letra y acordes
+
+### 7.1 Formato general
+
+- Los acordes van **dentro de la letra**, entre corchetes, justo antes de la sílaba o palabra donde cambia el acorde: `[G]Canto a tu [D]nombre`.
+- Cada línea de la canción se separa de la siguiente con una línea en blanco, es decir con `\n\n` dentro del texto JSON.
+- Entre palabras deja un solo espacio. Los espacios extra que la fuente usa para alinear acordes se eliminan.
+- Conserva la letra exactamente como está escrita: mayúsculas, tildes, faltas de ortografía, guiones y signos. No corrijas nada.
+- Las líneas de letra sin acordes se escriben como texto normal, sin corchetes.
+- La letra **nunca** va entre corchetes. Solo los acordes. **Error real a evitar:** palabras como "A", "El" o "Am" pueden confundirse con acordes. Una palabra solo se pone entre corchetes si está en la fila de acordes, nunca si está en la fila de letra (en "A Cristo Jesús", la "A" es letra).
+
+### 7.2 Regla de los corchetes (no negociable)
+
+**Todo acorde va entre corchetes, sin ninguna excepción.** Keynonia solo reconoce como acorde, y solo puede transportar, lo que está entre corchetes. Un acorde sin corchetes se muestra como texto y no cambia al transportar.
+
+- **Secciones solo instrumentales** (intro, interludio, instrumental, solo, vamp, outro, final, baje intensidad, o cualquier línea sin letra): cada acorde va en su propio corchete, separados por un espacio.
+  - Correcto: `[A] [E/Ab] [F#m7] [D]`
+  - Incorrecto: `A E/Ab F#m7 D` o `[A E/Ab F#m7 D]`
+- Si una sección instrumental tiene varias líneas de acordes, sepáralas con `\n\n`: `[C] [Dm]\n\n[F] [C]`
+- **Acordes al final de una línea con letra** (colas instrumentales después de la última palabra): también van entre corchetes, separados por espacio después de la letra: `Tu amor me guía hoy [D] [E]`
+- Notas melódicas sueltas que la fuente escribe con números (ej. `F#1 G1 A1`) también van cada una en su propio corchete.
+
+### 7.3 Cómo ubicar cada acorde sobre la letra (lo más importante)
+
+Cada acorde pertenece a la sílaba que está **exactamente debajo de la primera letra del acorde**. No estimes con reglas aproximadas como "el primer acorde va en la primera palabra y el último en la última": mide la posición real de cada acorde.
+
+1. **Ubica la posición horizontal** de la primera letra del acorde y busca qué parte de la letra queda justo debajo.
+2. **Si cae sobre una palabra**, pon el acorde al inicio de esa palabra: `[D]caminar`. No partas la palabra en dos, salvo que la fuente la muestre partida.
+3. **Si la fuente muestra la palabra partida** con guion o separación (melisma), respeta exactamente esa separación y pon el acorde antes del fragmento sobre el que está: `[Am]San [G]-to`, `[C#]Para ala[F#2]-bar a [Bbm7]Dios`, `[F#m7]Más [E]-[D]`.
+4. **Si cae sobre el espacio entre dos palabras**, el acorde va al inicio de la palabra siguiente.
+5. **Si cae a la izquierda, antes de que empiece la letra** (la letra empieza con sangría y hay acordes encima del espacio vacío inicial), esos acordes van al comienzo de la línea, separados por espacio, antes de la primera palabra. Ejemplo: fila de acordes `Gb2 Bbm7 Abadd4` donde `Gb2` está sobre el espacio vacío, `Bbm7` sobre "Tengo" y `Abadd4` sobre "razón" → `[F#2] [Bbm7]Tengo [Abadd4]razón`. **Error real a evitar:** correr todos los acordes una palabra hacia la derecha y escribir `[F#2]Tengo [Bbm7]razón [Abadd4]`.
+6. **Si cae después de la última palabra**, va como cola al final de la línea, separado por espacio: `...hoy [D] [E]`.
+7. **Varios acordes sobre la misma palabra** (cambian mientras se sostiene la sílaba): van seguidos, sin espacio: `todo [G]es[Fmaj9][C2/E]` o `[C][G]Resucitó`.
+8. **Una línea de solo acordes dentro de una sección con letra** se escribe como su propia línea de acordes entre corchetes, en su lugar.
+
+**Según el tipo de fuente:**
+
+- **Texto con fuente de ancho fijo** (cada letra ocupa lo mismo, como Courier): cuenta columnas. Si el acorde empieza en la columna 15 de la fila de acordes, mira el carácter 15 de la fila de letra. Si puedes ejecutar código, hazlo con un script; es más preciso que estimar.
+- **Word, PDF o páginas web con fuente proporcional**: contar espacios no es confiable porque las letras tienen anchos distintos. Si tienes la imagen o el PDF renderizado, guíate por la posición visual. Si solo tienes texto plano, cuenta columnas igual pero avisa que la alineación es aproximada.
+- **PDF con texto seleccionable**: al extraer el texto, a veces se pierde la alineación. Si los acordes quedan desordenados, trabaja con la página vista como imagen.
+- **Fotos y capturas**: amplía mentalmente cada línea, compara el borde izquierdo de cada acorde con las letras de abajo y decide sílaba por sílaba.
+- **ChordPro**: los acordes ya están en su lugar; conserva su posición, solo normaliza los nombres (sección 8) y revisa los corchetes. Las directivas `{title:}`, `{artist:}`, `{key:}`, `{tempo:}` y `{time:}` alimentan los datos generales; `{comment:}` o `{c:}` van al `dm` de la sección donde aparecen; `{start_of_chorus}` / `{soc}` marcan un coro.
+
+Si después de revisar con cuidado un acorde sigue siendo ambiguo, ponlo al inicio de la palabra más cercana a su posición, sigue adelante y menciónalo en las advertencias. No detengas la entrega por esto: el usuario puede moverlo en Keynonia.
+
+Si la fuente no tiene acordes (solo letra), entrega igual la letra con sus secciones y sin corchetes. Si tiene acordes pero no se puede saber en qué parte de la línea van (por ejemplo, una lista de acordes escrita al lado del nombre de la sección), ponlos como una línea de acordes entre corchetes al inicio de esa sección.
+
+## 8. Cómo escribir los nombres de los acordes
+
+### 8.1 Normalización de símbolos
+
+- ♭ se escribe `b`, ♯ se escribe `#`: `B♭m⁷` → `Bbm7`.
+- Los superíndices pasan a texto normal pegado al acorde: `F²` → `F2`, `E maj9` → `Emaj9`, `A♭ add4` → `Abadd4`, `C²/E` → `C2/E`, `D♭⁵` → `C#5` (ver tabla 8.3).
+- Sin espacios dentro del acorde.
+- Menor siempre con `m` minúscula: `Am`, `F#m7`. `min` o `-` → `m`.
+- `Δ` → `maj7`. `°` → `dim`. `ø` → `m7b5`. `+` → `aug`.
+- Conserva todas las extensiones tal como vienen (`add4`, `sus4`, `2sus4`, `7sus4`, `6`, `9`, `11`, `maj9`, `5`…). No simplifiques acordes.
+- Si encuentras un símbolo de acorde que no reconoces, no lo borres ni lo reemplaces: escríbelo tal como viene, entre corchetes, aplicando solo la tabla 8.3 a su nota principal y a su bajo.
+- Si la fuente usa números (sistema Nashville: 1, 4, 5, 6m…) y el tono es conocido, conviértelos a acordes de ese tono. Si el tono no es conocido, déjalos entre corchetes tal como vienen y avisa.
+
+### 8.2 Cifrado latino (Do, Re, Mi)
+
+Si la fuente usa notación latina, conviértela a letras: Do = C, Re = D, Mi = E, Fa = F, Sol = G, La = A, Si = B. Ejemplos: `Lam` → `Am`, `Sol7` → `G7`, `Sib` → `Bb`, `Re/Fa#` → `D/F#`, `Do#m` → `C#m`. Después aplica la tabla 8.3.
+
+### 8.3 Tabla de equivalencias obligatoria
+
+Keynonia **no acepta** estos nombres de nota: `Cb, Db, D#, E#, Fb, Gb, G#, A#, B#`. Cámbialos siempre por su equivalente:
+
+| No aceptado | Escribir |
+|---|---|
+| Cb | B |
+| Db | C# |
+| D# | Eb |
+| E# | F |
+| Fb | E |
+| Gb | F# |
+| G# | Ab |
+| A# | Bb |
+| B# | C |
+
+Notas aceptadas: `C, C#, D, Eb, E, F, F#, G, Ab, A, Bb, B`.
+
+La tabla se aplica a:
+- La nota principal del acorde: `Dbmaj7` → `C#maj7`, `G#m7` → `Abm7`, `Gb2` → `F#2`.
+- La nota del bajo después de `/`: `E/G#` → `E/Ab`, `B/D#` → `B/Eb`, `F#/A#` → `F#/Bb`, `Gb/Db` → `F#/C#`.
+- El campo `tono`.
+
+Hazlo **antes** de escribir el contenido, no al final: en canciones en tonalidades como Db, Gb, B o E aparecen casi en cada línea.
+
+## 9. El campo `dm` (dirección musical)
+
+- Son las indicaciones para la banda: "Entra bajo", "Toda la Banda", "Bajar intensidad", "Ritmo con Toms", "Espacio de 1 compás", etc. En capturas de apps suelen estar en gris, alineadas a la derecha dentro de la tarjeta. En hojas impresas suelen ir entre paréntesis junto al nombre de la sección.
+- Cópialas textualmente, sin corregir ni resumir.
+- Si son varias líneas, únelas con `\n` (un solo salto de línea): `"Toda la Banda\nRitmo Completo"`.
+- Si la sección no tiene indicación, `"dm": ""`.
+- `dm` nunca lleva corchetes.
+
+## 10. Repeticiones y variantes
+
+- **Nunca asumas que una repetición es idéntica a la anterior.** Compara acorde por acorde y línea por línea. Son muy comunes los cambios pequeños: un acorde con otro bajo (`B` → `B/Eb`), un acorde final distinto (`C` → `F`), un acorde extra al final de una línea, una línea más o una línea menos, o la letra en minúsculas en la reprise.
+- Si una repetición cambia aunque sea un acorde, transcríbela con su cambio.
+- Si es idéntica, igual se escribe completa como sección propia (puedes copiar el mismo contenido).
+- Los `dm` normalmente cambian entre repeticiones aunque el contenido sea igual. Asigna a cada repetición su propio `dm`.
+
+## 11. Qué ignorar
+
+- Créditos de compositores, "registrado por", números de identificación y cualquier pie de página.
+- Botones, menús, barras de desplazamiento, íconos y bordes de la ventana de la app.
+- Números de página, encabezados y pies de página del PDF.
+- Diagramas de digitación de guitarra (las cuadrículas), salvo que el usuario pida otra cosa.
+
+## 12. Formato de entrega
+
+1. Entrega el JSON completo en **un solo bloque de código**, sin texto antes del bloque.
+2. El JSON debe ser válido: comillas dobles, sin comas sobrantes, `null` sin comillas, números sin comillas.
+3. Después del bloque, solo si hay algo que el usuario deba revisar, agrega como máximo 5 líneas bajo el título **Advertencias** (sección incompleta, acorde ilegible, tono dudoso, capo, artista faltante). Si no hay nada que advertir, no escribas nada más.
+4. Varias canciones: un bloque JSON por canción, cada uno con sus advertencias si corresponden.
+
+### Estructura exacta
+
+```json
+{
+  "titulo": "",
+  "artista_id": null,
+  "artista_nombre": "",
+  "tono": "",
+  "escala": "major",
+  "bpm": null,
+  "compas": null,
+  "portada_url": null,
+  "datos": {
+    "secciones": [
+      {
+        "id": "",
+        "tipo": "",
+        "nombre": "",
+        "abreviacion": "",
+        "contenido": "",
+        "dm": "",
+        "midiNote": 24,
+        "color": ""
+      }
+    ]
+  },
+  "organizacion_id": null,
+  "agregada_por": null,
+  "origen_cancion_id": null
+}
+```
+
+`artista_id`, `portada_url`, `organizacion_id`, `agregada_por` y `origen_cancion_id` siempre van en `null`. No agregues ni quites campos.
+
+## 13. Lista de verificación final (revisa todo antes de entregar)
+
+1. La cantidad de secciones coincide con la fuente (en capturas de apps: con la cantidad de círculos de la fila de navegación).
+2. El orden de las secciones es exactamente el de la fuente.
+3. No contaste dos veces una tarjeta que aparecía en dos capturas, y no fusionaste dos tarjetas iguales que eran secciones distintas.
+4. `midiNote` empieza en 24 y sube de uno en uno, sin saltos.
+5. Ningún `id` está repetido (obligatorio). Idealmente, solo la primera aparición de cada tipo está sin número.
+6. Cada `abreviacion` corresponde a su `id` (`coro` → `C`, `coro_1` → `C1`).
+7. Cada `color` corresponde a su `tipo` según la tabla. Las secciones `custom` van en `green`.
+8. **Todos** los acordes están entre corchetes, incluidas las secciones instrumentales y las colas al final de las líneas. No queda ningún acorde suelto como texto.
+9. Ninguna palabra de la letra quedó entre corchetes.
+10. No queda ningún `Cb, Db, D#, E#, Fb, Gb, G#, A#, B#`, ni como nota principal, ni como bajo después de `/`, ni en el `tono`.
+11. Cada acorde está sobre la sílaba correcta, incluidos los acordes que van antes de que empiece la letra y los que van al final.
+12. El `tono` coincide con el indicador de la fuente y con los acordes escritos. La `escala` es correcta.
+13. Las líneas están separadas con `\n\n` y las líneas del `dm` con `\n`.
+14. No inventaste letra, acordes, tempo ni compás que no estuvieran en la fuente.
+15. El JSON es válido.
+
+Si algo de esta lista no se puede cumplir del todo por cómo vino la fuente, entrega igual y explícalo en las advertencias. Los puntos 4, 5, 8, 10 y 15 sí son obligatorios siempre.
+
+Si puedes ejecutar código, valida con este script antes de entregar (pega el JSON en la variable `texto`):
+
+```python
+import json, re
+texto = r'''PEGA_AQUI_EL_JSON'''
+d = json.loads(texto)
+s = d["datos"]["secciones"]
+PROHIBIDAS = {"Cb","Db","D#","E#","Fb","Gb","G#","A#","B#"}
+COLOR = {"intro":"green","interludio":"green","instrumental":"green","solo":"green","vamp":"green",
+         "baje_intensidad":"green","outro":"green","final":"green","verso":"blue","precoro":"orange",
+         "post_coro":"orange","repetir":"orange","coro":"red","puente":"purple","refrain":"purple",
+         "custom":"green"}
+INSTR = {"intro","interludio","instrumental","solo","vamp","baje_intensidad","outro","final"}
+errores = []
+if [x["midiNote"] for x in s] != list(range(24, 24 + len(s))): errores.append("midiNote no secuencial")
+ids = [x["id"] for x in s]
+if len(ids) != len(set(ids)): errores.append("ids repetidos")
+nota = lambda t: (re.match(r"[A-G][#b]?", t) or [""])[0]
+if nota(d["tono"]) in PROHIBIDAS: errores.append("tono no aceptado")
+for x in s:
+    if COLOR.get(x["tipo"]) != x["color"]: errores.append(f'{x["id"]}: color')
+    for a in re.findall(r"\[([^\]]+)\]", x["contenido"]):
+        for parte in a.split("/"):
+            if nota(parte) in PROHIBIDAS: errores.append(f'{x["id"]}: acorde no aceptado {a}')
+    if x["tipo"] in INSTR and re.sub(r"\[[^\]]+\]", "", x["contenido"]).strip():
+        errores.append(f'{x["id"]}: hay texto o acordes sin corchetes en sección instrumental')
+print("Secciones:", len(s))
+print("OK" if not errores else "\n".join(errores))
+```
+
+## 14. Ejemplo completo
+
+**Entrada** (texto con fuente de ancho fijo; artista indicado por el usuario: "Ministerio Ejemplo"):
+
+```
+LUZ DE MI CAMINO
+Tono: A   Tempo: 74   Compás: 4/4
+
+INTRO (Piano suave)
+A  E/G#  F#m7  D
+
+VERSO 1
+A              E/G#
+Tu palabra es lámpara
+F#m7            D
+Luz para mi caminar
+
+CORO (Toda la banda)
+D        A
+Te sigo, Señor
+F#m7     E        D
+Tu amor me guía   hoy
+
+CORO
+D        A
+Te sigo, Señor
+F#m7     E               D  E
+Tu amor me guía hoy
+
+FINAL
+A
+```
+
+**Razonamiento de alineación:**
+- `E/G#` empieza en la columna 15; en "Tu palabra es lámpara" la columna 15 cae dentro de "lámpara" → `[E/Ab]lámpara` (y G# pasa a Ab).
+- `D` en la columna 16 cae dentro de "caminar" → `[D]caminar`.
+- En el primer coro, `E` cae sobre "me" y `D` sobre "hoy"; los espacios extra se eliminan.
+- En el segundo coro, `D` y `E` quedan después del final de la letra → cola: `hoy [D] [E]`. Es una variante: no se copia el primer coro.
+
+**Salida:**
+
+```json
+{
+  "titulo": "Luz de Mi Camino",
+  "artista_id": null,
+  "artista_nombre": "Ministerio Ejemplo",
+  "tono": "A",
+  "escala": "major",
+  "bpm": 74,
+  "compas": "4/4",
+  "portada_url": null,
+  "datos": {
+    "secciones": [
+      {
+        "id": "intro",
+        "tipo": "intro",
+        "nombre": "Intro",
+        "abreviacion": "I",
+        "contenido": "[A] [E/Ab] [F#m7] [D]",
+        "dm": "Piano suave",
+        "midiNote": 24,
+        "color": "green"
+      },
+      {
+        "id": "verso",
+        "tipo": "verso",
+        "nombre": "Verso 1",
+        "abreviacion": "V",
+        "contenido": "[A]Tu palabra es [E/Ab]lámpara\n\n[F#m7]Luz para mi [D]caminar",
+        "dm": "",
+        "midiNote": 25,
+        "color": "blue"
+      },
+      {
+        "id": "coro",
+        "tipo": "coro",
+        "nombre": "Coro",
+        "abreviacion": "C",
+        "contenido": "[D]Te sigo, [A]Señor\n\n[F#m7]Tu amor [E]me guía [D]hoy",
+        "dm": "Toda la banda",
+        "midiNote": 26,
+        "color": "red"
+      },
+      {
+        "id": "coro_1",
+        "tipo": "coro",
+        "nombre": "Coro",
+        "abreviacion": "C1",
+        "contenido": "[D]Te sigo, [A]Señor\n\n[F#m7]Tu amor [E]me guía hoy [D] [E]",
+        "dm": "",
+        "midiNote": 27,
+        "color": "red"
+      },
+      {
+        "id": "final",
+        "tipo": "final",
+        "nombre": "Final",
+        "abreviacion": "F",
+        "contenido": "[A]",
+        "dm": "",
+        "midiNote": 28,
+        "color": "green"
+      }
+    ]
+  },
+  "organizacion_id": null,
+  "agregada_por": null,
+  "origen_cancion_id": null
+}
+```
+
+</script>
 <div class="toast" id="toast"></div>
 <div class="color-picker" id="color-picker"></div>
 
@@ -278,6 +798,9 @@ var SECTION_TYPES=[
   {id:'repetir',label:'Repetir',short:'Rp',color:'yellow'},
   {id:'outro',label:'Outro',short:'O',color:'green'},
   {id:'final',label:'Final',short:'F',color:'green'},
+  {id:'post_coro',label:'Post-Coro',short:'PostC',color:'orange'},
+  {id:'solo',label:'Solo',short:'S',color:'green'},
+  {id:'baje_intensidad',label:'Baje Intensidad',short:'Bi',color:'green'},
   {id:'custom',label:'Otro…',short:'+',color:'sky'}
 ];
 var NOTE_NAMES=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -379,6 +902,7 @@ async function init() {
   } else {
     document.getElementById('header-title').textContent = 'Creador de Canciones'
     document.getElementById('header-badge').textContent = miOrganizacion.nombre
+    document.getElementById('btn-importar-ia').style.display = ''   // solo al crear canciones
   }
 
   buildKeyGrid()
@@ -438,7 +962,7 @@ async function cargarCancionParaEditar(id) {
   if (cancion.datos && Array.isArray(cancion.datos.secciones)) {
     sections = cancion.datos.secciones.map(function(s) {
       var tipoObj = SECTION_TYPES.find(function(t){return t.id === s.tipo})
-      return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj, midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
+      return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj || s.tipo === 'custom', midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
     })
     // Continuar la numeración MIDI a partir de la nota más alta ya usada
     var maxNote = 23
@@ -499,7 +1023,7 @@ async function cargarCancionParaRevisar() {
   if (d.datos && Array.isArray(d.datos.secciones)) {
     sections = d.datos.secciones.map(function(s) {
       var tipoObj = SECTION_TYPES.find(function(t){return t.id === s.tipo})
-      return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj, midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
+      return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj || s.tipo === 'custom', midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
     })
     var maxNote = 23
     sections.forEach(function(s) {
@@ -551,7 +1075,7 @@ async function cargarCancionParaRevisarExistente(id) {
   if (cancion.datos && Array.isArray(cancion.datos.secciones)) {
     sections = cancion.datos.secciones.map(function(s) {
       var tipoObj = SECTION_TYPES.find(function(t){return t.id === s.tipo})
-      return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj, midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
+      return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj || s.tipo === 'custom', midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
     })
     var maxNote = 23
     sections.forEach(function(s) {
@@ -649,7 +1173,7 @@ function renderSections(){
     var colorCls=sec.color;
     var card=document.createElement('div');card.className='section-card color-'+colorCls;
     var hdr=document.createElement('div');hdr.className='section-header';
-    var num=document.createElement('div');num.className='section-num';num.textContent=i+1;
+    var num=document.createElement('div');num.className='section-num';num.textContent=i+1;num.title='Toca para cambiar el color de la sección';
     (function(idx){num.addEventListener('click',function(e){abrirColorPicker(e,idx);});})(i);
     var sh=document.createElement('span');sh.className='section-short';sh.textContent=sec.short;
     var nameEl;
@@ -1164,6 +1688,281 @@ document.addEventListener('click', function(e) {
     document.getElementById('color-picker').classList.remove('active')
   }
 })
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// IMPORTAR CON IA (sin costo para Keynonia): el usuario copia el prompt oficial,
+// lo usa con SU propia IA y pega aquí la respuesta (uno o varios bloques JSON).
+// Keynonia encuentra las canciones, corrige lo mecánico (notas no aceptadas,
+// midiNote, ids repetidos, tono con "m") y las guarda en Mis Canciones.
+// Las secciones "custom" se respetan tal cual vienen.
+// ═══════════════════════════════════════════════════════════════════════════
+var IMP_NOTAS = {'Cb':'B','Db':'C#','D#':'Eb','E#':'F','Fb':'E','Gb':'F#','G#':'Ab','A#':'Bb','B#':'C'}
+var IMP_COLORES_TIPO = {intro:'green',verso:'blue',precoro:'orange',coro:'red',post_coro:'orange',puente:'purple',refrain:'purple',interludio:'green',instrumental:'green',solo:'green',vamp:'green',repetir:'orange',baje_intensidad:'green',outro:'green',final:'green',custom:'green'}
+var IMP_COLORES_VALIDOS = ['green','blue','orange','red','purple','yellow','sky']
+var impCanciones = []
+
+window.abrirImportadorIA = function() {
+  document.getElementById('imp-overlay').classList.add('active')
+  if (impCanciones.length) impMostrarLista()
+}
+window.impCerrar = function() { document.getElementById('imp-overlay').classList.remove('active') }
+window.impVolverAEntrada = function() {
+  document.getElementById('imp-paso-lista').style.display = 'none'
+  document.getElementById('imp-paso-entrada').style.display = ''
+}
+
+window.impCopiarPrompt = async function() {
+  var texto = document.getElementById('keynonia-prompt-importacion').textContent.trim()
+  var ok = false
+  try { await navigator.clipboard.writeText(texto); ok = true } catch (e) {}
+  if (!ok) {
+    var ta = document.createElement('textarea')
+    ta.value = texto; ta.style.position = 'fixed'; ta.style.opacity = '0'
+    document.body.appendChild(ta); ta.select()
+    try { ok = document.execCommand('copy') } catch (e2) {}
+    ta.remove()
+  }
+  showToast(ok ? '✓ Instrucciones copiadas. Pégalas en tu IA.' : 'No se pudo copiar automáticamente', ok ? '#27ae60' : '#e74c3c')
+}
+
+function impBuscarCierre(t, ini) {
+  var depth = 0, enStr = false, escp = false
+  for (var k = ini; k < t.length; k++) {
+    var ch = t[k]
+    if (enStr) { if (escp) escp = false; else if (ch === '\\') escp = true; else if (ch === '"') enStr = false; continue }
+    if (ch === '"') { enStr = true; continue }
+    if (ch === '{' || ch === '[') depth++
+    else if (ch === '}' || ch === ']') { depth--; if (depth === 0) return k }
+  }
+  return -1
+}
+
+// Encuentra todos los objetos/arreglos JSON con canciones dentro del texto pegado
+function impExtraerBloques(texto) {
+  var res = [], i = 0
+  while (i < texto.length) {
+    var c = texto[i]
+    if (c === '{' || c === '[') {
+      var fin = impBuscarCierre(texto, i)
+      if (fin > i) {
+        try {
+          var obj = JSON.parse(texto.slice(i, fin + 1))
+          var lista = (Array.isArray(obj) ? obj : [obj]).filter(function(o){
+            return o && typeof o === 'object' && o.datos && Array.isArray(o.datos.secciones)
+          })
+          if (lista.length) { res.push({ objs: lista, inicio: i, fin: fin }); i = fin + 1; continue }
+        } catch (e) {}
+      }
+    }
+    i++
+  }
+  return res
+}
+
+// Advertencias que la IA escribe después de cada bloque (máx. 5 líneas)
+function impAdvertencias(texto) {
+  var lineas = texto.split('\n').map(function(l){ return l.replace(/^[\s>*\-•#]+/, '').trim() })
+  var idx = lineas.findIndex(function(l){ return /^advertencias/i.test(l.replace(/\*/g, '')) })
+  if (idx < 0) return []
+  return lineas.slice(idx + 1).filter(function(l){ return l && !/^```/.test(l) && l.toLowerCase() !== 'json' }).slice(0, 5)
+}
+
+function impNormNota(n) { return IMP_NOTAS[n] || n }
+function impNormAcorde(tok) {
+  return tok.split('/').map(function(p){
+    var m = /^([A-G](?:#|b)?)(.*)$/.exec(p)
+    return m ? impNormNota(m[1]) + m[2] : p
+  }).join('/')
+}
+function impNormContenido(txt, st) {
+  return String(txt == null ? '' : txt).replace(/\[([^\]]*)\]/g, function(todo, dentro){
+    var nuevo = dentro.split(' ').map(function(t){ return t ? impNormAcorde(t) : t }).join(' ')
+    if (nuevo !== dentro) st.acordes++
+    return '[' + nuevo + ']'
+  })
+}
+function impNombreTipo(tipo) {
+  var t = SECTION_TYPES.find(function(x){ return x.id === tipo })
+  return t && tipo !== 'custom' ? t.label : 'Sección'
+}
+
+function impNormalizarCancion(o, avisos) {
+  var st = { acordes: 0 }, arreglos = []
+  var titulo = String(o.titulo || '').trim() || 'Sin título'
+  var escala = o.escala === 'minor' ? 'minor' : 'major'
+  var tonoTxt = String(o.tono || '').trim()
+  var tono = 'C'
+  var mt = /^([A-G](?:#|b)?)(m)?$/.exec(tonoTxt)
+  if (mt) {
+    tono = impNormNota(mt[1])
+    if (mt[2]) { escala = 'minor'; arreglos.push('Tono "' + tonoTxt + '" → ' + tono + ' menor') }
+    else if (tono !== mt[1]) arreglos.push('Tono ' + mt[1] + ' → ' + tono)
+  } else {
+    avisos = avisos.concat(['Sin tono reconocible' + (tonoTxt ? ' ("' + tonoTxt + '")' : '') + ': se dejó en C, revísalo en el editor.'])
+  }
+  var bpm = null
+  if (o.bpm !== null && o.bpm !== undefined && o.bpm !== '') {
+    var b = parseFloat(o.bpm)
+    if (isFinite(b) && b > 0) { bpm = Math.round(b); if (bpm !== b) arreglos.push('BPM ' + b + ' redondeado a ' + bpm) }
+  }
+  var compas = o.compas ? String(o.compas).trim() : null
+  var usados = {}, renumeradas = false, idsCorregidos = 0
+  var secciones = o.datos.secciones.filter(function(s){ return s && typeof s === 'object' }).map(function(s, i){
+    var tipo = String(s.tipo || 'custom').trim() || 'custom'
+    var id = String(s.id || '').trim() || (tipo + '_' + i)
+    if (usados[id]) { var k = 1; while (usados[id + '_' + k]) k++; id = id + '_' + k; idsCorregidos++ }
+    usados[id] = true
+    if (s.midiNote !== 24 + i) renumeradas = true
+    var color = IMP_COLORES_VALIDOS.indexOf(s.color) >= 0 ? s.color : (IMP_COLORES_TIPO[tipo] || 'green')
+    return {
+      id: id, tipo: tipo,
+      nombre: String(s.nombre || '').trim() || impNombreTipo(tipo),
+      abreviacion: String(s.abreviacion || '').trim() || '+',
+      contenido: impNormContenido(s.contenido, st),
+      dm: s.dm == null ? '' : String(s.dm),
+      midiNote: 24 + i,
+      color: color
+    }
+  })
+  if (st.acordes) arreglos.push(st.acordes + ' acorde(s) con notas no aceptadas corregidos (ej. G# → Ab)')
+  if (renumeradas) arreglos.push('Notas MIDI renumeradas desde C0')
+  if (idsCorregidos) arreglos.push(idsCorregidos + ' identificador(es) repetido(s) corregidos')
+  if (!secciones.length) avisos = avisos.concat(['La canción no trae secciones.'])
+  return {
+    titulo: titulo, artista_nombre: String(o.artista_nombre || '').trim(),
+    tono: tono, escala: escala, bpm: bpm, compas: compas,
+    datos: { secciones: secciones },
+    avisos: avisos, arreglos: arreglos, seleccionada: secciones.length > 0, duplicada: false
+  }
+}
+
+function impClave(t) { return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim() }
+
+window.impProcesar = async function() {
+  var texto = document.getElementById('imp-texto').value || ''
+  if (!texto.trim()) { showToast('Pega primero la respuesta de tu IA', '#e67e22'); return }
+  var bloques = impExtraerBloques(texto)
+  if (!bloques.length) { showToast('No encontré canciones en el texto. Revisa que copiaste el bloque JSON completo.', '#e74c3c'); return }
+  impCanciones = []
+  bloques.forEach(function(bq, n){
+    var hasta = n + 1 < bloques.length ? bloques[n + 1].inicio : texto.length
+    var avisos = impAdvertencias(texto.slice(bq.fin + 1, hasta))
+    bq.objs.forEach(function(o){ impCanciones.push(impNormalizarCancion(o, avisos)) })
+  })
+  // Marcar las que ya existen en Mis Canciones (por título) para no duplicarlas
+  try {
+    var r = await supabase.from('mis_canciones').select('titulo').eq('organizacion_id', miOrganizacion.id)
+    var existentes = {}
+    ;(r.data || []).forEach(function(x){ existentes[impClave(x.titulo)] = true })
+    var vistas = {}
+    impCanciones.forEach(function(c){
+      var k = impClave(c.titulo)
+      if (existentes[k] || vistas[k]) { c.duplicada = true; c.seleccionada = false }
+      vistas[k] = true
+    })
+  } catch (e) {}
+  impMostrarLista()
+}
+
+function impMostrarLista() {
+  document.getElementById('imp-paso-entrada').style.display = 'none'
+  document.getElementById('imp-paso-lista').style.display = ''
+  var lista = document.getElementById('imp-lista')
+  lista.innerHTML = ''
+  impCanciones.forEach(function(c, i){
+    var fila = document.createElement('div')
+    fila.className = 'imp-item'
+    var meta = [c.artista_nombre || 'Sin artista', 'Tono ' + c.tono + (c.escala === 'minor' ? 'm' : ''), c.datos.secciones.length + ' secciones']
+    if (c.bpm) meta.push(c.bpm + ' BPM')
+    fila.innerHTML =
+      '<input type="checkbox" ' + (c.seleccionada ? 'checked' : '') + ' onchange="impMarcar(' + i + ', this.checked)">' +
+      '<div class="imp-item-info"><div class="imp-item-tit">' + esc(c.titulo) +
+        (c.duplicada ? '<span class="imp-dup">Ya existe en Mis Canciones</span>' : '') + '</div>' +
+        '<div class="imp-item-meta">' + esc(meta.join(' · ')) + '</div>' +
+        c.avisos.map(function(a){ return '<div class="imp-aviso">⚠ ' + esc(a) + '</div>' }).join('') +
+        c.arreglos.map(function(a){ return '<div class="imp-arreglo">✓ ' + esc(a) + '</div>' }).join('') +
+      '</div>' +
+      '<button class="imp-item-btn" onclick="impRevisarEnEditor(' + i + ')">Revisar en el editor</button>'
+    lista.appendChild(fila)
+  })
+  impActualizarResumen()
+}
+
+function impActualizarResumen() {
+  var sel = impCanciones.filter(function(c){ return c.seleccionada }).length
+  var dup = impCanciones.filter(function(c){ return c.duplicada }).length
+  document.getElementById('imp-resumen').textContent =
+    'Encontré ' + impCanciones.length + ' canción(es). Seleccionadas: ' + sel + '.' +
+    (dup ? ' ' + dup + ' ya existen en Mis Canciones y quedaron sin marcar.' : '')
+  var btn = document.getElementById('imp-btn-guardar')
+  btn.disabled = sel === 0
+  btn.textContent = sel ? 'Guardar ' + sel + ' en Mis Canciones' : 'Guardar seleccionadas en Mis Canciones'
+}
+
+window.impMarcar = function(i, v) { impCanciones[i].seleccionada = v; impActualizarResumen() }
+
+window.impGuardarSeleccionadas = async function() {
+  var sel = impCanciones.filter(function(c){ return c.seleccionada })
+  if (!sel.length) return
+  var btn = document.getElementById('imp-btn-guardar')
+  btn.disabled = true
+  var guardadas = 0
+  try {
+    for (var i = 0; i < sel.length; i += 20) {
+      btn.textContent = 'Guardando ' + Math.min(i + 20, sel.length) + ' de ' + sel.length + '…'
+      var filas = sel.slice(i, i + 20).map(function(c){
+        return {
+          organizacion_id: miOrganizacion.id, agregada_por: currentUser.id, origen_cancion_id: null,
+          titulo: c.titulo, artista_id: null, artista_nombre: c.artista_nombre || null,
+          tono: c.tono, escala: c.escala, bpm: c.bpm, compas: c.compas, portada_url: null,
+          datos: c.datos
+        }
+      })
+      var r = await supabase.from('mis_canciones').insert(filas)
+      if (r.error) throw new Error(r.error.message)
+      guardadas += filas.length
+    }
+    showToast('✓ ' + guardadas + ' canción(es) importadas a Mis Canciones')
+    impCanciones = []
+    setTimeout(volverAMain, 1200)
+  } catch (e) {
+    // Quitar de la lista las que sí se guardaron, para no duplicarlas al reintentar
+    var yaGuardadas = sel.slice(0, guardadas)
+    impCanciones = impCanciones.filter(function(c){ return yaGuardadas.indexOf(c) < 0 })
+    showToast('Se guardaron ' + guardadas + ' de ' + sel.length + '. Error: ' + e.message, '#e74c3c')
+    impMostrarLista()
+  }
+}
+
+// Carga una canción importada en el formulario del editor para revisarla antes de guardar
+window.impRevisarEnEditor = function(i) {
+  var c = impCanciones[i]
+  if (!c) return
+  document.getElementById('song-title').value = c.titulo
+  document.getElementById('artista-input').value = c.artista_nombre || ''
+  artistaSeleccionado = null; artistaEsNuevo = false; artistaParecidoConfirmado = false
+  document.getElementById('song-bpm').value = c.bpm || ''
+  document.getElementById('song-compas').value = c.compas || ''
+  selectedKey = c.tono
+  selectedScale = c.escala
+  document.getElementById('scale-major').classList.toggle('active', selectedScale === 'major')
+  document.getElementById('scale-minor').classList.toggle('active', selectedScale === 'minor')
+  buildKeyGrid()
+  sections = c.datos.secciones.map(function(s){
+    var tipoObj = SECTION_TYPES.find(function(t){ return t.id === s.tipo })
+    return { key: s.id, typeId: s.tipo, short: s.abreviacion, fullName: s.nombre, content: s.contenido, dm: s.dm || '',
+             isCustom: !tipoObj || s.tipo === 'custom', midiNote: s.midiNote, color: s.color }
+  })
+  midiCounter = 24 + sections.length
+  counters = {}
+  sections.forEach(function(s){ counters[s.typeId] = (counters[s.typeId] || 0) + 1 })
+  renderSections()
+  renderPreview()
+  impCanciones.splice(i, 1)
+  impCerrar()
+  showToast('Canción cargada en el editor. Revísala y presiona "Crear y Guardar".')
+}
 
 init()
 
