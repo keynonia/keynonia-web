@@ -5343,7 +5343,7 @@ function repUpdateCapoInd(){
     return
   }
   ind.title='Capo'
-  if(repCapoPos===0){ ind.textContent='Capo'; ind.classList.remove('active') }
+  if(repCapoPos===0){ ind.textContent='∅'; ind.classList.remove('active') }
   else { ind.textContent='C'+repCapoPos; ind.classList.add('active') }
 }
 
@@ -5354,7 +5354,7 @@ function repBuildCapo(baseKey){
   for(var i=0;i<=4;i++){
     var btn=document.createElement('button')
     btn.className='rep-cp-btn'+(repCapoPos===i?' active':'')
-    btn.textContent=i===0?'Sin':String(i)
+    btn.textContent=i===0?'∅':String(i)
     ;(function(ii){ btn.addEventListener('click',function(){ repCapoPos=ii; repUltimoAjuste='capo'; repBuildCapo(baseKey); repUpdateCapoInd(); repGuardarPreferencias() }) })(i)
     cb.appendChild(btn)
     var note=document.createElement('div')
@@ -7199,7 +7199,7 @@ aplicarNavegacionPendiente()
       <div class="rep-hdr-right">
         <span class="rep-midi-chip" id="rep-midi-chip" title="MIDI desconectado"><span class="rep-midi-dot"></span><span>MIDI</span></span>
         <button class="rep-btn" id="rep-ton-btn" onclick="repAbrirSelectorTono()">C</button>
-        <button class="rep-btn rep-capo-ind" id="rep-capo-ind" tabindex="-1">Capo</button>
+        <button class="rep-btn rep-capo-ind" id="rep-capo-ind" tabindex="-1" title="Capo">&empty;</button>
         <button class="rep-btn" id="rep-pref-btn" onclick="repAbrirPreferencias()">⚙ Preferencias</button>
         <button class="rep-btn" id="rep-reportar-error-btn" onclick="abrirAvisoReportarError()" style="display:none" title="Reportar Error en Canción">⚠</button>
       </div>
