@@ -225,9 +225,9 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
       <label class="form-label">Nombre de la canción</label>
       <input type="text" class="form-input" id="song-title" placeholder="Ej: Adiós al Ayer" style="margin-bottom:10px">
 
-      <label class="form-label">Artista</label>
+      <label class="form-label">Artista <span style="color:#e67e22">*</span></label>
       <div class="artista-wrap" style="margin-bottom:12px">
-        <input type="text" class="form-input" id="artista-input" placeholder="Buscar o escribir artista..." autocomplete="off">
+        <input type="text" class="form-input" id="artista-input" placeholder="Busca y selecciona un artista, o crea uno nuevo..." autocomplete="off">
         <div class="artista-dropdown" id="artista-dropdown"></div>
         <div class="artista-pendiente" id="artista-pendiente-msg" style="display:none">Este artista se creará como nuevo, pendiente de aprobación para el catálogo global.</div>
       </div>
@@ -1284,6 +1284,7 @@ function setupArtistaBuscador() {
   var dropdown = document.getElementById('artista-dropdown')
 
   input.addEventListener('input', function() {
+    this.style.borderColor = ''
     artistaSeleccionado = null
     artistaEsNuevo = false
     artistaParecidoConfirmado = false
@@ -1498,6 +1499,15 @@ async function guardarCancion() {
   var artistaTexto = document.getElementById('artista-input').value.trim()
 
   if (!titulo) { showToast('Escribe el título de la canción', '#e67e22'); return }
+  // ARTISTA OBLIGATORIO: hay que elegir un artista existente de la lista o "Crear artista nuevo"
+  if (!artistaSeleccionado && !(artistaEsNuevo && artistaTexto)) {
+    showToast('Selecciona un Artista o Crea uno Nuevo', '#e67e22')
+    var _artIn = document.getElementById('artista-input')
+    _artIn.style.borderColor = '#e67e22'
+    _artIn.focus()
+    if (artistaTexto.length >= 2) buscarArtistas(artistaTexto)
+    return
+  }
   if (sections.length === 0) { showToast('Agrega al menos una sección', '#e67e22'); return }
 
   var btn = document.getElementById('btn-guardar')
