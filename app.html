@@ -445,6 +445,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .rep-cp-btn.active{background:linear-gradient(180deg,var(--accent),var(--accent2));color:#fff}
 .rep-cp-note-row{display:flex;justify-content:center;gap:8px}
 .rep-tp-row{display:flex;justify-content:center;align-items:center;gap:8px;margin-bottom:4px}
+.rep-tp-note-row{display:flex;justify-content:center}
 .rep-tp-val{min-width:56px;height:34px;border:1px solid var(--border);border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Poppins',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
 .rep-cp-note{width:42px;height:18px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text2)}
 
@@ -5317,9 +5318,27 @@ async function acdRender(lista, capo, firma){
   grid.innerHTML = html
 }
 
+// Nota resultante del Transpose Piano: misma tabla cromática y misma lógica que el
+// visualizador del Capo (REP_CHROM), pero desplazando por repTransposePos semitonos
+// (puede ser negativo). baseKey es la tonalidad actual (o la pendiente, si el usuario
+// está previsualizando otra tonalidad en el selector antes de "Aplicar").
+function repTransposeNoteFor(baseKey){
+  var idx = REP_CHROM.indexOf(baseKey)
+  if(idx < 0) return ''
+  return REP_CHROM[((idx + repTransposePos) % 12 + 12) % 12]
+}
+
+function repUpdateTransposeNote(){
+  var el = document.getElementById('rep-tp-note')
+  if(!el) return
+  var baseKey = repHasPend ? repPendKey : repCurKey
+  el.textContent = repTransposeNoteFor(baseKey)
+}
+
 function repActualizarTransposeUI(){
   var el=document.getElementById('rep-tp-val')
   if(el) el.textContent=(repTransposePos>0?'+':'')+repTransposePos
+  repUpdateTransposeNote()
 }
 
 window.repAjustarTranspose = function(delta){
@@ -5363,6 +5382,7 @@ function repBuildCapo(baseKey){
     cn.appendChild(note)
   }
   repUpdateCapoInd()
+  repUpdateTransposeNote()
 }
 
 function repBuildTonGrid(){
@@ -7230,6 +7250,7 @@ aplicarNavegacionPendiente()
   <div class="rep-capo-wrap" style="margin-top:12px">
     <div class="rep-capo-lbl">Transpose Piano</div>
     <div class="rep-tp-row"><button class="rep-cp-btn" onclick="repAjustarTranspose(-1)" title="Bajar">&#8722;</button><div class="rep-tp-val" id="rep-tp-val">0</div><button class="rep-cp-btn" onclick="repAjustarTranspose(1)" title="Subir">+</button></div>
+    <div class="rep-tp-note-row"><div class="rep-cp-note" id="rep-tp-note"></div></div>
   </div>
 </div>
 
