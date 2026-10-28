@@ -88,7 +88,10 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
 .color-sky{--c:#3498DB;--cbg:#172e3d}
 .type-btn.color-green,.type-btn.color-blue,.type-btn.color-orange,.type-btn.color-red,.type-btn.color-purple,.type-btn.color-yellow,.type-btn.color-sky{border-color:var(--c);color:var(--c);background:var(--cbg)}
 .type-btn.color-green:hover,.type-btn.color-blue:hover,.type-btn.color-orange:hover,.type-btn.color-red:hover,.type-btn.color-purple:hover,.type-btn.color-yellow:hover,.type-btn.color-sky:hover{background:var(--c);color:#fff}
-.section-midi{font-size:.65rem;color:var(--text2);font-family:'Courier New',monospace;letter-spacing:.02em;white-space:nowrap;user-select:none;margin-left:6px}
+.section-midi-wrap{display:inline-flex;align-items:center;gap:4px;margin-left:6px}
+.section-midi-lbl{font-size:.65rem;color:var(--text2);font-family:'Courier New',monospace;letter-spacing:.02em;white-space:nowrap;user-select:none}
+.section-midi{font-size:.65rem;color:var(--text2);font-family:'Courier New',monospace;letter-spacing:.02em;white-space:nowrap;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:2px 4px;outline:none;cursor:pointer}
+.section-midi:hover,.section-midi:focus{border-color:var(--accent)}
 .dm-label{font-size:.65rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-top:9px;margin-bottom:4px;display:block}
 .dm-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:7px 10px;font-family:'Poppins',sans-serif;font-size:.78rem;outline:none;transition:border-color .15s;line-height:1.5;resize:vertical}
 .dm-input:focus{border-color:var(--accent)}
@@ -220,6 +223,13 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
         <div class="imp-banner-sub">Convierte fotos, capturas o PDF de tus canciones al formato de Keynonia usando tu propia IA (ChatGPT, Claude, Gemini…). Puedes importar muchas de una vez.</div>
       </div>
       <button class="imp-banner-btn" onclick="event.stopPropagation();abrirImportadorIA()">Importar con IA</button>
+    </div>
+    <div class="imp-banner" id="scope-rep-banner" style="display:none;cursor:default">
+      <div class="imp-banner-ico">🎯</div>
+      <div class="imp-banner-txt">
+        <div class="imp-banner-tit">Editando solo para este repertorio</div>
+        <div class="imp-banner-sub">Los cambios en las secciones (letra y acordes) se guardarán únicamente para esta presentación, sin afectar la canción en ningún otro repertorio ni en el catálogo de tu organización. El título, artista, tonalidad, BPM y compás no se pueden cambiar aquí — para eso usa "Editar de forma permanente" desde el repertorio.</div>
+      </div>
     </div>
     <div class="card">
       <label class="form-label">Nombre de la canción</label>
@@ -826,10 +836,42 @@ function midiToName(n){
   var oct=Math.floor(n/12)-2;
   return NOTE_NAMES[n%12]+oct;
 }
+// Rango editable de notas MIDI por sección: C0 a G8, excluyendo las reservadas
+// para navegación entre canciones (C8 = canción siguiente, D8 = canción anterior).
+var MIDI_NOTE_MIN=24   // C0
+var MIDI_NOTE_MAX=127  // G8
+var MIDI_NOTAS_RESERVADAS=[120,122] // C8 (siguiente canción), D8 (anterior canción)
+function siguienteMidiLibre(){
+  var usadas={}
+  sections.forEach(function(s){ if(typeof s.midiNote==='number') usadas[s.midiNote]=true })
+  for(var n=MIDI_NOTE_MIN;n<=MIDI_NOTE_MAX;n++){
+    if(MIDI_NOTAS_RESERVADAS.indexOf(n)!==-1) continue
+    if(!usadas[n]) return n
+  }
+  return MIDI_NOTE_MIN // fallback improbable: no quedan notas libres
+}
+function construirOpcionesMidi(selectEl, notaActual, idxSeccion){
+  var usadas={}
+  sections.forEach(function(s,j){
+    if(j!==idxSeccion && typeof s.midiNote==='number') usadas[s.midiNote]=true
+  })
+  selectEl.innerHTML=''
+  for(var n=MIDI_NOTE_MIN;n<=MIDI_NOTE_MAX;n++){
+    if(MIDI_NOTAS_RESERVADAS.indexOf(n)!==-1) continue
+    if(usadas[n] && n!==notaActual) continue
+    var opt=document.createElement('option')
+    opt.value=n
+    opt.textContent=midiToName(n)
+    if(n===notaActual) opt.selected=true
+    selectEl.appendChild(opt)
+  }
+}
 
 var currentUser = null
 var miOrganizacion = null   // { id, nombre, rol }
 var modoEdicion = null      // null = crear, o el id de mis_canciones si edita
+var modoEdicionAlcance = null // null = edición normal (permanente), o 'rep' = solo para un repertorio
+var modoEdicionRcId = null    // id de la fila repertorio_canciones cuando modoEdicionAlcance === 'rep'
 var modoRevisar = false     // true = cuenta maestra revisando JSON del correo
 var modoRevisarEditarId = null // si se está editando una canción YA existente del catálogo
 var cancionOriginal = null  // datos cargados si estamos editando
@@ -913,9 +955,15 @@ async function init() {
 
   // Detectar modo edición via URL param
   const editId = params.get('edit')
+  const scopeParam = params.get('scope')
+  const rcParam = params.get('rc')
 
   if (editId) {
     modoEdicion = editId
+    if (scopeParam === 'rep' && rcParam) {
+      modoEdicionAlcance = 'rep'
+      modoEdicionRcId = rcParam
+    }
     await cargarCancionParaEditar(editId)
   } else {
     document.getElementById('header-title').textContent = 'Creador de Canciones'
@@ -954,10 +1002,29 @@ async function cargarCancionParaEditar(id) {
 
   cancionOriginal = cancion
 
-  document.getElementById('header-title').textContent = 'Editar canción'
   document.getElementById('header-badge').textContent = miOrganizacion.nombre
-  document.getElementById('save-desc').textContent = 'Los cambios se guardarán solo en la copia de tu organización.'
-  document.getElementById('btn-guardar').textContent = 'Guardar'
+
+  if (modoEdicionAlcance === 'rep') {
+    document.getElementById('header-title').textContent = 'Editar canción (solo este repertorio)'
+    document.getElementById('save-desc').textContent = 'Los cambios en las secciones se guardarán solo para este repertorio.'
+    document.getElementById('btn-guardar').textContent = 'Guardar solo aquí'
+    document.getElementById('scope-rep-banner').style.display = 'flex'
+    document.getElementById('song-title').disabled = true
+    document.getElementById('song-bpm').disabled = true
+    document.getElementById('song-compas').disabled = true
+    document.getElementById('artista-input').disabled = true
+    document.getElementById('scale-major').disabled = true
+    document.getElementById('scale-minor').disabled = true
+    var kg = document.getElementById('key-grid')
+    kg.style.pointerEvents = 'none'
+    kg.style.opacity = '.5'
+    document.getElementById('btn-subir-portada').style.display = 'none'
+    document.getElementById('btn-quitar-portada').style.display = 'none'
+  } else {
+    document.getElementById('header-title').textContent = 'Editar canción'
+    document.getElementById('save-desc').textContent = 'Los cambios se guardarán solo en la copia de tu organización.'
+    document.getElementById('btn-guardar').textContent = 'Guardar'
+  }
 
   document.getElementById('song-title').value = cancion.titulo || ''
   document.getElementById('song-bpm').value = cancion.bpm || ''
@@ -994,6 +1061,28 @@ async function cargarCancionParaEditar(id) {
     sections.forEach(function(s) {
       counters[s.typeId] = (counters[s.typeId] || 0) + 1
     })
+  }
+
+  // Si se llegó aquí para editar "solo este repertorio", y esa canción+repertorio ya
+  // tiene una edición local guardada antes, se reemplazan las secciones por esa versión
+  // (si todavía no existe ninguna, se parte de la versión global recién cargada arriba).
+  if (modoEdicionAlcance === 'rep' && modoEdicionRcId) {
+    const { data: rcRow } = await supabase
+      .from('repertorio_canciones')
+      .select('datos_override')
+      .eq('id', modoEdicionRcId)
+      .maybeSingle()
+    if (rcRow && rcRow.datos_override && Array.isArray(rcRow.datos_override.secciones)) {
+      sections = rcRow.datos_override.secciones.map(function(s) {
+        var tipoObj = SECTION_TYPES.find(function(t){return t.id === s.tipo})
+        return { key: s.id, typeId: s.tipo || 'custom', short: s.abreviacion, fullName: s.nombre, content: s.contenido || '', dm: s.dm || '', isCustom: !tipoObj || s.tipo === 'custom', midiNote: typeof s.midiNote === 'number' ? s.midiNote : midiCounter, color: s.color || (tipoObj ? tipoObj.color : 'sky') }
+      })
+      var maxNoteRc = 23
+      sections.forEach(function(s) { if (typeof s.midiNote === 'number') maxNoteRc = Math.max(maxNoteRc, s.midiNote) })
+      midiCounter = maxNoteRc + 1
+      counters = {}
+      sections.forEach(function(s) { counters[s.typeId] = (counters[s.typeId] || 0) + 1 })
+    }
   }
 }
 
@@ -1168,8 +1257,7 @@ function addSection(typeId){
   var siempreNumerar=SIN_NUMERO_PRIMERA_VEZ.indexOf(typeId)===-1;
   var short=typeId==='custom'?'+':(siempreNumerar?type.short+n:(n>1?type.short+n:type.short));
   var fullName=typeId==='custom'?'':(siempreNumerar?type.label+' '+n:(n>1?type.label+' '+n:type.label));
-  sections.push({key:key,typeId:typeId,short:short,fullName:fullName,content:'',dm:'',isCustom:typeId==='custom',midiNote:midiCounter,color:type.color});
-  midiCounter++;
+  sections.push({key:key,typeId:typeId,short:short,fullName:fullName,content:'',dm:'',isCustom:typeId==='custom',midiNote:siguienteMidiLibre(),color:type.color});
   renderSections();renderPreview();
   setTimeout(function(){var l=document.getElementById('sections-list');if(l.lastElementChild)l.lastElementChild.scrollIntoView({behavior:'smooth',block:'nearest'});},60);
 }
@@ -1212,8 +1300,19 @@ function renderSections(){
       nameEl=document.createElement('span');nameEl.className='section-name';nameEl.textContent=sec.fullName;
     }
     var actions=document.createElement('div');actions.className='section-actions';
-    var midiBadge=document.createElement('span');midiBadge.className='section-midi';
-    midiBadge.textContent='MIDI: '+midiToName(sec.midiNote);
+    var midiWrap=document.createElement('span');midiWrap.className='section-midi-wrap';
+    var midiLbl=document.createElement('span');midiLbl.className='section-midi-lbl';midiLbl.textContent='MIDI:';
+    var midiBadge=document.createElement('select');midiBadge.className='section-midi';
+    construirOpcionesMidi(midiBadge, sec.midiNote, i);
+    (function(idx){
+      midiBadge.addEventListener('click',function(e){e.stopPropagation();});
+      midiBadge.addEventListener('change',function(){
+        sections[idx].midiNote=parseInt(this.value,10);
+        renderSections();
+        renderPreview();
+      });
+    })(i);
+    midiWrap.appendChild(midiLbl);midiWrap.appendChild(midiBadge);
     var bUp=document.createElement('button');bUp.type='button';bUp.className='btn-move';bUp.textContent='▲';bUp.disabled=(i===0);
     (function(idx){bUp.addEventListener('click',function(){moveSection(idx,-1);});})(i);
     var bDn=document.createElement('button');bDn.type='button';bDn.className='btn-move';bDn.textContent='▼';bDn.disabled=(i===sections.length-1);
@@ -1221,7 +1320,7 @@ function renderSections(){
     var bDel=document.createElement('button');bDel.type='button';bDel.className='btn-del';bDel.textContent='✕';
     (function(idx){bDel.addEventListener('click',function(){removeSection(idx);});})(i);
     actions.appendChild(bUp);actions.appendChild(bDn);actions.appendChild(bDel);
-    hdr.appendChild(num);hdr.appendChild(sh);hdr.appendChild(nameEl);hdr.appendChild(midiBadge);hdr.appendChild(actions);
+    hdr.appendChild(num);hdr.appendChild(sh);hdr.appendChild(nameEl);hdr.appendChild(midiWrap);hdr.appendChild(actions);
     var body=document.createElement('div');body.className='section-body';
     var ta=document.createElement('textarea');ta.className='section-textarea';ta.rows=4;
     ta.placeholder='[G]        [Em]\n  Hoy vivo   en un nuevo amanecer\n[C]\nGloria a Dios';
@@ -1521,7 +1620,7 @@ async function guardarCancion() {
       document.getElementById('confirm-artista-parecidos').innerHTML = parecidos.map(function(p){ return esc(p) }).join('<br>')
       document.getElementById('confirm-artista-overlay').classList.add('active')
       btn.disabled = false
-      btn.textContent = modoRevisar ? 'Subir al Catálogo' : (modoEdicion ? 'Guardar' : 'Crear y Guardar')
+      btn.textContent = modoRevisar ? 'Subir al Catálogo' : (modoEdicionAlcance === 'rep' ? 'Guardar solo aquí' : (modoEdicion ? 'Guardar' : 'Crear y Guardar'))
       return
     }
   }
@@ -1605,8 +1704,21 @@ async function guardarCancion() {
 
       setTimeout(function(){ window.location.href = 'app.html' }, 900)
 
+    } else if (modoEdicion && modoEdicionAlcance === 'rep') {
+      // MODO EDITAR SOLO PARA ESTE REPERTORIO — no toca mis_canciones (la canción global),
+      // guarda las secciones únicamente en repertorio_canciones.datos_override.
+      const { error: errUpdateRc } = await supabase
+        .from('repertorio_canciones')
+        .update({ datos_override: { secciones: secciones } })
+        .eq('id', modoEdicionRcId)
+
+      if (errUpdateRc) throw new Error('Error al guardar: ' + errUpdateRc.message)
+
+      showToast('✓ Cambios guardados solo para este repertorio')
+      setTimeout(volverAMain, 900)
+
     } else if (modoEdicion) {
-      // MODO EDITAR — solo actualizar
+      // MODO EDITAR (permanente) — actualiza la canción global
       const { error: errUpdate } = await supabase
         .from('mis_canciones')
         .update(payload)
@@ -1656,7 +1768,7 @@ async function guardarCancion() {
   } catch (err) {
     showToast(err.message || 'Error al guardar', '#e74c3c')
     btn.disabled = false
-    btn.textContent = modoRevisar ? 'Subir al Catálogo' : (modoEdicion ? 'Guardar' : 'Crear y Guardar')
+    btn.textContent = modoRevisar ? 'Subir al Catálogo' : (modoEdicionAlcance === 'rep' ? 'Guardar solo aquí' : (modoEdicion ? 'Guardar' : 'Crear y Guardar'))
   }
 }
 
