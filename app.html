@@ -290,6 +290,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .rep-song-info{flex:1;min-width:0}
 .rep-song-title{font-size:.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rep-song-artist{font-size:.75rem;color:var(--text2);margin-top:2px}
+.rep-song-override-badge{display:inline-block;margin-left:7px;padding:1px 7px;border-radius:9px;background:rgba(43,110,255,.15);color:var(--accent);font-size:.62rem;font-weight:600;letter-spacing:.02em;vertical-align:middle;white-space:nowrap}
 .rep-song-tono{padding:4px 10px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .15s}
 .rep-song-reorder{display:flex;flex-direction:column;gap:2px;flex-shrink:0}
 .rep-song-reorder span{cursor:pointer;color:var(--text2);font-size:.85rem;padding:2px 5px;border-radius:4px;transition:all .15s}
@@ -3797,7 +3798,7 @@ var repMiembrosCache = []
 async function cargarRepSongs(repertorioId) {
   const { data, error } = await supabase
     .from('repertorio_canciones')
-    .select('id, orden, tono_override, escala_override, cantante_id, cantante_miembro_id, mis_canciones(id, titulo, tono, escala, portada_url, artista_nombre, artistas(nombre), enlaces)')
+    .select('id, orden, tono_override, escala_override, cantante_id, cantante_miembro_id, datos_override, mis_canciones(id, titulo, tono, escala, portada_url, artista_nombre, artistas(nombre), enlaces)')
     .eq('repertorio_id', repertorioId)
     .order('orden', { ascending: true })
 
@@ -3865,6 +3866,10 @@ function renderRepSongs() {
     var enlacesBtnHtml = (verEnlaces || puedeEditarCancion)
       ? `<button class="rep-song-enlaces-btn" onclick="event.stopPropagation();abrirMenuCancionRep(event,'${rc.id}','${cancion.id}',${puedeEditarEnlaces},${verEnlaces},${puedeEditarCancion})" title="Más opciones">⋯</button>`
       : ''
+    var tieneEdicionLocal = !!(rc.datos_override && Array.isArray(rc.datos_override.secciones))
+    var edicionLocalBadgeHtml = tieneEdicionLocal
+      ? `<span class="rep-song-override-badge" title="Esta canción tiene cambios guardados solo para este repertorio">Edición local</span>`
+      : ''
 
     var extraHtml = ''
     if (modoEditarRep) {
@@ -3882,7 +3887,7 @@ function renderRepSongs() {
         ${cancion.portada_url ? `<img src="${esc(cancion.portada_url)}" alt="${esc(cancion.titulo)}"/>` : ''}
       </div>
       <div class="rep-song-info">
-        <div class="rep-song-title">${esc(cancion.titulo)}</div>
+        <div class="rep-song-title">${esc(cancion.titulo)}${edicionLocalBadgeHtml}</div>
         <div class="rep-song-artist">${esc(artistaNombre)}</div>
       </div>
       ${cantanteHtml}
@@ -3952,7 +3957,7 @@ window.abrirMenuCancionRep = function(e, rcId, cancionId, puedeEditarEnlaces, ve
   var itEd = document.createElement('div')
   itEd.className = 'dropdown-item'
   itEd.textContent = 'Editar canción'
-  itEd.onclick = function(ev){ ev.stopPropagation(); dd.remove(); menuCancionRepEl = null; editarCancionDesdeRepertorio(cancionId) }
+  itEd.onclick = function(ev){ ev.stopPropagation(); dd.remove(); menuCancionRepEl = null; elegirAlcanceEdicion(rcId, cancionId) }
   dd.appendChild(itEd)
   var rect = e.target.getBoundingClientRect()
   dd.style.position = 'fixed'
@@ -3969,6 +3974,31 @@ window.abrirMenuCancionRep = function(e, rcId, cancionId, puedeEditarEnlaces, ve
 window.editarCancionDesdeRepertorio = function(cancionId) {
   if (!cancionId || !repActualId) return
   window.location.href = 'editor.html?edit=' + encodeURIComponent(cancionId) + '&volver=rep&rep=' + encodeURIComponent(repActualId)
+}
+
+// Antes de abrir el editor desde un repertorio, se pregunta si el cambio es solo para
+// esta presentación (no afecta la canción en ningún otro repertorio ni en el catálogo
+// de la organización) o si debe quedar guardado de forma permanente en la canción.
+var alcanceEdicionCancionId = null
+var alcanceEdicionRcId = null
+
+window.elegirAlcanceEdicion = function(rcId, cancionId) {
+  if (!cancionId || !repActualId) return
+  alcanceEdicionCancionId = cancionId
+  alcanceEdicionRcId = rcId
+  abrirModal('modal-alcance-edicion')
+}
+
+window.confirmarAlcanceEdicion = function(alcance) {
+  var cancionId = alcanceEdicionCancionId
+  var rcId = alcanceEdicionRcId
+  cerrarModal('modal-alcance-edicion')
+  if (!cancionId || !repActualId) return
+  if (alcance === 'rep') {
+    window.location.href = 'editor.html?edit=' + encodeURIComponent(cancionId) + '&volver=rep&rep=' + encodeURIComponent(repActualId) + '&scope=rep&rc=' + encodeURIComponent(rcId)
+  } else {
+    window.location.href = 'editor.html?edit=' + encodeURIComponent(cancionId) + '&volver=rep&rep=' + encodeURIComponent(repActualId)
+  }
 }
 
 window.abrirSelectorCantante = function(e, rcId) {
@@ -5865,7 +5895,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   document.getElementById('rep-song-meta').innerHTML = ''
   document.getElementById('rep-lyrics-content').innerHTML = ''
 
-  const { data: cancion, error } = await supabase
+  let { data: cancion, error } = await supabase
     .from(tabla)
     .select('*, artistas(nombre)')
     .eq('id', cancionId)
@@ -5875,6 +5905,23 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
     showToast('No se pudo cargar la canción', '#e74c3c')
     cerrarReproductor()
     return
+  }
+
+  // Si esta canción se abre dentro de un repertorio, y esa combinación repertorio+canción
+  // tiene una edición guardada "solo para este repertorio", se usa esa versión de las
+  // secciones (letra/acordes) en vez de la versión global de la canción.
+  if(tabla === 'mis_canciones' && repertorioIdOrigen && repertorioIdOrigen !== 'demo'){
+    try {
+      const { data: rcOverride } = await supabase
+        .from('repertorio_canciones')
+        .select('datos_override')
+        .eq('repertorio_id', repertorioIdOrigen)
+        .eq('cancion_id', cancionId)
+        .maybeSingle()
+      if(rcOverride && rcOverride.datos_override && Array.isArray(rcOverride.datos_override.secciones)){
+        cancion = Object.assign({}, cancion, { datos: rcOverride.datos_override })
+      }
+    } catch(e){ console.warn('No se pudo verificar edición local del repertorio:', e) }
   }
 
   repCancion = cancion
@@ -7178,6 +7225,19 @@ aplicarNavegacionPendiente()
       <div class="modal-actions" style="margin-top:0">
         <button class="btn-confirm" style="flex:1" onclick="cerrarModal('modal-rep-adicionales')">Cerrar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ALCANCE DE EDICIÓN (desde el repertorio) -->
+<div class="modal-overlay" id="modal-alcance-edicion">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-title">¿Cómo quieres editar esta canción?</div>
+    <p style="font-size:.82rem;color:var(--text2);margin-bottom:16px;text-align:center">Puedes corregir la letra y los acordes solo para este repertorio (no afecta otras presentaciones ni el catálogo de tu organización), o editarla de forma permanente para que el cambio quede guardado en la canción para siempre.</p>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn-confirm" style="width:100%" onclick="confirmarAlcanceEdicion('rep')">Editar solo para este repertorio</button>
+      <button class="btn-confirm" style="width:100%;background:var(--bg3);color:var(--text)" onclick="confirmarAlcanceEdicion('permanente')">Editar de forma permanente</button>
+      <button class="btn-cancel" style="width:100%" onclick="cerrarModal('modal-alcance-edicion')">Cancelar</button>
     </div>
   </div>
 </div>
