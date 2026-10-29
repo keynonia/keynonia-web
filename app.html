@@ -956,6 +956,20 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
   </button>
 </div>
 
+<!-- PANEL SUSCRIPCIÓN -->
+<div class="panel" id="panel-suscripcion">
+  <div class="panel-header">
+    <button class="panel-back" onclick="cerrarPanel('panel-suscripcion')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </button>
+    <span class="panel-title">Suscripción</span>
+  </div>
+  <div class="panel-body" id="suscripcion-body">
+    <!-- Contenido dinámico — ver actualizarPanelSuscripcion() -->
+  </div>
+</div>
+
 <!-- PANEL ORGANIZACIÓN -->
 <div class="panel" id="panel-org">
   <div class="panel-header">
@@ -1157,6 +1171,31 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
     <p style="font-size:.82rem;color:var(--text2);margin-bottom:24px;line-height:1.6">Perderás acceso a todas las funciones premium de inmediato.</p>
     <button class="btn-cancel" onclick="cerrarModal('modal-cancelar-suscripcion')" style="width:100%;margin-bottom:10px">Mantener</button>
     <button id="btn-confirmar-cancelacion" class="btn-confirm" onclick="confirmarCancelacionSuscripcion()" style="width:100%;background:#e74c3c;border-color:#e74c3c">Cancelar Suscripción</button>
+  </div>
+</div>
+
+<!-- MODAL A TU MEDIDA -->
+<div class="modal-overlay" id="modal-a-medida">
+  <div class="modal">
+    <div class="modal-title" style="margin-bottom:4px">A tu medida</div>
+    <p style="font-size:.8rem;color:var(--text2);margin-bottom:16px;line-height:1.6">Cuéntanos qué necesita tu iglesia. Te responderemos por correo con una propuesta y el valor de desarrollo.</p>
+    <input type="text" class="modal-input" id="amedida-organizacion" placeholder="Nombre de tu iglesia u organización"/>
+    <input type="email" class="modal-input" id="amedida-correo" placeholder="Correo de contacto"/>
+    <textarea class="modal-input" id="amedida-detalle" placeholder="Describe la función que necesitas, con el mayor detalle posible..." rows="5" style="resize:none"></textarea>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal('modal-a-medida')">Cancelar</button>
+      <button class="btn-confirm" id="amedida-enviar-btn" onclick="enviarAMedida()">Enviar solicitud</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL A TU MEDIDA ENVIADO -->
+<div class="modal-overlay" id="modal-amedida-enviado">
+  <div class="modal" style="text-align:center">
+    <div style="font-size:2rem;margin-bottom:12px">✉️</div>
+    <div class="modal-title">Solicitud enviada</div>
+    <p style="font-size:.88rem;color:var(--text2);line-height:1.7;margin-top:10px">Recibimos tu solicitud.<br>Te escribiremos a tu correo con una propuesta y el valor de esta función.</p>
+    <button class="btn-confirm" style="width:100%;margin-top:20px" onclick="cerrarModal('modal-amedida-enviado')">Entendido</button>
   </div>
 </div>
 
@@ -2738,6 +2777,11 @@ function actualizarPanelSuscripcion() {
       '</div>' +
     '</div>' +
     '<div id="subs-cards"></div>' +
+    '<div class="plan-card" style="text-align:center;margin-bottom:14px">' +
+      '<div class="plan-name" style="margin-bottom:4px">A tu medida</div>' +
+      '<p style="font-size:.78rem;color:var(--text2);line-height:1.6;margin-bottom:12px">¿Tu iglesia necesita una función que no existe todavía en Keynonia? Cuéntanos qué te gustaría tener y te enviamos una propuesta hecha a tu medida.</p>' +
+      '<button class="plan-btn plan-btn-secondary" onclick="abrirModalAMedida()">Solicitar función personalizada</button>' +
+    '</div>' +
     '<p class="plan-contacto">¿Dudas? Escríbenos a <strong>matias.keynonia@gmail.com</strong></p>' +
     (esSuscrito
       ? '<div style="text-align:center;padding-bottom:16px"><button onclick="solicitarCancelacionSuscripcion()" style="background:none;border:none;color:var(--text2);font-size:.75rem;cursor:pointer;text-decoration:underline;font-family:\'Poppins\',sans-serif;padding:8px 16px;opacity:.7">Cancelar suscripción</button></div>'
@@ -2802,11 +2846,13 @@ function actualizarPanelSuscripcion() {
           '</div>' +
           '<div class="plan-card destacado">' +
             '<div class="plan-badge">Recomendado</div>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('orange','Oferta') + '</div>' +
-            tachado('$5.990 CLP / mes') +
-            '<div class="plan-price">$3.990 <span class="plan-price-sub">CLP / mes</span></div>' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','3 meses gratis') + '</div>' +
+            '<div class="plan-price" style="font-size:2.3rem">$0</div>' +
+            '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">costo cero <span style="color:var(--text);font-weight:600">/ 3 meses</span></div>' +
+            '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">desde el mes 4: <strong style="color:var(--text)">$3.990 CLP</strong> al mes</div>' +
             '<hr class="plan-divider">' + featPro() + porMusico('15','266','',false) +
-            btnP('Suscribirse — $3.990 / mes', '36723486083944b8bd60a7eb31699e56') + notaLtd() +
+            btnP('Comenzar gratis — 3 meses', '36723486083944b8bd60a7eb31699e56') +
+            '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">Luego $3.990/mes · Cancela cuando quieras</div>' +
           '</div>' +
         '</div>'
     } else {
@@ -2856,6 +2902,42 @@ window.solicitarCancelacionSuscripcion = function() {
   var planNombre = esPro ? 'Pro' : 'Básica'
   document.getElementById('cancel-sub-plan-nombre').textContent = planNombre
   abrirModal('modal-cancelar-suscripcion')
+}
+
+window.abrirModalAMedida = function() {
+  var elCorreo = document.getElementById('amedida-correo')
+  if (elCorreo && !elCorreo.value) elCorreo.value = (currentUser && currentUser.email) || ''
+  abrirModal('modal-a-medida')
+}
+
+window.enviarAMedida = async function() {
+  var org = document.getElementById('amedida-organizacion').value.trim()
+  var correo = document.getElementById('amedida-correo').value.trim()
+  var detalle = document.getElementById('amedida-detalle').value.trim()
+  if (!org || !correo || !detalle) { showToast('Completa todos los campos.', '#e74c3c'); return }
+  var btn = document.getElementById('amedida-enviar-btn')
+  btn.disabled = true
+  btn.textContent = 'Enviando...'
+  try {
+    var nombreUsuario = (currentUser.user_metadata && (currentUser.user_metadata.nombre || currentUser.user_metadata.full_name)) || org
+    const { error } = await supabase.functions.invoke('enviar-soporte', {
+      body: {
+        mensaje: '[Solicitud A tu medida]\nOrganización: ' + org + '\n\n' + detalle,
+        correoUsuario: correo,
+        nombreUsuario: nombreUsuario
+      }
+    })
+    if (error) throw error
+    cerrarModal('modal-a-medida')
+    document.getElementById('amedida-organizacion').value = ''
+    document.getElementById('amedida-correo').value = ''
+    document.getElementById('amedida-detalle').value = ''
+    abrirModal('modal-amedida-enviado')
+  } catch(e) {
+    showToast('No se pudo enviar la solicitud. Intenta más tarde.', '#e74c3c')
+  }
+  btn.disabled = false
+  btn.textContent = 'Enviar solicitud'
 }
 
 window.confirmarCancelacionSuscripcion = async function() {
@@ -2940,8 +3022,8 @@ function _iniciarEsperaPago() {
 }
 
 window.iniciarCheckout = function(url) {
-  // Abrir checkout en ventana Chrome separada (no dentro de la app)
-  /* web: no checkout */
+  // Abrir checkout en una pestaña nueva del navegador
+  window.open(url, '_blank')
   _iniciarEsperaPago()
 }
 
