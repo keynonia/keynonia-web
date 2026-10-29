@@ -2810,16 +2810,18 @@ function actualizarPanelSuscripcion() {
       n + ' personas · ' + (equiv ? 'equiv. ' : '') + '<strong>$' + clp + ' CLP</strong>/persona/mes</div>'
   }
   function featBasico() {
-    return '<ul class="plan-features"><li>Editor de canciones con acordes</li><li>Catálogo global</li>' +
-      '<li>Repertorios en vivo sincronizados</li><li>Control MIDI (DAW + Individual)</li><li>Hasta 5 personas</li></ul>'
+    return '<ul class="plan-features"><li>Editor de canciones con acordes</li><li>Catálogo global con canciones ilimitadas</li>' +
+      '<li>Repertorio en vivo sincronizado</li><li>Control MIDI (DAW + Individual)</li><li>Hasta 5 personas</li></ul>'
   }
   function featPro() {
-    return '<ul class="plan-features"><li class="plan-feat-basico-todo" style="color:#1DB89A;font-weight:600">✓ Todo lo del plan Básico</li>' +
+    return '<ul class="plan-features"><li>Editor de canciones con acordes</li>' +
+      '<li>Catálogo global con canciones ilimitadas</li>' +
+      '<li class="plan-feat-plus">Importación de canciones con IA</li>' +
+      '<li>Repertorio en vivo sincronizado</li>' +
+      '<li>Control MIDI completo (DAW, Individual, Global y Delegado)</li>' +
       '<li class="plan-feat-plus">Hasta 15 personas</li>' +
       '<li class="plan-feat-plus">Asignar cantante por canción</li>' +
       '<li class="plan-feat-plus">Tono personal por cantante</li>' +
-      '<li class="plan-feat-plus">Controlador MIDI Global</li>' +
-      '<li class="plan-feat-plus">Delegar control MIDI</li>' +
       '<li class="plan-feat-plus">Links personalizados por canción</li></ul>'
   }
   function notaLtd() { return '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">Oferta por tiempo limitado</div>' }
