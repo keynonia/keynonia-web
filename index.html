@@ -106,7 +106,22 @@
       .pricing-grid { grid-template-columns: 1fr; }
       footer { padding: 24px 20px; }
     }
-  </style>
+  
+.btn-plan{display:block;width:100%;margin-top:22px;padding:12px 18px;border-radius:980px;font-size:.88rem;font-weight:700;text-align:center;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);}
+.btn-plan-accent{background:var(--accent);border-color:var(--accent);color:#fff;}
+.trial-badge{display:inline-block;background:#1DB89A;color:#fff;font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:980px;letter-spacing:.04em;text-transform:uppercase;margin-left:8px;vertical-align:middle;}
+.checkout-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:999;padding:20px;}
+.checkout-modal-overlay.open{display:flex;}
+.checkout-modal{background:#fff;color:#1d1d1f;border-radius:16px;padding:28px;max-width:360px;width:100%;}
+.checkout-modal h3{font-size:1.1rem;margin-bottom:6px;}
+.checkout-modal p{font-size:.85rem;color:#666;margin-bottom:16px;}
+.checkout-modal input{width:100%;padding:11px 13px;border:1px solid #ddd;border-radius:10px;font-size:.9rem;margin-bottom:12px;}
+.checkout-modal .row{display:flex;gap:10px;}
+.checkout-modal button{flex:1;padding:11px;border-radius:980px;font-weight:700;font-size:.85rem;cursor:pointer;border:none;}
+.checkout-modal .btn-cancel{background:#f0f0f0;color:#1d1d1f;}
+.checkout-modal .btn-go{background:var(--accent);color:#fff;}
+.checkout-err{color:#d33;font-size:.78rem;margin-top:-6px;margin-bottom:10px;display:none;}
+</style>
 </head>
 <body>
 
@@ -206,41 +221,45 @@
 </div>
 
 <div id="pricing" class="pricing-section">
-  <div class="section-label">Precios</div>
-  <h2 class="section-title">Simple y transparente</h2>
-  <p style="color:var(--muted);font-size:1rem;margin-top:8px;">Empieza gratis, crece con tu equipo.</p>
-  <div class="pricing-grid">
-    <div class="plan-card">
-      <div class="plan-name">Básico <span class="offer-badge">Oferta</span></div>
-      <div class="plan-price-old">$3.990 CLP / mes</div>
-      <div class="plan-price">$2.990 <sub>CLP / mes</sub></div>
-      <div class="plan-desc">Para líderes que están empezando o trabajan con equipos pequeños.</div>
-      <ul class="plan-features">
-        <li>Editor de canciones con acordes</li>
-        <li>Catálogo global</li>
-        <li>Repertorios en vivo sincronizados</li>
-        <li>Control MIDI (DAW + Individual)</li>
-        <li>Hasta 5 personas</li>
-      </ul>
-    </div>
-    <div class="plan-card featured">
-      <div class="plan-badge">Más popular</div>
-      <div class="plan-name">Pro <span class="offer-badge">Oferta</span></div>
-      <div class="plan-price-old">$5.990 CLP / mes</div>
-      <div class="plan-price">$3.990 <sub>CLP / mes</sub></div>
-      <div class="plan-desc">Para equipos que lideran cultos y necesitan coordinación completa en tiempo real.</div>
-      <ul class="plan-features">
-        <li>Todo lo del plan Básico</li>
-        <li class="plus">Hasta 15 personas</li>
-        <li class="plus">Asignar cantante por canción</li>
-        <li class="plus">Tono personal por cantante</li>
-        <li class="plus">Controlador MIDI Global</li>
-        <li class="plus">Delegar control MIDI</li>
-        <li class="plus">Links personalizados por canción</li>
-      </ul>
-    </div>
-  </div>
-  <p class="pricing-note">Las compras se realizan directamente desde la aplicación. No se usa el sistema de compras de Microsoft Store.</p>
+<div class="section-label">Precios</div>
+<h2 class="section-title">Simple y transparente</h2>
+<p style="color:var(--muted);font-size:1rem;margin-top:8px;">Empieza gratis, crece con tu equipo.</p>
+<div class="pricing-grid">
+<div class="plan-card">
+<div class="plan-name">Básico</div>
+<div class="plan-price">$2.990 <sub>CLP / mes</sub></div>
+<div class="plan-desc">Para líderes que están empezando o trabajan con equipos pequeños.</div>
+<ul class="plan-features">
+<li>Editor de canciones con acordes</li>
+<li>Catálogo global con canciones ilimitadas</li>
+<li>Repertorio en vivo sincronizado</li>
+<li>Control MIDI (DAW + Individual)</li>
+<li>Hasta 5 personas</li>
+</ul>
+<button class="btn-plan" onclick="abrirCheckoutLanding('ede534c518e24701ac988f4e9cf9fe4a','Básico')">Comenzar con Básico</button>
+</div>
+<div class="plan-card featured">
+<div class="plan-badge">Más popular</div>
+<div class="plan-name">Pro <span class="trial-badge">3 meses gratis</span></div>
+<div class="plan-price" style="font-size:2.6rem">$0</div>
+<div style="font-size:.85rem;color:var(--muted);margin-top:-4px">costo cero <strong>/ 3 meses</strong></div>
+<div style="font-size:.8rem;color:var(--muted);margin-bottom:4px">desde el mes 4: <strong>$3.990 CLP</strong> al mes</div>
+<div class="plan-desc">Para equipos que lideran cultos y necesitan coordinación completa en tiempo real.</div>
+<ul class="plan-features">
+<li>Editor de canciones con acordes</li>
+<li>Catálogo global con canciones ilimitadas</li>
+<li class="plus">Importación de canciones con IA</li>
+<li>Repertorio en vivo sincronizado</li>
+<li>Control MIDI completo (DAW, Individual, Global y Delegado)</li>
+<li class="plus">Hasta 15 personas</li>
+<li class="plus">Asignar cantante por canción</li>
+<li class="plus">Tono personal por cantante</li>
+<li class="plus">Links personalizados por canción</li>
+</ul>
+<button class="btn-plan btn-plan-accent" onclick="abrirCheckoutLanding('36723486083944b8bd60a7eb31699e56','Pro')">Comenzar gratis — 3 meses</button>
+</div>
+</div>
+<p class="pricing-note">Las compras se procesan de forma segura con Mercado Pago. No se usa el sistema de compras de Microsoft Store.</p>
 </div>
 
 <section class="cta-section">
@@ -259,5 +278,59 @@
     <a href="mailto:keynonia.soporte@gmail.com">Soporte</a>
   </div>
 </footer>
+<div class="checkout-modal-overlay" id="checkoutOverlay">
+<div class="checkout-modal">
+<h3 id="checkoutTitle">Comenzar con Pro</h3>
+<p>Ingresa tu correo para continuar al pago seguro con Mercado Pago.</p>
+<input type="email" id="checkoutEmail" placeholder="tu@correo.com" autocomplete="email">
+<div class="checkout-err" id="checkoutErr">Ingresa un correo válido.</div>
+<div class="row">
+<button class="btn-cancel" onclick="cerrarCheckoutLanding()">Cancelar</button>
+<button class="btn-go" id="checkoutGoBtn" onclick="confirmarCheckoutLanding()">Continuar</button>
+</div>
+</div>
+</div>
+<script>
+let __checkoutPlanId = null;
+function abrirCheckoutLanding(planId, nombre){
+  __checkoutPlanId = planId;
+  document.getElementById('checkoutTitle').textContent = 'Comenzar con ' + nombre;
+  document.getElementById('checkoutErr').style.display = 'none';
+  document.getElementById('checkoutEmail').value = '';
+  document.getElementById('checkoutOverlay').classList.add('open');
+}
+function cerrarCheckoutLanding(){
+  document.getElementById('checkoutOverlay').classList.remove('open');
+}
+async function confirmarCheckoutLanding(){
+  const email = document.getElementById('checkoutEmail').value.trim();
+  const errEl = document.getElementById('checkoutErr');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent = 'Ingresa un correo válido.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('checkoutGoBtn');
+  btn.disabled = true; btn.textContent = 'Un momento…';
+  try{
+    const res = await fetch('https://awjkpafyrcblglnvmkyp.supabase.co/functions/v1/suscribirse-landing', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ plan_id: __checkoutPlanId, correo: email })
+    });
+    const data = await res.json();
+    if(!res.ok || !data.init_point){
+      errEl.textContent = data.error || 'No pudimos iniciar el pago. Intenta de nuevo.';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.textContent = 'Continuar';
+      return;
+    }
+    window.location.href = data.init_point;
+  } catch(e){
+    errEl.textContent = 'Error de conexión. Intenta de nuevo.';
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.textContent = 'Continuar';
+  }
+}
+</script>
 </body>
 </html>
