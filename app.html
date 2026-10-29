@@ -878,7 +878,12 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 
     <div class="cuenta-section">
       <div class="cuenta-section-title">Herramientas</div>
-
+      <div class="ci" onclick="abrirPanel('panel-config-midi')">
+        <div class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div>
+        <span class="ci-label">Configurar Keynonia MIDI</span>
+        <span class="ci-arrow">›</span>
+      </div>
+    </div>
 
     <div class="cuenta-section">
       <div class="cuenta-section-title">Aprende a usar</div>
@@ -7378,6 +7383,55 @@ aplicarNavegacionPendiente()
     <div class="guia-section">
       <h3>✏️ Editar una canción existente</h3>
       <p>Ve a Librería → Mis Canciones, toca los tres puntos <strong>⋯</strong> de la canción y selecciona <strong>"Editar"</strong>. El editor abrirá la canción con toda su información lista para modificar.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL CONFIGURAR KEYNONIA MIDI -->
+<div class="panel" id="panel-config-midi">
+  <div class="panel-header">
+    <button class="panel-back" onclick="cerrarPanel('panel-config-midi')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </button>
+    <span class="panel-title">Configurar Keynonia MIDI</span>
+  </div>
+  <div class="panel-body">
+    <div class="guia-section">
+      <h3>¿Para qué sirve esto?</h3>
+      <p>El Modo DAW de un repertorio permite que un controlador MIDI cambie de sección automáticamente y que ese cambio se transmita en vivo a todos los dispositivos conectados a ese mismo repertorio. Para eso, Keynonia necesita un puerto MIDI virtual con un nombre exacto: <strong>keynonia</strong> (todo en minúscula, sin espacios). Ese puerto no viene creado por defecto — hay que crearlo una sola vez en tu computador.</p>
+    </div>
+    <div class="guia-section">
+      <h3>💻 En Windows — loopMIDI</h3>
+      <p>En Windows se usa el programa gratuito <strong>loopMIDI</strong> (de Tobias Erichsen). Se instala, se crea un puerto nuevo con el botón "+", y se le pone de nombre <strong>keynonia</strong>. Con loopMIDI abierto y el puerto creado, Keynonia lo detecta solo al abrir un repertorio en vivo.</p>
+    </div>
+    <div class="guia-section">
+      <h3>🍎 En Mac — IAC Driver (nativo, sin instalar nada)</h3>
+      <p>macOS ya trae esta función integrada, no hace falta instalar ningún programa:</p>
+      <p>1. Abre <strong>Audio MIDI Setup</strong> (Spotlight con Cmd+Espacio, o Aplicaciones → Utilidades).</p>
+      <p>2. En el menú superior: <strong>Ventana → Mostrar estudio MIDI</strong>.</p>
+      <p>3. Doble clic en el ícono <strong>IAC Driver</strong>.</p>
+      <p>4. Marca la casilla <strong>"El dispositivo está en línea"</strong>.</p>
+      <p>5. Ve a la pestaña <strong>Puertos</strong>. Por defecto aparece un puerto llamado "Bus 1".</p>
+      <p>6. Doble clic sobre ese puerto y cambia el nombre a <strong>keynonia</strong>, exactamente así, todo en minúscula.</p>
+      <p>7. Haz clic en <strong>Aplicar</strong>.</p>
+    </div>
+    <div class="guia-section">
+      <h3>⚠️ Importante: el nombre debe ser exacto</h3>
+      <p>Keynonia busca el puerto por su nombre exacto, en minúscula: <strong>keynonia</strong>. Si lo dejas como "Keynonia" con mayúscula o con cualquier otro nombre, la app no lo va a detectar. Revisa el nombre antes de seguir.</p>
+    </div>
+    <div class="guia-section">
+      <h3>🎹 Cómo conectar tu controlador MIDI a ese puerto</h3>
+      <p>Un puerto virtual (loopMIDI o IAC) no recibe directamente las notas de un controlador físico por sí solo — necesita que una aplicación se las pase. Lo normal es hacerlo desde tu DAW (Ableton Live, Logic, MainStage, etc.):</p>
+      <p>1. Crea una pista MIDI nueva.</p>
+      <p>2. Como entrada (Input), selecciona tu controlador físico.</p>
+      <p>3. Como salida (Output), selecciona el puerto <strong>keynonia</strong> (loopMIDI en Windows, IAC Driver en Mac).</p>
+      <p>4. Activa el monitoreo de esa pista (Monitor / "In"), para que lo que toques en el controlador pase en tiempo real hacia el puerto.</p>
+      <p>Con esto, cada nota que toques en tu controlador llega al puerto <strong>keynonia</strong>, y Keynonia la recibe automáticamente apenas abras un repertorio en vivo con Modo de control "DAW" — no hay que conectar nada manualmente dentro de la app.</p>
+    </div>
+    <div class="guia-section">
+      <h3>¿No necesitas sincronizar varios dispositivos?</h3>
+      <p>Si solo quieres usar tu controlador para ti, sin transmitir los cambios a otros dispositivos en vivo, no necesitas crear ningún puerto virtual. Puedes seleccionar tu controlador directamente en el Modo Individual, desde la configuración MIDI de cada repertorio.</p>
     </div>
   </div>
 </div>
