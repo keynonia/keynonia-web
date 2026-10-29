@@ -1182,7 +1182,7 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 <!-- MODAL A TU MEDIDA -->
 <div class="modal-overlay" id="modal-a-medida">
   <div class="modal">
-    <div class="modal-title" style="margin-bottom:4px">A tu medida</div>
+    <div class="modal-title" style="margin-bottom:4px">A Tu Medida</div>
     <p style="font-size:.8rem;color:var(--text2);margin-bottom:16px;line-height:1.6">Cuéntanos qué necesita tu iglesia. Te responderemos por correo con una propuesta y el valor de desarrollo.</p>
     <input type="text" class="modal-input" id="amedida-organizacion" placeholder="Nombre de tu iglesia u organización"/>
     <input type="email" class="modal-input" id="amedida-correo" placeholder="Correo de contacto"/>
@@ -2783,9 +2783,15 @@ function actualizarPanelSuscripcion() {
     '</div>' +
     '<div id="subs-cards"></div>' +
     '<div class="plan-card" style="text-align:center;margin-bottom:14px">' +
-      '<div class="plan-name" style="margin-bottom:4px">A tu medida</div>' +
-      '<p style="font-size:.78rem;color:var(--text2);line-height:1.6;margin-bottom:12px">¿Tu iglesia necesita una función que no existe todavía en Keynonia? Cuéntanos qué te gustaría tener y te enviamos una propuesta hecha a tu medida.</p>' +
-      '<button class="plan-btn plan-btn-secondary" onclick="abrirModalAMedida()">Solicitar función personalizada</button>' +
+      '<div class="plan-price" style="font-size:1.6rem">A Tu Medida</div>' +
+      '<hr class="plan-divider">' +
+      '<ul class="plan-features" style="text-align:left">' +
+        '<li>Contáctate directo con el creador y programador</li>' +
+        '<li>Explícale qué función te gustaría que existiera</li>' +
+        '<li>Lleva a tu iglesia a su máximo potencial</li>' +
+        '<li>Dale rienda suelta a tu creatividad</li>' +
+      '</ul>' +
+      '<button class="plan-btn plan-btn-secondary" onclick="abrirModalAMedida()" style="margin-top:4px">Solicitar función personalizada</button>' +
     '</div>' +
     '<p class="plan-contacto">¿Dudas? Escríbenos a <strong>matias.keynonia@gmail.com</strong></p>' +
     (esSuscrito
@@ -2927,7 +2933,7 @@ window.enviarAMedida = async function() {
     var nombreUsuario = (currentUser.user_metadata && (currentUser.user_metadata.nombre || currentUser.user_metadata.full_name)) || org
     const { error } = await supabase.functions.invoke('enviar-soporte', {
       body: {
-        mensaje: '[Solicitud A tu medida]\nOrganización: ' + org + '\n\n' + detalle,
+        mensaje: '[Solicitud A Tu Medida]\nOrganización: ' + org + '\n\n' + detalle,
         correoUsuario: correo,
         nombreUsuario: nombreUsuario
       }
