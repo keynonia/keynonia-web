@@ -7072,6 +7072,87 @@ window.guardarConfiguracionMidi = async function() {
   actualizarUIModoControl(configMidiModoActual)
 }
 
+// ── Simulación paso a paso: crear puerto MIDI "keynonia" en macOS (panel Configurar Keynonia MIDI) ──
+var kwMidiSteps = [
+  {
+    label: 'Paso 1 de 6 — Abrir Audio MIDI Setup',
+    html: '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0">' +
+      '<div style="width:56px;height:56px;border-radius:12px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.6rem">🎛️</div>' +
+      '<p style="font-size:.82rem;text-align:center;margin:0">Busca <strong>Audio MIDI Setup</strong> con Spotlight (Cmd+Espacio) o en Aplicaciones → Utilidades.</p>' +
+      '</div>'
+  },
+  {
+    label: 'Paso 2 de 6 — Mostrar estudio MIDI',
+    html: '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;overflow:hidden">' +
+      '<div style="background:var(--bg3);padding:6px 10px;font-size:.68rem;color:var(--text2);border-bottom:1px solid var(--border)">Ventana ▸ <span style="color:var(--accent)">Mostrar estudio MIDI</span></div>' +
+      '<div style="padding:16px;display:flex;align-items:center;justify-content:center;gap:10px">' +
+      '<div style="width:64px;height:46px;border:1px solid var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--bg3);font-size:1.2rem">🔌</div>' +
+      '<span style="font-size:.72rem;color:var(--text2)">IAC Driver</span></div></div>' +
+      '<p style="font-size:.78rem;color:var(--text2);margin-top:10px">Elige <strong>Ventana → Mostrar estudio MIDI</strong>. Ahí aparece el ícono del IAC Driver.</p>'
+  },
+  {
+    label: 'Paso 3 de 6 — Abrir las propiedades del IAC Driver',
+    html: '<p style="font-size:.78rem;color:var(--text2);margin:0 0 10px">Doble clic sobre el ícono del IAC Driver para abrir sus propiedades.</p>' +
+      '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">' +
+      '<div style="font-size:.78rem;font-weight:600;margin-bottom:10px">Propiedades del dispositivo IAC</div>' +
+      '<label style="display:flex;align-items:center;gap:8px;font-size:.78rem"><input type="checkbox" checked disabled>El dispositivo está en línea</label>' +
+      '</div>'
+  },
+  {
+    label: 'Paso 4 de 6 — Ir a la pestaña de puertos',
+    html: '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">' +
+      '<div style="display:flex;gap:16px;font-size:.7rem;border-bottom:1px solid var(--border);padding-bottom:8px;margin-bottom:10px">' +
+      '<span style="color:var(--text2)">Propiedades</span><span style="color:var(--accent);font-weight:700;border-bottom:2px solid var(--accent);padding-bottom:7px">Puertos</span></div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:6px;padding:8px 10px;font-size:.78rem">' +
+      '<span>Bus 1</span><span style="color:var(--text2)">⋯</span></div></div>' +
+      '<p style="font-size:.78rem;color:var(--text2);margin-top:10px">En la pestaña <strong>Puertos</strong> aparece un puerto por defecto llamado "Bus 1".</p>'
+  },
+  {
+    label: 'Paso 5 de 6 — Renombrar el puerto a keynonia',
+    html: '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:14px">' +
+      '<div style="font-size:.7rem;color:var(--text2);margin-bottom:6px">Nombre del puerto</div>' +
+      '<div style="background:var(--bg3);border:1px solid var(--accent);border-radius:6px;padding:8px 10px;font-size:.84rem;font-weight:700">keynonia</div>' +
+      '</div>' +
+      '<p style="font-size:.78rem;color:var(--text2);margin-top:10px">Doble clic sobre "Bus 1" para editar el nombre. Escribe <strong>keynonia</strong> (todo en minúscula) y presiona Enter.</p>'
+  },
+  {
+    label: 'Paso 6 de 6 — Aplicar los cambios',
+    html: '<div style="display:flex;flex-direction:column;align-items:center;gap:10px;padding:10px 0">' +
+      '<div style="width:48px;height:48px;border-radius:50%;background:rgba(46,204,113,.15);display:flex;align-items:center;justify-content:center;font-size:1.4rem">✓</div>' +
+      '<p style="font-size:.82rem;text-align:center;margin:0">Haz clic en <strong>Aplicar</strong>. El puerto <strong>keynonia</strong> ya queda disponible para que lo use tu DAW y Keynonia lo detecte en Modo DAW.</p>' +
+      '</div>'
+  }
+]
+var kwMidiStepIdx = 0
+function kwMidiStepperRender(){
+  var step = kwMidiSteps[kwMidiStepIdx]
+  var labelEl = document.getElementById('kwmidi-steplabel')
+  var stageEl = document.getElementById('kwmidi-stage')
+  var dotsEl = document.getElementById('kwmidi-dots')
+  var prevBtn = document.getElementById('kwmidi-prev')
+  var nextBtn = document.getElementById('kwmidi-next')
+  if(!step || !labelEl || !stageEl || !dotsEl || !prevBtn || !nextBtn) return
+  labelEl.textContent = step.label
+  stageEl.innerHTML = step.html
+  prevBtn.style.visibility = kwMidiStepIdx === 0 ? 'hidden' : 'visible'
+  nextBtn.textContent = kwMidiStepIdx === kwMidiSteps.length - 1 ? 'Listo' : 'Siguiente'
+  dotsEl.innerHTML = ''
+  for(var d = 0; d < kwMidiSteps.length; d++){
+    var dot = document.createElement('div')
+    dot.style.cssText = 'height:4px;flex:1;border-radius:2px;background:' + (d <= kwMidiStepIdx ? 'var(--accent)' : 'var(--border)')
+    dotsEl.appendChild(dot)
+  }
+}
+window.kwMidiStepperNext = function(){
+  if(kwMidiStepIdx < kwMidiSteps.length - 1){ kwMidiStepIdx++; kwMidiStepperRender() }
+  else { kwMidiStepIdx = 0; kwMidiStepperRender() }
+}
+window.kwMidiStepperPrev = function(){
+  if(kwMidiStepIdx > 0){ kwMidiStepIdx--; kwMidiStepperRender() }
+}
+document.addEventListener('DOMContentLoaded', function(){ kwMidiStepperRender() })
+if(document.readyState === 'complete' || document.readyState === 'interactive') kwMidiStepperRender()
+
 aplicarNavegacionPendiente()
 </script>
 
@@ -7397,6 +7478,19 @@ aplicarNavegacionPendiente()
     <span class="panel-title">Configurar Keynonia MIDI</span>
   </div>
   <div class="panel-body">
+    <div class="guia-section">
+      <h3>🖱️ Simulación paso a paso (Mac)</h3>
+      <p style="margin-bottom:12px">Recorre las pantallas de Audio MIDI Setup para crear el puerto "keynonia" en macOS.</p>
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:12px" id="kwmidi-dots"></div>
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:220px">
+        <div style="font-size:.72rem;color:var(--text2);margin-bottom:10px" id="kwmidi-steplabel"></div>
+        <div id="kwmidi-stage"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:12px">
+        <button class="btn-cancel" id="kwmidi-prev" onclick="kwMidiStepperPrev()">Atrás</button>
+        <button class="btn-confirm" id="kwmidi-next" onclick="kwMidiStepperNext()">Siguiente</button>
+      </div>
+    </div>
     <div class="guia-section">
       <h3>¿Para qué sirve esto?</h3>
       <p>El Modo DAW de un repertorio permite que un controlador MIDI cambie de sección automáticamente y que ese cambio se transmita en vivo a todos los dispositivos conectados a ese mismo repertorio. Para eso, Keynonia necesita un puerto MIDI virtual con un nombre exacto: <strong>keynonia</strong> (todo en minúscula, sin espacios). Ese puerto no viene creado por defecto — hay que crearlo una sola vez en tu computador.</p>
