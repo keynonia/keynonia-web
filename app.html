@@ -6677,51 +6677,144 @@ function kcfgVigilarSilencio(){
 }
 
 // ── Recepción ──
-function kcfgRecibir(mensaje){
-  var status = mensaje.data[0]
-  var nota = mensaje.data[1]
-  var vel = mensaje.data[2] || 0
-  if((status & 0xf0) !== 0x90 || vel <= 0) return
-  kcfgUltimaHora = Date.now()
-  var canal = (status & 0x0f) + 1
-  var nombre = repMidiName(nota)
+// El historial muestra TODO lo que llega (notas, Program Change, CC, transporte…),
+// porque no todos los reproductores marcan secciones con notas. Playback, por
+// ejemplo, suele usar Program Change.
+var kcfgClockN = 0
+var kcfgVerReloj = false
 
-  // Modo asignar: la próxima nota se liga a la sección elegida
+function kcfgTipoMsg(status){
+  var alto = status & 0xf0
+  if(alto === 0x90) return 'noteon'
+  if(alto === 0x80) return 'noteoff'
+  if(alto === 0xA0) return 'after'
+  if(alto === 0xB0) return 'cc'
+  if(alto === 0xC0) return 'pc'
+  if(alto === 0xD0) return 'after'
+  if(alto === 0xE0) return 'bend'
+  if(status === 0xF0) return 'sysex'
+  if(status === 0xF8) return 'clock'
+  if(status === 0xFA) return 'start'
+  if(status === 0xFB) return 'continue'
+  if(status === 0xFC) return 'stop'
+  if(status === 0xFE) return 'sensing'
+  return 'otro'
+}
+
+// Etiqueta legible de una clave guardada ('n36', 'p5', 'c20' y el formato antiguo '36')
+function kcfgEtiquetaClave(k){
+  if(k === null || k === undefined) return null
+  k = String(k)
+  if(/^\d+$/.test(k)) return repMidiName(parseInt(k, 10))
+  var c = k.charAt(0), v = parseInt(k.slice(1), 10)
+  if(c === 'n') return repMidiName(v)
+  if(c === 'p') return 'PC ' + v
+  if(c === 'c') return 'CC ' + v
+  return k
+}
+
+window.kcfgToggleReloj = function(){
+  kcfgVerReloj = !kcfgVerReloj
+  var b = document.getElementById('kcfg-reloj-btn')
+  if(b) b.textContent = kcfgVerReloj ? 'Ocultar reloj MIDI' : 'Mostrar reloj MIDI'
+  kcfgAnotar('kcfg-l-s', kcfgVerReloj ? 'Mostrando reloj MIDI' : 'Reloj MIDI oculto (se sigue contando)')
+}
+
+function kcfgRecibir(mensaje){
+  var d = mensaje.data
+  var status = d[0]
+  var tipo = kcfgTipoMsg(status)
+  var canal = (status < 0xF0) ? ((status & 0x0f) + 1) : null
+
+  if(tipo === 'sensing') return
+
+  // El reloj llega 24 veces por negra: se cuenta, no se escribe (inundaría el historial)
+  if(tipo === 'clock'){
+    kcfgClockN++
+    kcfgUltimaHora = Date.now()
+    if(kcfgVerReloj && kcfgClockN % 24 === 0) kcfgAnotar('kcfg-l-s', 'reloj MIDI &times;' + kcfgClockN)
+    return
+  }
+
+  kcfgUltimaHora = Date.now()
+
+  if(tipo === 'start' || tipo === 'continue' || tipo === 'stop'){
+    kcfgAnotar('kcfg-l-s', 'transporte: ' + tipo.toUpperCase())
+    return
+  }
+  if(tipo === 'sysex'){
+    kcfgAnotar('kcfg-l-w', 'SysEx de ' + d.length + ' bytes &mdash; Keynonia no lo usa para secciones')
+    return
+  }
+  // Note Off y Note On con velocidad 0: se ignoran en silencio
+  if(tipo === 'noteoff' || (tipo === 'noteon' && (d[2] || 0) === 0)) return
+
+  var clave = null, etiqueta = null
+  if(tipo === 'noteon'){
+    clave = 'n' + d[1]
+    etiqueta = repMidiName(d[1]) + ' (nota ' + d[1] + ')'
+  } else if(tipo === 'pc'){
+    clave = 'p' + d[1]
+    etiqueta = 'Program Change ' + d[1]
+  } else if(tipo === 'cc'){
+    if((d[2] || 0) === 0) return   // sólo el "encendido" del control
+    clave = 'c' + d[1]
+    etiqueta = 'CC ' + d[1] + ' = ' + d[2]
+  } else {
+    kcfgAnotar('kcfg-l-s', tipo + ' recibido (no sirve para marcar secciones)')
+    return
+  }
+
+  var suf = canal ? ' · canal ' + canal : ''
+
+  // Modo asignar: lo primero que llegue queda ligado a la sección elegida
   if(kcfgAsignandoSec){
     var secId = kcfgAsignandoSec
     var mapa = kcfgLeerMapa()
     Object.keys(mapa).forEach(function(k){ if(mapa[k] === secId) delete mapa[k] })
-    mapa[String(nota)] = secId
+    mapa[clave] = secId
     kcfgGuardarMapa(mapa)
     var s = kcfgSecciones().find(function(x){ return x.id === secId })
     kcfgAsignandoSec = null
-    kcfgAnotar('kcfg-l-ok', nombre + ' (' + nota + ') &rarr; asignada a <b>' + esc((s && s.nombre) || '?') + '</b>')
+    kcfgAnotar('kcfg-l-ok', etiqueta + suf + ' &rarr; asignado a <b>' + esc((s && s.nombre) || '?') + '</b>')
     kcfgPintarSecciones()
-    showToast('✓ ' + ((s && s.nombre) || 'Sección') + ' = ' + nombre)
+    showToast('✓ ' + ((s && s.nombre) || 'Sección') + ' = ' + kcfgEtiquetaClave(clave))
     return
   }
 
   // Modo normal: resolver y activar
-  var destino = kcfgResolver(nota)
+  var destino = kcfgResolverClave(clave)
   if(destino){
     repActivarSeccion(destino.id)
-    kcfgAnotar('kcfg-l-ok', nombre + ' (' + nota + ', canal ' + canal + ') &rarr; ' + esc(destino.nombre) + ' &#10003;')
+    kcfgAnotar('kcfg-l-ok', etiqueta + suf + ' &rarr; ' + esc(destino.nombre) + ' &#10003;')
   } else {
-    kcfgAnotar('kcfg-l-w', nombre + ' (' + nota + ', canal ' + canal + ') &rarr; no est&aacute; en el mapa de esta canci&oacute;n')
+    kcfgAnotar('kcfg-l-w', etiqueta + suf + ' &rarr; no est&aacute; asignado en esta canci&oacute;n')
   }
 }
 
-// Override local primero, luego el midiNote original de la canción
-function kcfgResolver(nota){
+// Resuelve por clave ('n36' / 'p5' / 'c20'). Override local primero; si es nota,
+// cae al midiNote original de la canción para no romper el comportamiento de siempre.
+function kcfgResolverClave(clave){
   var secciones = kcfgSecciones()
   var mapa = kcfgLeerMapa()
-  var secId = mapa[String(nota)]
+  var secId = mapa[clave]
   if(secId){
     var porMapa = secciones.find(function(s){ return s.id === secId })
     if(porMapa) return porMapa
   }
-  return secciones.find(function(s){ return s.midiNote === nota }) || null
+  if(String(clave).charAt(0) === 'n'){
+    var n = parseInt(String(clave).slice(1), 10)
+    var viejo = mapa[String(n)]   // compatibilidad con mapas guardados antes
+    if(viejo){
+      var pv = secciones.find(function(s){ return s.id === viejo })
+      if(pv) return pv
+    }
+    return secciones.find(function(s){ return s.midiNote === n }) || null
+  }
+  return null
 }
+
+function kcfgResolver(nota){ return kcfgResolverClave('n' + nota) }
 
 // ── Lista de secciones ──
 function kcfgPintarSecciones(){
@@ -6730,13 +6823,14 @@ function kcfgPintarSecciones(){
   if(!secciones.length){ cont.innerHTML = '<div class="kcfg-vacio">Abre una canción para asignar sus secciones.</div>'; return }
   var mapa = kcfgLeerMapa()
   var inverso = {}
-  Object.keys(mapa).forEach(function(n){ inverso[mapa[n]] = parseInt(n, 10) })
+  Object.keys(mapa).forEach(function(k){ inverso[mapa[k]] = k })
 
   cont.innerHTML = secciones.map(function(s){
-    var ovr = (typeof inverso[s.id] === 'number')
-    var n = ovr ? inverso[s.id] : (typeof s.midiNote === 'number' ? s.midiNote : null)
-    var clase = ovr ? 'kcfg-nota ovr' : (n !== null ? 'kcfg-nota set' : 'kcfg-nota')
-    var txt = (n !== null) ? repMidiName(n) : '—'
+    var ovr = !!inverso[s.id]
+    var txt = ovr
+      ? kcfgEtiquetaClave(inverso[s.id])
+      : (typeof s.midiNote === 'number' ? repMidiName(s.midiNote) : '—')
+    var clase = ovr ? 'kcfg-nota ovr' : (txt !== '—' ? 'kcfg-nota set' : 'kcfg-nota')
     var esperando = (kcfgAsignandoSec === s.id)
     return '<div class="kcfg-sec' + (esperando ? ' escuchando' : '') + '">'
       + '<span class="kcfg-sec-n">' + esc(s.nombre) + '</span>'
@@ -8202,9 +8296,12 @@ aplicarNavegacionPendiente()
       <div class="kcfg-desc" style="margin-top:9px;font-size:.72rem">Lo que asignes queda guardado <b>solo en este dispositivo</b> y solo para esta canción. No modifica la canción del catálogo ni afecta a tu equipo.</div>
 
       <div class="kcfg-sub">Historial MIDI</div>
-      <div class="kcfg-desc">Lo que fue llegando. Sirve para revisar por qué algo no avanzó.</div>
+      <div class="kcfg-desc">Muestra <b>todo</b> lo que llega: notas, Program Change, CC, transporte. Si aquí no aparece nada mientras tu reproductor avanza, el MIDI no está saliendo de él o no está entrando por este puerto.</div>
       <div class="kcfg-log" id="kcfg-log"><div class="kcfg-vacio">Todavía no llega nada.</div></div>
-      <div class="kcfg-row"><button class="kcfg-btn" onclick="kcfgLimpiarLog()">Limpiar historial</button></div>
+      <div class="kcfg-row">
+        <button class="kcfg-btn" onclick="kcfgLimpiarLog()">Limpiar historial</button>
+        <button class="kcfg-btn" id="kcfg-reloj-btn" onclick="kcfgToggleReloj()">Mostrar reloj MIDI</button>
+      </div>
 
     </div>
     <div class="modal-actions" style="margin-top:16px">
