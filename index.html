@@ -50,8 +50,35 @@
     .btn-secondary:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); }
     .win-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
-    .product-shot { position: relative; width: 100%; max-width: 300px; margin: 0 auto; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08); background: #0e0e11; }
-    .product-shot video { width: 100%; display: block; }
+    .product-shot { position: relative; width: 100%; max-width: 380px; margin: 0 auto; border-radius: 22px; overflow: hidden; box-shadow: 0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08); background: #121216; }
+
+    /* ---------- Mini reproductor interactivo (estructura real de 'Alaba') ---------- */
+    .mp-topbar { padding: 14px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .mp-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .mp-song-title { font-size: 0.98rem; font-weight: 700; color: #fff; }
+    .mp-song-sub { font-size: 0.7rem; color: var(--ink-muted); margin-top: 1px; }
+    .mp-live-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.62rem; font-weight: 700; color: #6fe6a0; background: rgba(40,200,120,0.12); border: 1px solid rgba(40,200,120,0.3); padding: 3px 9px; border-radius: 980px; }
+    .mp-live-dot { width: 6px; height: 6px; border-radius: 50%; background: #3ddc84; animation: mpPulse 1.4s ease-in-out infinite; }
+    @keyframes mpPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .mp-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+    .mp-chips::-webkit-scrollbar { display: none; }
+    .mp-chip { flex-shrink: 0; font-size: 0.66rem; font-weight: 700; color: var(--ink-muted); background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14); border-radius: 980px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; }
+    .mp-chip.active { color: #0a0a0c; transform: scale(1.1); }
+
+    .mp-body { height: 400px; overflow-y: auto; padding: 14px 16px 60px; scroll-behavior: smooth; }
+    .mp-body::-webkit-scrollbar { width: 4px; }
+    .mp-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+    .mp-section { border: 1.5px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; cursor: pointer; transition: border-color .25s, background .25s; }
+    .mp-section.active { background: rgba(255,255,255,0.04); }
+    .mp-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+    .mp-badge { font-size: 0.64rem; font-weight: 700; padding: 2px 9px; border-radius: 980px; }
+    .mp-midi { font-size: 0.6rem; color: var(--subtle); }
+    .mp-chordline { display: flex; gap: 10px; margin-bottom: 5px; }
+    .mp-chord { font-size: 0.68rem; font-weight: 700; color: #cfcfe0; min-width: 20px; }
+    .mp-lyric-bar { height: 8px; border-radius: 4px; background: rgba(255,255,255,0.09); margin-bottom: 6px; }
+    .mp-instr-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .mp-instr-row .mp-chord { background: rgba(255,255,255,0.06); padding: 3px 8px; border-radius: 6px; min-width: 0; }
+    @media (prefers-reduced-motion: reduce) { .mp-body { scroll-behavior: auto; } }
 
     .logos-section { padding: 40px 24px; text-align: center; background: var(--bg); }
     .logos-label { font-size: 0.72rem; color: var(--subtle); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px; font-weight: 500; }
@@ -201,9 +228,17 @@
       </a>
     </div>
     <div class="product-shot">
-      <video autoplay muted loop playsinline webkit-playsinline="true" preload="auto" aria-label="Video real de Keynonia avanzando por las secciones de una canción: versos, pre-coro, coro e interludio">
-        <source src="shots/kw-hero-video.mp4" type="video/mp4">
-      </video>
+      <div class="mp-topbar">
+        <div class="mp-title-row">
+          <div>
+            <div class="mp-song-title">Alaba</div>
+            <div class="mp-song-sub">Evan Craft · 127 BPM · 4/4</div>
+          </div>
+          <div class="mp-live-pill"><span class="mp-live-dot"></span>MIDI</div>
+        </div>
+        <div class="mp-chips" id="mpChips"></div>
+      </div>
+      <div class="mp-body" id="mpBody"></div>
     </div>
   </div>
 </section>
@@ -401,6 +436,106 @@
       btn.disabled = false; btn.textContent = 'Continuar';
     }
   }
+
+  // ---------- Mini reproductor interactivo: estructura real de 'Alaba' (Evan Craft) ----------
+  // Nota: se usan los nombres de sección, acordes y tonos MIDI reales de la app.
+  // El texto cantado se representa con barras (placeholder) para no reproducir la letra con derechos de autor.
+  (function(){
+    const TYPE_COLOR = {
+      intro: '#3ddc84', verso: '#0a84ff', precoro: '#ff4d6d', coro: '#ff4d6d',
+      interludio: '#3ddc84', puente: '#a855f7', instrumental: '#3ddc84',
+      refrain: '#ffcc00', outro: '#3ddc84', final: '#3ddc84'
+    };
+    const BAR_W = [92, 70, 88, 55, 95, 65, 80];
+    const sections = [
+      { chip:'I',   name:'Intro',      type:'intro',       midi:'C0',  chords:[], bars:4, note:'voces y batería' },
+      { chip:'V1',  name:'Verso 1',    type:'verso',        midi:'C#0', chords:['G','Am','D','C9'], bars:4 },
+      { chip:'V2',  name:'Verso 2',    type:'verso',        midi:'D0',  chords:['Am','G','D','C9'], bars:4 },
+      { chip:'PC1', name:'Pre-Coro 1', type:'precoro',      midi:'Eb0', chords:['D','C9'], bars:2 },
+      { chip:'C1',  name:'Coro 1',     type:'coro',         midi:'E0',  chords:['Em','C','G','D'], bars:4 },
+      { chip:'V3',  name:'Verso 3',    type:'verso',        midi:'F0',  chords:['G','Am','D','C9'], bars:4 },
+      { chip:'V4',  name:'Verso 4',    type:'verso',        midi:'F#0', chords:['Am','D','C9'], bars:4 },
+      { chip:'PC2', name:'Pre-Coro 2', type:'precoro',      midi:'G0',  chords:['D','C9'], bars:2 },
+      { chip:'C1',  name:'Coro 1',     type:'coro',         midi:'Ab0', chords:['Em','C','G','D'], bars:4 },
+      { chip:'C2',  name:'Coro 2',     type:'coro',         midi:'A0',  chords:['Em','C','G','D'], bars:6 },
+      { chip:'It1', name:'Interludio 1', type:'interludio', midi:'Bb0', chords:['G'], bars:0 },
+      { chip:'P1',  name:'Puente 1',   type:'puente',       midi:'B0',  chords:['G','Gsus4'], bars:5 },
+      { chip:'P2',  name:'Puente 2',   type:'puente',       midi:'C1',  chords:['G','Am','Em','C'], bars:5 },
+      { chip:'C1',  name:'Coro 1',     type:'coro',         midi:'C#1', chords:['Em','C','G','D'], bars:4, note:'solo marcando tónica' },
+      { chip:'C1',  name:'Coro 1',     type:'coro',         midi:'D1',  chords:['Em','C','G','D'], bars:4 },
+      { chip:'C2',  name:'Coro 2',     type:'coro',         midi:'Eb1', chords:['Em','C','G','D'], bars:6 },
+      { chip:'Ins1',name:'Instrumental 1', type:'instrumental', midi:'E1', chords:['Em','C','G','D','G'], bars:0 },
+      { chip:'R1',  name:'Refrain 1',  type:'refrain',      midi:'F1',  chords:[], bars:6 },
+      { chip:'O',   name:'Outro',      type:'outro',        midi:'F#1', chords:['G'], bars:4 },
+      { chip:'F',   name:'Final',      type:'final',        midi:'G1',  chords:['G'], bars:0 },
+    ];
+
+    const chipsEl = document.getElementById('mpChips');
+    const bodyEl = document.getElementById('mpBody');
+    if(!chipsEl || !bodyEl) return;
+
+    sections.forEach((s,i) => {
+      const chip = document.createElement('div');
+      chip.className = 'mp-chip';
+      chip.textContent = s.chip;
+      chip.style.borderColor = TYPE_COLOR[s.type] + '55';
+      chip.dataset.i = i;
+      chip.onclick = () => goTo(i, true);
+      chipsEl.appendChild(chip);
+
+      const sec = document.createElement('div');
+      sec.className = 'mp-section';
+      sec.dataset.i = i;
+      sec.onclick = () => goTo(i, true);
+      const color = TYPE_COLOR[s.type];
+      let html = `<div class="mp-section-head">
+        <span class="mp-badge" style="background:${color}22;color:${color}">${s.name}</span>
+        <span class="mp-midi">MIDI: ${s.midi}</span>
+      </div>`;
+      if(s.note){ html += `<div style="font-size:.66rem;color:var(--subtle);font-style:italic;margin-bottom:7px;">(${s.note})</div>`; }
+      if(s.chords.length && (s.type==='instrumental')){
+        html += `<div class="mp-instr-row">` + s.chords.map(c=>`<span class="mp-chord">${c}</span>`).join('') + `</div>`;
+      } else {
+        for(let b=0;b<s.bars;b++){
+          const chordHtml = s.chords[b] ? `<div class="mp-chordline"><span class="mp-chord">${s.chords[b]}</span></div>` : '';
+          html += chordHtml + `<div class="mp-lyric-bar" style="width:${BAR_W[b%BAR_W.length]}%"></div>`;
+        }
+      }
+      sec.innerHTML = html;
+      bodyEl.appendChild(sec);
+    });
+
+    let current = 0;
+    let timer = null;
+
+    function goTo(i, userClicked){
+      current = ((i % sections.length) + sections.length) % sections.length;
+      [...bodyEl.children].forEach((el,idx) => {
+        const active = idx === current;
+        el.classList.toggle('active', active);
+        el.style.borderColor = active ? TYPE_COLOR[sections[idx].type] : 'rgba(255,255,255,0.08)';
+      });
+      [...chipsEl.children].forEach((el,idx) => {
+        const active = idx === current;
+        el.classList.toggle('active', active);
+        el.style.background = active ? TYPE_COLOR[sections[idx].type] : 'rgba(255,255,255,0.06)';
+      });
+      const activeSec = bodyEl.children[current];
+      if(activeSec) activeSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const activeChip = chipsEl.children[current];
+      if(activeChip) activeChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      if(userClicked) restartTimer();
+    }
+
+    function restartTimer(){
+      if(timer) clearInterval(timer);
+      timer = setInterval(() => goTo(current + 1), 1900);
+    }
+
+    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    goTo(0);
+    if(!prefersReduced) restartTimer();
+  })();
 </script>
 </body>
 </html>
