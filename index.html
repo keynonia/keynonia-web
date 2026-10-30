@@ -50,40 +50,8 @@
     .btn-secondary:hover { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); }
     .win-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
-    .product-shot { position: relative; width: 100%; max-width: 380px; margin: 0 auto; border-radius: 22px; overflow: hidden; box-shadow: 0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08); background: #121216; }
-
-    /* ---------- Mini reproductor interactivo (réplica fiel de la UI real de Keynonia) ---------- */
-    .mp-navrow { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 0.68rem; font-weight: 600; color: #6fb1ff; border-bottom: 1px solid rgba(255,255,255,0.06); }
-    .mp-navrow span { color: var(--ink-muted); font-weight: 500; }
-    .mp-topbar { padding: 10px 16px 10px; border-bottom: 1px solid rgba(255,255,255,0.08); }
-    .mp-title-row { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-    .mp-song-title { font-size: 1rem; font-weight: 700; color: #fff; }
-    .mp-song-sub { font-size: 0.68rem; color: var(--ink-muted); margin-top: 1px; }
-    .mp-icons { display: flex; gap: 6px; align-items: center; }
-    .mp-icon-pill { font-size: 0.6rem; font-weight: 700; color: #6fe6a0; background: rgba(40,200,120,0.12); border: 1px solid rgba(40,200,120,0.3); padding: 4px 8px; border-radius: 980px; display: inline-flex; align-items: center; gap: 4px; }
-    .mp-live-dot { width: 5px; height: 5px; border-radius: 50%; background: #3ddc84; animation: mpPulse 1.4s ease-in-out infinite; }
-    @keyframes mpPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-    .mp-icon-btn { width: 22px; height: 22px; border-radius: 6px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 700; color: var(--ink-muted); }
-    .mp-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-    .mp-chips::-webkit-scrollbar { display: none; }
-    .mp-chip { flex-shrink: 0; font-size: 0.6rem; font-weight: 700; color: var(--ink-muted); background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.14); border-radius: 50%; width: 25px; height: 25px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .2s; }
-    .mp-chip.active { color: #0a0a0c; transform: scale(1.12); }
-
-    .mp-body { height: 420px; overflow-y: auto; padding: 14px 16px 60px; scroll-behavior: smooth; background: #121216; }
-    .mp-body::-webkit-scrollbar { width: 4px; }
-    .mp-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
-    .mp-section { border: 1.5px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 11px 14px 13px; margin-bottom: 9px; cursor: pointer; transition: border-color .25s, background .25s; background: #19191d; }
-    .mp-section.active { background: #1d1d22; }
-    .mp-section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
-    .mp-badge { font-size: 0.62rem; font-weight: 700; padding: 2px 10px; border-radius: 980px; border: 1px solid; }
-    .mp-midi { font-size: 0.58rem; color: var(--subtle); }
-    .mp-note { font-size: 0.62rem; color: var(--subtle); font-style: italic; margin-bottom: 8px; }
-    .mp-line { position: relative; height: 22px; margin-bottom: 3px; }
-    .mp-line .mp-chord { position: absolute; top: -1px; font-size: 0.64rem; font-weight: 700; color: #d8d8e8; }
-    .mp-line .mp-lyric-bar { position: absolute; top: 12px; left: 0; height: 7px; border-radius: 4px; background: rgba(255,255,255,0.09); }
-    .mp-instr-row { display: flex; gap: 7px; flex-wrap: wrap; }
-    .mp-instr-row .mp-chord { background: rgba(255,255,255,0.07); padding: 3px 9px; border-radius: 6px; font-size: 0.66rem; font-weight: 700; color: #d8d8e8; }
-    @media (prefers-reduced-motion: reduce) { .mp-body { scroll-behavior: auto; } }
+    .product-shot { position: relative; width: 100%; max-width: 380px; margin: 0 auto; border-radius: 22px; overflow: hidden; box-shadow: 0 30px 90px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.08); background: #121216; line-height: 0; }
+    .product-shot video { width: 100%; display: block; }
 
     .logos-section { padding: 40px 24px; text-align: center; background: var(--bg); }
     .logos-label { font-size: 0.72rem; color: var(--subtle); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 20px; font-weight: 500; }
@@ -224,31 +192,18 @@
       </a>
       <a href="https://www.keynonia.com/app" class="dl-card">
         <div class="dl-icon"><svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path fill="#00D2FF" d="M6,3 Q4,7.5 6,12 L13,12 L16.9,10 Z"/>
-          <path fill="#FF3C53" d="M16.9,10 L20,12 L13,12 Z"/>
-          <path fill="#00E676" d="M6,21 Q4,16.5 6,12 L13,12 L16.9,14 Z"/>
-          <path fill="#FFCF00" d="M16.9,14 L20,12 L13,12 Z"/>
+          <path fill="#00D7FE" d="M5 3.6C4.6 3.9 4.3 4.4 4.3 5V19C4.3 19.6 4.6 20.1 5 20.4L13.5 12L5 3.6Z"/>
+          <path fill="#00F076" d="M16.4 15.1L5.8 21.2C5.5 21.3 5.3 21.4 5 21.4L13.9 12.9L16.4 15.1Z"/>
+          <path fill="#FFCF00" d="M19.9 10.5C20.3 10.8 20.6 11.3 20.6 12C20.6 12.7 20.3 13.2 19.8 13.5L17.1 15L14.4 12L17.1 9L19.9 10.5Z"/>
+          <path fill="#FF3A44" d="M5 2.6C5.3 2.6 5.5 2.7 5.8 2.8L16.4 8.9L13.9 11.1L5 2.6Z"/>
         </svg></div>
         Google Play
       </a>
     </div>
     <div class="product-shot">
-      <div class="mp-navrow"><span>‹ Volver</span>‹ Anterior &nbsp;&nbsp;&nbsp; Siguiente ›</div>
-      <div class="mp-topbar">
-        <div class="mp-title-row">
-          <div>
-            <div class="mp-song-title">Alaba</div>
-            <div class="mp-song-sub">Evan Craft · 127 BPM · 4/4</div>
-          </div>
-          <div class="mp-icons">
-            <div class="mp-icon-pill"><span class="mp-live-dot"></span>MIDI</div>
-            <div class="mp-icon-btn">G</div>
-            <div class="mp-icon-btn">⌀</div>
-          </div>
-        </div>
-        <div class="mp-chips" id="mpChips"></div>
-      </div>
-      <div class="mp-body" id="mpBody"></div>
+      <video autoplay muted loop playsinline preload="auto">
+        <source src="shots/kw-hero-video-v2.mp4" type="video/mp4">
+      </video>
     </div>
   </div>
 </section>
@@ -363,10 +318,10 @@
     </a>
     <a href="https://www.keynonia.com/app" class="dl-card">
       <div class="dl-icon"><svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path fill="#00D2FF" d="M6,3 Q4,7.5 6,12 L13,12 L16.9,10 Z"/>
-        <path fill="#FF3C53" d="M16.9,10 L20,12 L13,12 Z"/>
-        <path fill="#00E676" d="M6,21 Q4,16.5 6,12 L13,12 L16.9,14 Z"/>
-        <path fill="#FFCF00" d="M16.9,14 L20,12 L13,12 Z"/>
+        <path fill="#00D7FE" d="M5 3.6C4.6 3.9 4.3 4.4 4.3 5V19C4.3 19.6 4.6 20.1 5 20.4L13.5 12L5 3.6Z"/>
+        <path fill="#00F076" d="M16.4 15.1L5.8 21.2C5.5 21.3 5.3 21.4 5 21.4L13.9 12.9L16.4 15.1Z"/>
+        <path fill="#FFCF00" d="M19.9 10.5C20.3 10.8 20.6 11.3 20.6 12C20.6 12.7 20.3 13.2 19.8 13.5L17.1 15L14.4 12L17.1 9L19.9 10.5Z"/>
+        <path fill="#FF3A44" d="M5 2.6C5.3 2.6 5.5 2.7 5.8 2.8L16.4 8.9L13.9 11.1L5 2.6Z"/>
       </svg></div>
       Google Play
     </a>
@@ -447,113 +402,6 @@
     }
   }
 
-  // ---------- Mini reproductor interactivo: réplica fiel de la UI de Keynonia sobre 'Alaba' (Evan Craft) ----------
-  // Secciones, acordes (posición real sobre cada línea) y tonos MIDI son los reales de la app.
-  // El texto cantado se representa con barras (placeholder): no se reproduce la letra, que tiene derechos de autor.
-  (function(){
-    const TYPE_COLOR = {
-      intro: '#3ddc84', verso: '#0a84ff', precoro: '#ff4d6d', coro: '#ff4d6d',
-      interludio: '#3ddc84', puente: '#a855f7', instrumental: '#3ddc84',
-      refrain: '#ffcc00', outro: '#3ddc84', final: '#3ddc84'
-    };
-    // cada línea: [ {c:'Acorde', l:indentPct}, ... ] y el ancho de la barra de letra en %
-    const L = (chords, w) => ({ chords, w });
-    const versoLines = [ L([{c:'G',l:0}],74), L([{c:'Am',l:14},{c:'G',l:58}],86), L([{c:'D',l:14},{c:'C9',l:66}],80), L([{c:'G',l:50}],68) ];
-    const versoLines2 = [ L([],68), L([{c:'Am',l:10},{c:'G',l:54}],82), L([{c:'D',l:22}],76), L([{c:'C9',l:0},{c:'G',l:62}],86) ];
-    const preCoroLines = [ L([{c:'D',l:14}],72), L([{c:'C9',l:8}],64) ];
-    const coroLines = [ L([{c:'Em',l:0},{c:'C',l:18},{c:'G',l:46}],68), L([{c:'D',l:22}],52), L([{c:'Em',l:0},{c:'C',l:18},{c:'G',l:46}],68), L([{c:'D',l:22}],48) ];
-    const coro2Lines = [ L([{c:'Em',l:0}],64), L([{c:'C',l:16}],66), L([{c:'G',l:10},{c:'D',l:68}],84), L([{c:'Em',l:0},{c:'C',l:16},{c:'G',l:46}],70), L([{c:'D',l:28},{c:'G',l:42}],58) ];
-    const puente1Lines = [ L([{c:'G',l:0}],68), L([{c:'Gsus4',l:14}],76), L([{c:'G',l:0}],64), L([{c:'Gsus4',l:6}],72), L([{c:'G',l:0}],66), L([{c:'Gsus4',l:14}],74), L([{c:'G',l:4}],62), L([{c:'Gsus4',l:16}],68) ];
-    const puente2Lines = [ L([{c:'G',l:0}],68), L([{c:'Am',l:8}],70), L([{c:'Em',l:4}],68), L([{c:'C',l:10}],72) ];
-    const refrainLines = [ L([],60), L([],52), L([],66), L([],58) ];
-
-    const sections = [
-      { chip:'I',   name:'Intro',      type:'intro',    midi:'C0',  note:'voces y batería', lines:refrainLines.slice(0,3) },
-      { chip:'V1',  name:'Verso 1',    type:'verso',    midi:'C#0', lines:versoLines },
-      { chip:'V2',  name:'Verso 2',    type:'verso',    midi:'D0',  lines:versoLines2 },
-      { chip:'PC1', name:'Pre-Coro 1', type:'precoro',  midi:'Eb0', lines:preCoroLines },
-      { chip:'C1',  name:'Coro 1',     type:'coro',     midi:'E0',  lines:coroLines },
-      { chip:'V3',  name:'Verso 3',    type:'verso',    midi:'F0',  lines:versoLines },
-      { chip:'V4',  name:'Verso 4',    type:'verso',    midi:'F#0', lines:versoLines2 },
-      { chip:'PC2', name:'Pre-Coro 2', type:'precoro',  midi:'G0',  lines:preCoroLines },
-      { chip:'C1',  name:'Coro 1',     type:'coro',     midi:'Ab0', lines:coroLines },
-      { chip:'C2',  name:'Coro 2',     type:'coro',     midi:'A0',  lines:coro2Lines },
-      { chip:'It1', name:'Interludio 1', type:'interludio', midi:'Bb0', instr:['G'] },
-      { chip:'P1',  name:'Puente 1',   type:'puente',   midi:'B0',  lines:puente1Lines },
-      { chip:'P2',  name:'Puente 2',   type:'puente',   midi:'C1',  lines:puente2Lines },
-      { chip:'C1',  name:'Coro 1',     type:'coro',     midi:'C#1', lines:coroLines, note:'solo marcando tónica' },
-      { chip:'C1',  name:'Coro 1',     type:'coro',     midi:'D1',  lines:coroLines },
-      { chip:'C2',  name:'Coro 2',     type:'coro',     midi:'Eb1', lines:coro2Lines },
-      { chip:'Ins1',name:'Instrumental 1', type:'instrumental', midi:'E1', instr:['Em','C','G','D','Em','C','G','D','G'] },
-      { chip:'R1',  name:'Refrain 1',  type:'refrain',  midi:'F1',  lines:refrainLines },
-      { chip:'O',   name:'Outro',      type:'outro',    midi:'F#1', lines:[L([{c:'G',l:0}],60),L([],56),L([],60),L([],54)] },
-      { chip:'F',   name:'Final',      type:'final',    midi:'G1',  instr:['G'] },
-    ];
-
-    const chipsEl = document.getElementById('mpChips');
-    const bodyEl = document.getElementById('mpBody');
-    if(!chipsEl || !bodyEl) return;
-
-    sections.forEach((s,i) => {
-      const color = TYPE_COLOR[s.type];
-      const chip = document.createElement('div');
-      chip.className = 'mp-chip';
-      chip.textContent = s.chip;
-      chip.style.borderColor = color + '55';
-      chip.onclick = () => goTo(i, true);
-      chipsEl.appendChild(chip);
-
-      const sec = document.createElement('div');
-      sec.className = 'mp-section';
-      sec.onclick = () => goTo(i, true);
-      let html = `<div class="mp-section-head">
-        <span class="mp-badge" style="background:${color}1a;color:${color};border-color:${color}55">${s.name}</span>
-        <span class="mp-midi">MIDI: ${s.midi}</span>
-      </div>`;
-      if(s.note){ html += `<div class="mp-note">(${s.note})</div>`; }
-      if(s.instr){
-        html += `<div class="mp-instr-row">` + s.instr.map(c=>`<span class="mp-chord">${c}</span>`).join('') + `</div>`;
-      } else {
-        html += (s.lines||[]).map(line => {
-          const chords = line.chords.map(c => `<span class="mp-chord" style="left:${c.l}%">${c.c}</span>`).join('');
-          return `<div class="mp-line">${chords}<span class="mp-lyric-bar" style="width:${line.w}%"></span></div>`;
-        }).join('');
-      }
-      sec.innerHTML = html;
-      bodyEl.appendChild(sec);
-    });
-
-    let current = 0;
-    let timer = null;
-
-    function goTo(i, userClicked){
-      current = ((i % sections.length) + sections.length) % sections.length;
-      [...bodyEl.children].forEach((el,idx) => {
-        const active = idx === current;
-        el.classList.toggle('active', active);
-        el.style.borderColor = active ? TYPE_COLOR[sections[idx].type] : 'rgba(255,255,255,0.08)';
-      });
-      [...chipsEl.children].forEach((el,idx) => {
-        const active = idx === current;
-        el.classList.toggle('active', active);
-        el.style.background = active ? TYPE_COLOR[sections[idx].type] : 'rgba(255,255,255,0.06)';
-      });
-      const activeSec = bodyEl.children[current];
-      if(activeSec) activeSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      const activeChip = chipsEl.children[current];
-      if(activeChip) activeChip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
-      if(userClicked) restartTimer();
-    }
-
-    function restartTimer(){
-      if(timer) clearInterval(timer);
-      timer = setInterval(() => goTo(current + 1), 1900);
-    }
-
-    const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    goTo(0);
-    if(!prefersReduced) restartTimer();
-  })();
 </script>
 </body>
 </html>
