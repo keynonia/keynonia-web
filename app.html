@@ -6574,7 +6574,9 @@ async function repDesconectarDAW(){
 //   · Al resolver una nota se busca primero el override local y, si no hay,
 //     se usa el midiNote original de la canción (comportamiento de siempre).
 // ═══════════════════════════════════════════════════════════════════════════
-var kcfgInput = null
+var kcfgInputs = []        // puertos que estamos escuchando ahora
+var kcfgEtiquetaPuerto = '' // texto para mostrar en el estado
+var kcfgRawN = 0           // mensajes crudos recibidos (incluye reloj): sirve de prueba de vida
 var kcfgEscuchando = false
 var kcfgAsignandoSec = null
 var kcfgLog = []
@@ -6628,6 +6630,10 @@ window.kcfgRefrescarDispositivos = async function(){
   try {
     var acceso = await obtenerAccesoMidi()
     var hay = false
+    var todos = document.createElement('option')
+    todos.value = '__todos__'
+    todos.textContent = '★ Todos los puertos (para probar)'
+    sel.appendChild(todos)
     acceso.inputs.forEach(function(inp){
       hay = true
       var o = document.createElement('option')
@@ -6635,6 +6641,7 @@ window.kcfgRefrescarDispositivos = async function(){
       sel.appendChild(o)
     })
     if(!hay){
+      sel.innerHTML = ''
       sel.innerHTML = '<option value="">— no se encontró ningún puerto MIDI —</option>'
       kcfgAnotar('kcfg-l-w','No se encontr&oacute; ning&uacute;n puerto MIDI de entrada')
     } else if(previo){
@@ -6701,16 +6708,27 @@ window.kcfgToggleEscucha = async function(){
   if(!sel || !sel.value){ showToast('Elige primero un dispositivo', '#e67e22'); return }
   try {
     var acceso = await obtenerAccesoMidi()
-    var encontrado = null
-    acceso.inputs.forEach(function(inp){ if(inp.id === sel.value) encontrado = inp })
-    if(!encontrado){ showToast('Ese dispositivo ya no está disponible', '#e67e22'); return }
-    kcfgInput = encontrado
-    await kcfgInput.open()
-    kcfgInput.onmidimessage = kcfgRecibir
+    var elegidos = []
+    acceso.inputs.forEach(function(inp){
+      if(sel.value === '__todos__' || inp.id === sel.value) elegidos.push(inp)
+    })
+    if(!elegidos.length){ showToast('Ese dispositivo ya no está disponible', '#e67e22'); return }
+
+    kcfgRawN = 0
+    for(var i=0;i<elegidos.length;i++){
+      try { await elegidos[i].open() } catch(e){}
+      // addEventListener (y no onmidimessage) para no pisarnos con el modo DAW,
+      // que usa onmidimessage en el puerto llamado "keynonia". Con esto conviven.
+      elegidos[i].addEventListener('midimessage', kcfgRecibir)
+      kcfgInputs.push(elegidos[i])
+    }
+    kcfgEtiquetaPuerto = (sel.value === '__todos__')
+      ? ('todos (' + elegidos.length + ')')
+      : elegidos[0].name
     kcfgEscuchando = true
-    kcfgSetEstado(true, 'Escuchando ' + kcfgInput.name)
+    kcfgSetEstado(true, 'Escuchando ' + kcfgEtiquetaPuerto)
     if(btn) btn.textContent = 'Dejar de escuchar'
-    kcfgAnotar('kcfg-l-s','Escuchando &laquo;' + esc(kcfgInput.name) + '&raquo;')
+    kcfgAnotar('kcfg-l-s','Escuchando: ' + elegidos.map(function(p){ return esc(p.name) }).join(', '))
     kcfgVigilarSilencio()
   } catch(e){
     showToast('No se pudo abrir el dispositivo', '#e74c3c')
@@ -6719,8 +6737,11 @@ window.kcfgToggleEscucha = async function(){
 }
 
 function kcfgDetener(){
-  if(kcfgInput){ try { kcfgInput.onmidimessage = null } catch(e){} }
-  kcfgInput = null
+  kcfgInputs.forEach(function(p){
+    try { p.removeEventListener('midimessage', kcfgRecibir) } catch(e){}
+  })
+  kcfgInputs = []
+  kcfgEtiquetaPuerto = ''
   kcfgEscuchando = false
   kcfgAsignandoSec = null
   if(kcfgTimerSilencio){ clearInterval(kcfgTimerSilencio); kcfgTimerSilencio = null }
@@ -6788,6 +6809,12 @@ function kcfgRecibir(mensaje){
   var status = d[0]
   var tipo = kcfgTipoMsg(status)
   var canal = (status < 0xF0) ? ((status & 0x0f) + 1) : null
+  var puerto = (mensaje.target && mensaje.target.name) ? mensaje.target.name : ''
+  var pfx = (kcfgInputs.length > 1 && puerto) ? ('[' + esc(puerto) + '] ') : ''
+
+  // Contador crudo: incluye absolutamente todo lo que entra. Es la prueba de vida.
+  kcfgRawN++
+  if(kcfgEscuchando) kcfgSetEstado(true, 'Escuchando ' + kcfgEtiquetaPuerto + ' · ' + kcfgRawN + ' msg')
 
   if(tipo === 'sensing') return
 
@@ -6929,7 +6956,7 @@ window.kcfgAbrir = function(){
   kcfgRefrescarDispositivos()
   var btn = document.getElementById('kcfg-conectar')
   if(btn) btn.textContent = kcfgEscuchando ? 'Dejar de escuchar' : 'Empezar a escuchar'
-  kcfgSetEstado(kcfgEscuchando, kcfgEscuchando && kcfgInput ? ('Escuchando ' + kcfgInput.name) : 'Sin escuchar')
+  kcfgSetEstado(kcfgEscuchando, kcfgEscuchando ? ('Escuchando ' + kcfgEtiquetaPuerto + ' · ' + kcfgRawN + ' msg') : 'Sin escuchar')
 }
 
 window.kcfgCerrar = function(){
