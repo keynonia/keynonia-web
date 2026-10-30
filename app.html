@@ -3757,13 +3757,35 @@ async function obtenerAccesoMidi() {
   if (_midiAccessCache) return _midiAccessCache
   try {
     _midiAccessCache = await navigator.requestMIDIAccess({ sysex: false })
-    _midiAccessCache.onstatechange = function() {
-      // Si el dispositivo se desconecta, limpiar cache para reconectar correctamente
+    _midiAccessCache.onstatechange = function(ev) {
+      // Si hay un puerto que se conecta o desconecta, refrescar la lista
+      // del panel de Configuraciones MIDI si está abierto.
+      try {
+        var m = document.getElementById('modal-kcfg')
+        if (m && m.classList.contains('active') && typeof kcfgRefrescarDispositivos === 'function') {
+          kcfgRefrescarDispositivos()
+          if (ev && ev.port && typeof kcfgAnotar === 'function') {
+            kcfgAnotar('kcfg-l-s', 'puerto ' + (ev.port.state === 'connected' ? 'conectado' : 'desconectado') + ': ' + esc(ev.port.name || '?'))
+          }
+        }
+      } catch(e){}
     }
     return _midiAccessCache
   } catch(e) {
     throw e
   }
+}
+
+// Fuerza que el navegador vuelva a preguntar por los puertos MIDI desde cero.
+// Hace falta cuando se renombran puertos (p. ej. buses del IAC Driver en Mac):
+// el objeto de acceso guarda los nombres viejos y no los actualiza solo.
+async function reiniciarAccesoMidi() {
+  if (_midiAccessCache) {
+    try { _midiAccessCache.onstatechange = null } catch(e){}
+    try { _midiAccessCache.inputs.forEach(function(i){ try { i.onmidimessage = null } catch(e){} }) } catch(e){}
+  }
+  _midiAccessCache = null
+  return await obtenerAccesoMidi()
 }
 // ─── SELECTOR DE MODO DE CONTROL (DAW / Global / Individual) ───
 async function actualizarUIModoControl(modo) {
@@ -6624,6 +6646,47 @@ window.kcfgRefrescarDispositivos = async function(){
   }
 }
 
+// Restablecer: suelta el puerto, borra el acceso MIDI guardado y vuelve a pedirlo
+// desde cero. Es lo que hay que usar cuando renombraste puertos y siguen
+// apareciendo los nombres antiguos.
+window.kcfgRestablecer = async function(){
+  var btn = document.getElementById('kcfg-reset')
+  if(btn){ btn.disabled = true; btn.textContent = 'Restableciendo…' }
+  var estabaEscuchando = kcfgEscuchando
+  kcfgDetener()
+  var btnC = document.getElementById('kcfg-conectar')
+  if(btnC) btnC.textContent = 'Empezar a escuchar'
+  kcfgClockN = 0
+  kcfgAnotar('kcfg-l-s', 'Restableciendo la lista de dispositivos&hellip;')
+  var antes = []
+  try {
+    if(_midiAccessCache) _midiAccessCache.inputs.forEach(function(i){ antes.push(i.name) })
+  } catch(e){}
+  try {
+    var acceso = await reiniciarAccesoMidi()
+    var ahora = []
+    acceso.inputs.forEach(function(i){ ahora.push(i.name) })
+    await kcfgRefrescarDispositivos()
+    if(!ahora.length){
+      kcfgAnotar('kcfg-l-w', 'Sigue sin aparecer ning&uacute;n puerto MIDI de entrada')
+    } else {
+      kcfgAnotar('kcfg-l-ok', 'Lista actualizada: ' + ahora.map(function(n){ return esc(n) }).join(', '))
+      var iguales = antes.length === ahora.length && antes.every(function(n,i){ return n === ahora[i] })
+      if(iguales && antes.length){
+        kcfgAnotar('kcfg-l-w', 'Son los mismos nombres de antes. Si renombraste un puerto reci&eacute;n, recarga la p&aacute;gina para que el navegador los relea.')
+      }
+    }
+    showToast('✓ Lista de dispositivos actualizada')
+  } catch(e){
+    kcfgAnotar('kcfg-l-e', 'No se pudo volver a pedir acceso MIDI')
+    showToast('No se pudo restablecer', '#e74c3c')
+  }
+  if(btn){ btn.disabled = false; btn.textContent = 'Restablecer' }
+  if(estabaEscuchando) kcfgAnotar('kcfg-l-s', 'La escucha se detuvo: vuelve a elegir el puerto y aprieta "Empezar a escuchar"')
+}
+
+window.kcfgRecargarPagina = function(){ location.reload() }
+
 function kcfgSetEstado(on, texto){
   var e = document.getElementById('kcfg-estado'), t = document.getElementById('kcfg-estado-t')
   if(!e || !t) return
@@ -8277,11 +8340,13 @@ aplicarNavegacionPendiente()
     <div class="kcfg-scroll">
 
       <div class="kcfg-sub">Dispositivo</div>
-      <div class="kcfg-desc">Elige el puerto por donde te llega el MIDI de tu DAW o reproductor.</div>
+      <div class="kcfg-desc">Elige el puerto por donde te llega el MIDI de tu DAW o reproductor. Si renombraste puertos y siguen apareciendo los nombres viejos, usa <b>Restablecer</b>.</div>
       <div class="kcfg-dev">
         <select id="kcfg-dev"><option value="">— sin dispositivos —</option></select>
         <button class="kcfg-btn" onclick="kcfgRefrescarDispositivos()">Buscar</button>
+        <button class="kcfg-btn" id="kcfg-reset" onclick="kcfgRestablecer()">Restablecer</button>
       </div>
+      <div class="kcfg-desc" style="font-size:.72rem;margin-bottom:8px">Si después de restablecer el puerto nuevo aún no aparece, <a href="#" onclick="kcfgRecargarPagina();return false" style="color:var(--accent)">recarga la página</a>.</div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         <span class="kcfg-estado off" id="kcfg-estado"><span class="kcfg-dot"></span><span id="kcfg-estado-t">Sin escuchar</span></span>
         <button class="kcfg-btn pri" id="kcfg-conectar" onclick="kcfgToggleEscucha()">Empezar a escuchar</button>
