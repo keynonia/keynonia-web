@@ -6469,12 +6469,25 @@ async function repConectarModoDAW(repertorioId){
   try {
     var acceso = await obtenerAccesoMidi()
     var dawInput = null
+    var disponibles = []
+    // Se busca por "contiene keynonia" y no por nombre exacto, porque cada sistema
+    // arma el nombre distinto:
+    //   Windows (loopMIDI) → "keynonia"
+    //   macOS (IAC Driver) → "<dispositivo> <bus>", p. ej. "IAC Driver keynonia"
     acceso.inputs.forEach(function(input){
-      if(input.name === 'keynonia') dawInput = input
+      var n = input.name || ''
+      disponibles.push(n)
+      if(!dawInput && n.toLowerCase().indexOf('keynonia') !== -1) dawInput = input
     })
+    if(!dawInput){
+      repSetMidiStatus('error', disponibles.length
+        ? 'Sin puerto "keynonia". Detectados: ' + disponibles.join(', ')
+        : 'No se detectó ningún puerto MIDI de entrada')
+    }
     if(dawInput){
       repDawInput = dawInput
       await repDawInput.open()
+      repSetMidiStatus('connected', 'DAW conectado por "' + dawInput.name + '"')
       repDawInput.onmidimessage = function(mensaje){
         var status = mensaje.data[0]
         var nota = mensaje.data[1]
