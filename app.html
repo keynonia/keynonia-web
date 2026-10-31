@@ -709,6 +709,56 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .tono-selector{position:fixed!important;z-index:99400!important;}
 .dt-overlay{position:fixed!important;z-index:99500!important;}
 #modal-terminos{position:fixed!important;z-index:99600!important;}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   AJUSTES SOLO PARA CELULAR  (max-width:640px)
+   En Mac y escritorio nada de esto se aplica: la consulta nunca se cumple.
+   ═══════════════════════════════════════════════════════════════════════ */
+.rep-mobile-nav{display:none}
+
+@media(max-width:640px){
+
+  /* 1. Los paneles son position:fixed e ignoran el padding-top del body,
+        por eso "Volver" quedaba debajo de la hora y la señal del iPhone. */
+  .panel,.rep-view{padding-top:env(safe-area-inset-top,0px)}
+
+  /* La barra inferior mide nav-h + safe-area, pero .rep-view solo restaba
+     nav-h: el final del contenido quedaba escondido tras la barra. */
+  .rep-view{inset:0 0 calc(var(--nav-h) + env(safe-area-inset-bottom,0px)) 0}
+
+  /* 2. Anterior / Siguiente salen de arriba y pasan a una franja inferior,
+        con el área táctil completa de cada mitad. */
+  #rep-anterior-btn,#rep-siguiente-btn{display:none!important}
+
+  .rep-mobile-nav.activo{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:650;
+    background:var(--bg2);border-top:1px solid var(--border);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    box-shadow:0 -4px 18px rgba(0,0,0,.35)
+  }
+  .rep-mnav-btn{
+    flex:1;display:flex;align-items:center;justify-content:center;gap:8px;
+    min-height:58px;background:none;border:none;color:var(--text);
+    font-family:'Poppins',sans-serif;font-weight:600;font-size:.92rem;
+    cursor:pointer;-webkit-tap-highlight-color:transparent
+  }
+  .rep-mnav-btn:active{background:var(--bg3)}
+  .rep-mnav-btn:disabled{opacity:.3}
+  .rep-mnav-btn+.rep-mnav-btn{border-left:1px solid var(--border)}
+  .rep-mnav-btn svg{width:18px;height:18px;flex-shrink:0}
+
+  /* Aire al final para que la letra no quede tapada por la franja */
+  .rep-container{padding:14px 14px calc(78px + env(safe-area-inset-bottom,0px))}
+
+  /* 3. Encabezado más cómodo y objetivos táctiles más grandes */
+  .rep-header{padding:12px 14px}
+  .panel-back{font-size:.95rem;padding:6px 2px}
+  .rep-secs-wrap{padding:8px 12px}
+  .rep-sec-btn{padding:7px 14px;font-size:.8rem}
+
+  /* 4. Los paneles flotantes caben en pantalla angosta y pueden desplazarse */
+  .rep-floating{left:12px;right:12px;width:auto;max-height:70vh;overflow-y:auto}
+}
 </style>
 </head>
 <body>
@@ -6124,6 +6174,9 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
 
   document.getElementById('rep-anterior-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
   document.getElementById('rep-siguiente-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
+  // Franja inferior de celular: mismo criterio. En escritorio el CSS la mantiene oculta igual.
+  var repMnav = document.getElementById('rep-mobile-nav')
+  if(repMnav) repMnav.classList.toggle('activo', !!repRepertorioOrigenId)
 
   var modoControlActual = 'daw'
   if (repRepertorioOrigenId) {
@@ -7879,6 +7932,17 @@ aplicarNavegacionPendiente()
       </div>
       <div class="rep-lyrics-content" id="rep-lyrics-content"></div>
     </div>
+  </div>
+  <!-- Franja inferior solo para celular: Anterior a la izquierda, Siguiente a la derecha -->
+  <div class="rep-mobile-nav" id="rep-mobile-nav">
+    <button class="rep-mnav-btn" onclick="repAnteriorCancion()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Anterior
+    </button>
+    <button class="rep-mnav-btn" onclick="repSiguienteCancion()">
+      Siguiente
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+    </button>
   </div>
 </div>
 
