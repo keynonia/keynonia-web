@@ -7480,7 +7480,11 @@ var ensUrlActual = null
 var ensPrevTimer = null
 var ensTickDur = 0
 
-function ensOn(){ try { return localStorage.getItem(ENS_LS_ON) === '1' } catch(e){ return false } }
+/* El modo ensayo se enciende a propósito, cada vez: vive solo mientras la app esté abierta
+   (sessionStorage: sobrevive a cambiar de pestaña o recargar, pero no a cerrar la app) y se
+   apaga al cerrar sesión. Cada persona lo activa en su propio dispositivo, aunque el
+   administrador esté dirigiendo en modo grupal. */
+function ensOn(){ try { return sessionStorage.getItem(ENS_LS_ON) === '1' } catch(e){ return false } }
 function ensEl(id){ return document.getElementById(id) }
 function ensSecs(){ return (repCancion && repCancion.datos && repCancion.datos.secciones) || [] }
 function ensSecPorId(id){ var s = ensSecs(); for(var i=0;i<s.length;i++){ if(s[i].id === id) return s[i] } return null }
@@ -8231,7 +8235,7 @@ function ensSyncPrefBtn(){
 }
 function ensTogglePref(){
   var on = !ensOn()
-  try { localStorage.setItem(ENS_LS_ON, on ? '1' : '0') } catch(e){}
+  try { if(on) sessionStorage.setItem(ENS_LS_ON, '1'); else sessionStorage.removeItem(ENS_LS_ON) } catch(e){}
   ensSyncPrefBtn()
   if(on){
     if(repCancion) ensAlAbrirCancion(repCancion, repModoPreview)
@@ -8243,9 +8247,17 @@ function ensTogglePref(){
 }
 
 /* ───────── arranque ───────── */
+function ensApagar(){
+  try { sessionStorage.removeItem(ENS_LS_ON) } catch(e){}
+  try { ensAlCerrar() } catch(e){}
+  ensSyncPrefBtn()
+}
 function ensInit(){
   ensAud = ensEl('ens-aud')
+  // versiones anteriores lo guardaban de forma permanente: se limpia para que parta apagado
+  try { localStorage.removeItem(ENS_LS_ON) } catch(e){}
   ensSyncPrefBtn()
+  try { supabase.auth.onAuthStateChange(function(ev){ if(ev === 'SIGNED_OUT') ensApagar() }) } catch(e){}
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensInit); else ensInit()
 
