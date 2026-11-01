@@ -759,13 +759,12 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
   /* 4. Los paneles flotantes caben en pantalla angosta y pueden desplazarse */
   .rep-floating{left:12px;right:12px;width:auto;max-height:70vh;overflow-y:auto}
 }
-/* ═════════ MODO ENSAYO (BETA) ═════════ */
+/* ═════════ MODO ENSAYO ═════════ */
 .ens-drawer{flex-shrink:0;background:#0b0c0e;border-top:1px solid var(--border);position:relative;max-height:64vh;display:flex;flex-direction:column;min-height:0}
 .ens-head{position:relative;height:26px;display:flex;align-items:center;flex-shrink:0}
 .ens-handle{flex:1;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .ens-handle span{width:44px;height:4px;border-radius:3px;background:#d7d9dc;opacity:.85}
 .ens-drawer.closed .ens-handle span{opacity:.5}
-.ens-beta{position:absolute;left:12px;top:5px;font-size:.56rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#E6A23C;border:1px solid rgba(230,162,60,.45);border-radius:5px;padding:1px 6px;pointer-events:none}
 .ens-more{position:absolute;right:4px;top:0;height:26px;background:none;border:none;color:#c8cbd1;font-size:1.3rem;line-height:1;cursor:pointer;padding:0 12px;letter-spacing:1px}
 .ens-more:hover{color:#fff}
 .ens-body{padding:2px 12px 14px;overflow-y:auto;min-height:0}
@@ -860,7 +859,6 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-modal-b{display:flex;gap:8px}
 .ens-modal-b .ens-btn{padding:11px;font-size:.84rem}
 .ens-modal-b .ens-btn+.ens-btn{margin-top:0}
-.ens-beta-tag{font-size:.54rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#E6A23C;border:1px solid rgba(230,162,60,.45);border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:1px}
 @media(max-width:640px){
   .ens-drawer.con-nav{margin-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
   .ens-drawer{max-height:68vh}
@@ -7451,7 +7449,7 @@ document.addEventListener('DOMContentLoaded', function(){ kwMidiStepperRender() 
 if(document.readyState === 'complete' || document.readyState === 'interactive') kwMidiStepperRender()
 
 /* ═══════════════════════════════════════════════════════════════════════
-   MODO ENSAYO (BETA) — web
+   MODO ENSAYO — web
    Un cajón que se despliega abajo del reproductor y toca el audio que el
    administrador de la organización dejó para la canción (archivo importado en
    el dispositivo de cada persona, o un video de YouTube). Las marcas de
@@ -7943,7 +7941,11 @@ function ensSetModo(m){
 function ensDescargar(){
   if(!ens.cfg || !ens.cfg.enlace_url) return
   ens.esperandoRegreso = true
-  window.open(ens.cfg.enlace_url, '_blank', 'noopener')
+  // en la app de escritorio (Tauri) se abre con el navegador del sistema; en la web, en una pestaña nueva
+  try {
+    if(window.__TAURI__ && window.__TAURI__.core) window.__TAURI__.core.invoke('abrir_url', { url: ens.cfg.enlace_url })
+    else window.open(ens.cfg.enlace_url, '_blank', 'noopener')
+  } catch(e){ window.open(ens.cfg.enlace_url, '_blank', 'noopener') }
   ens.paso = 0
   ensRender()
 }
@@ -8362,7 +8364,7 @@ function ensTogglePref(){
   ensSyncPrefBtn()
   if(on){
     if(repCancion) ensAlAbrirCancion(repCancion, repModoPreview)
-    showToast('Modo ensayo (beta) activado', '#27ae60')
+    showToast('Modo ensayo activado', '#27ae60')
   } else {
     ensAlCerrar()
     showToast('Modo ensayo desactivado', '#7f8c8d')
@@ -8991,11 +8993,10 @@ aplicarNavegacionPendiente()
       <div class="rep-lyrics-content" id="rep-lyrics-content"></div>
     </div>
   </div>
-  <!-- MODO ENSAYO (BETA): cajón inferior con el audio que dejó el administrador -->
+  <!-- MODO ENSAYO: cajón inferior con el audio que dejó el administrador -->
   <div class="ens-drawer" id="ens-drawer" style="display:none">
     <div class="ens-menu" id="ens-menu"></div>
     <div class="ens-head">
-      <span class="ens-beta">beta</span>
       <div class="ens-handle" onclick="ensToggleDrawer()" title="Esconder o mostrar el reproductor"><span></span></div>
       <button class="ens-more" id="ens-more" onclick="ensToggleMenu(event)" style="display:none" title="Opciones del administrador">⋯</button>
     </div>
@@ -9047,7 +9048,7 @@ aplicarNavegacionPendiente()
   <div class="rep-pref-row"><span class="rep-pref-label">Interlineado</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('lineH',-0.1)">&#8722;</button><span class="rep-step-val" id="rep-lh-val">1.1</span><button class="rep-step-btn" onclick="repAjustarPref('lineH',0.1)">+</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Columnas</span><div class="rep-col-group"><button class="rep-col-btn active" id="rep-col1-btn" onclick="repSetCols(1)">1</button><button class="rep-col-btn" id="rep-col2-btn" onclick="repSetCols(2)">2</button><button class="rep-col-btn" id="rep-col3-btn" onclick="repSetCols(3)">3</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Diagramas</span><button class="rep-pref-toggle" id="rep-pref-diag" onclick="acdToggleActivo()">Guitarra / Piano</button></div>
-  <div class="rep-pref-row"><span class="rep-pref-label">Modo ensayo<span class="ens-beta-tag">beta</span></span><button class="rep-pref-toggle" id="rep-pref-ens" onclick="ensTogglePref()">Desactivado</button></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Modo ensayo</span><button class="rep-pref-toggle" id="rep-pref-ens" onclick="ensTogglePref()">Desactivado</button></div>
 </div>
 
 <!-- MODAL AGREGAR CANCIÓN DESDE CATÁLOGO -->
