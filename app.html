@@ -759,6 +759,110 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
   /* 4. Los paneles flotantes caben en pantalla angosta y pueden desplazarse */
   .rep-floating{left:12px;right:12px;width:auto;max-height:70vh;overflow-y:auto}
 }
+/* ═════════ MODO ENSAYO (BETA) ═════════ */
+.ens-drawer{flex-shrink:0;background:#0b0c0e;border-top:1px solid var(--border);position:relative;max-height:64vh;display:flex;flex-direction:column;min-height:0}
+.ens-head{position:relative;height:26px;display:flex;align-items:center;flex-shrink:0}
+.ens-handle{flex:1;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.ens-handle span{width:44px;height:4px;border-radius:3px;background:#d7d9dc;opacity:.85}
+.ens-drawer.closed .ens-handle span{opacity:.5}
+.ens-beta{position:absolute;left:12px;top:5px;font-size:.56rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#E6A23C;border:1px solid rgba(230,162,60,.45);border-radius:5px;padding:1px 6px;pointer-events:none}
+.ens-more{position:absolute;right:4px;top:0;height:26px;background:none;border:none;color:#c8cbd1;font-size:1.3rem;line-height:1;cursor:pointer;padding:0 12px;letter-spacing:1px}
+.ens-more:hover{color:#fff}
+.ens-body{padding:2px 12px 14px;overflow-y:auto;min-height:0}
+.ens-drawer.closed .ens-body{display:none}
+.ens-menu{position:absolute;right:8px;bottom:100%;margin-bottom:4px;width:250px;background:#1b1e24;border:1px solid #31353d;border-radius:11px;box-shadow:0 10px 30px rgba(0,0,0,.6);padding:5px;z-index:20;display:none}
+.ens-menu.on{display:block}
+.ens-mtag{font-size:.56rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#E6A23C;padding:5px 9px 4px}
+.ens-mitem{display:block;width:100%;text-align:left;background:none;border:none;color:#e8eaed;font-family:inherit;font-size:.78rem;padding:10px 9px;border-radius:7px;cursor:pointer}
+.ens-mitem:hover{background:#262a32}
+.ens-yt{width:100%;max-width:440px;margin:0 auto 9px;aspect-ratio:16/9;background:#000;border-radius:8px;overflow:hidden}
+.ens-yt iframe{width:100%;height:100%;border:0;display:block}
+
+.ens-mode{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.ens-sw{display:flex;gap:2px;background:#16181c;border:1px solid #262a31;border-radius:7px;padding:2px}
+.ens-sw button{padding:5px 10px;border:none;border-radius:5px;background:none;color:#9aa0a6;font-family:inherit;font-size:.66rem;font-weight:700;cursor:pointer}
+.ens-sw button.on{background:var(--accent);color:#fff}
+.ens-sig{margin-left:auto;flex-shrink:0;background:#16181c;border:1px solid #2b2f36;color:#9aa0a6;border-radius:7px;padding:6px 10px;font-family:inherit;font-size:.64rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.ens-sig.on{background:rgba(29,184,154,.14);border-color:rgba(29,184,154,.5);color:#1DB89A}
+.ens-grp{display:flex;align-items:center;gap:6px;font-size:.64rem;color:#c9b6ff;margin:-3px 0 9px}
+.ens-pulse{width:6px;height:6px;border-radius:50%;background:#9B7FE8;animation:ensPl 1.3s ease-in-out infinite;flex-shrink:0}
+@keyframes ensPl{0%,100%{opacity:1}50%{opacity:.3}}
+
+.ens-pl{display:flex;align-items:center;gap:10px;min-width:0}
+.ens-ic{background:none;border:none;color:#b9bdc4;cursor:pointer;padding:2px;flex-shrink:0;font-size:1.2rem;line-height:1}
+.ens-ic:hover{color:#fff}
+.ens-ic.on{color:#9B7FE8}
+.ens-mid{flex:1;min-width:0}
+.ens-end{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0;min-width:36px}
+.ens-time{font-size:.76rem;color:#e6e8eb;font-family:ui-monospace,Menlo,monospace}
+.ens-vel{background:none;border:1px solid #2e3239;color:#9aa0a6;border-radius:5px;padding:1px 6px;font-size:.58rem;font-weight:700;cursor:pointer;font-family:inherit}
+.ens-pp{background:none;border:none;color:#fff;font-size:1.45rem;cursor:pointer;flex-shrink:0;width:34px;height:38px;display:flex;align-items:center;justify-content:center}
+.ens-wave{width:100%;overflow:hidden;height:38px;display:flex;align-items:center;gap:1px;cursor:pointer}
+.ens-wave i{flex:1 1 0;min-width:0;background:#4f5a66;border-radius:1px}
+.ens-wave i.pl{background:#8fa8c4}
+.ens-wave i.lp{background:#9B7FE8}
+.ens-segs{display:flex;gap:2px;margin-top:5px;height:7px;cursor:pointer}
+.ens-seg{background:#ececec;border-radius:1px;min-width:0}
+.ens-seg.on{background:#F08A2A}
+.ens-seg.loop{background:#9B7FE8}
+.ens-player-box{background:#000;border:1px solid var(--border);border-radius:12px;padding:10px 11px}
+
+.ens-msg{font-size:.76rem;color:var(--text2);text-align:center;line-height:1.6;padding:8px 0}
+.ens-nota{font-size:.7rem;color:var(--text2);line-height:1.55;margin:9px 0}
+.ens-err{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.35);color:#ff9b90;border-radius:9px;padding:9px 11px;font-size:.72rem;line-height:1.5;margin-bottom:9px;text-align:center}
+.ens-link{display:block;width:100%;text-align:center;background:none;border:none;color:var(--text2);font-family:inherit;font-size:.7rem;cursor:pointer;margin-top:10px;text-decoration:underline}
+.ens-link:disabled{opacity:.35;cursor:default}
+.ens-mini-links{display:flex;justify-content:center;gap:16px}
+.ens-mini-links .ens-link{width:auto}
+
+.ens-btn{width:100%;padding:13px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-family:inherit;font-size:.88rem;font-weight:700;cursor:pointer}
+.ens-btn:disabled{opacity:.4;cursor:not-allowed}
+.ens-btn.gh{background:var(--bg3);border:1.5px solid var(--border);color:var(--text);font-weight:600}
+.ens-btn.big{padding:17px;font-size:1rem}
+.ens-btn+.ens-btn{margin-top:8px}
+
+.ens-imp{text-align:center;padding:4px 0}
+.ens-lider{background:rgba(43,110,255,.09);border:1.5px solid rgba(43,110,255,.3);color:#8fb4ff;border-radius:11px;padding:10px;font-size:.74rem;font-weight:700;margin-bottom:12px}
+.ens-big{font-size:1rem;font-weight:700;margin-bottom:5px}
+.ens-small{font-size:.74rem;color:var(--text2);margin-bottom:12px;line-height:1.55}
+.ens-file{background:var(--bg3);border:1.5px dashed var(--border);border-radius:10px;padding:11px;font-family:ui-monospace,Menlo,monospace;font-size:.9rem;color:#fff;margin-bottom:12px;word-break:break-all}
+.ens-ok{width:54px;height:54px;border-radius:50%;background:rgba(29,184,154,.14);border:2px solid #1DB89A;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:1.6rem;color:#1DB89A}
+
+.ens-ed-top{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.ens-ed-top b{font-size:.86rem}
+.ens-back{background:none;border:none;color:#8fb4ff;font-family:inherit;font-size:.78rem;cursor:pointer;padding:0}
+.ens-tag{font-size:.66rem;color:#8fb4ff;background:rgba(43,110,255,.1);border:1px solid rgba(43,110,255,.28);border-radius:7px;padding:5px 9px;margin-bottom:9px}
+.ens-tabs{display:flex;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;padding:3px;margin-bottom:12px}
+.ens-tabs button{flex:1;padding:8px 4px;border:none;border-radius:7px;background:none;color:var(--text2);font-family:inherit;font-size:.7rem;font-weight:700;cursor:pointer}
+.ens-tabs button.on{background:var(--accent);color:#fff}
+.ens-lbl{font-size:.64rem;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+.ens-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 11px;font-family:inherit;font-size:.8rem;outline:none;margin-bottom:11px}
+.ens-inp:focus{border-color:var(--accent)}
+.ens-next{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:11px 0 8px;font-size:.7rem;color:var(--text2)}
+.ens-sel{background:#22262d;border:1px solid #333840;color:#d6d9de;border-radius:6px;font-family:inherit;font-size:.72rem;padding:5px 4px;min-width:0}
+.ens-sel.flex{flex:1}
+.ens-list{max-height:120px;overflow-y:auto;margin-top:9px}
+.ens-list.tall{max-height:34vh}
+.ens-row{display:flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:6px 8px;margin-bottom:5px;font-size:.74rem}
+.ens-row .ens-nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ens-row em{font-style:normal;font-family:ui-monospace,Menlo,monospace;color:var(--text2);font-size:.66rem}
+.ens-tm{font-family:ui-monospace,Menlo,monospace;color:#8fb4ff;min-width:34px;text-align:center}
+.ens-mini{background:#22262d;border:1px solid #333840;color:#d6d9de;border-radius:5px;width:26px;height:26px;font-size:.78rem;cursor:pointer;flex-shrink:0;padding:0}
+.ens-mini:hover{border-color:var(--accent)}
+.ens-mini:disabled{opacity:.3;cursor:default}
+
+.ens-modal{position:fixed;inset:0;background:rgba(0,0,0,.72);align-items:center;justify-content:center;z-index:99130;padding:22px;display:none}
+.ens-modal-c{background:#1b1e24;border:1px solid #333840;border-radius:14px;padding:20px;width:100%;max-width:340px;text-align:center}
+.ens-modal-t{font-size:.95rem;font-weight:700;margin-bottom:6px}
+.ens-modal-s{font-size:.76rem;color:var(--text2);margin-bottom:16px;line-height:1.5}
+.ens-modal-b{display:flex;gap:8px}
+.ens-modal-b .ens-btn{padding:11px;font-size:.84rem}
+.ens-modal-b .ens-btn+.ens-btn{margin-top:0}
+.ens-beta-tag{font-size:.54rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#E6A23C;border:1px solid rgba(230,162,60,.45);border-radius:5px;padding:0 5px;margin-left:4px;vertical-align:1px}
+@media(max-width:640px){
+  .ens-drawer.con-nav{margin-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
+  .ens-drawer{max-height:68vh}
+}
 </style>
 </head>
 <body>
@@ -5863,6 +5967,7 @@ window.repAplicarTono = function(){
 }
 
 window.repAbrirPreferencias = function(){
+  try { ensSyncPrefBtn() } catch(e) {}
   document.getElementById('rep-ton-sel').classList.remove('active')
   document.getElementById('rep-pref-panel').classList.toggle('active')
 }
@@ -6172,6 +6277,8 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repActualizarTransposeUI()
   repUpdateDisplay()
 
+  try { ensAlAbrirCancion(cancion, esPreview) } catch(e) { console.warn('Modo ensayo:', e) }
+
   document.getElementById('rep-anterior-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
   document.getElementById('rep-siguiente-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
   // Franja inferior de celular: mismo criterio. En escritorio el CSS la mantiene oculta igual.
@@ -6206,6 +6313,7 @@ window.cerrarReproductor = function(){
   document.getElementById('panel-reproductor').classList.remove('active')
   document.getElementById('rep-ton-sel').classList.remove('active')
   document.getElementById('rep-pref-panel').classList.remove('active')
+  try { ensAlCerrar() } catch(e) {}
   repDesconectarDAW()
   repDesconectarControladorIndividual()
   repDesconectarGlobal()
@@ -7340,6 +7448,821 @@ window.kwMidiStepperPrev = function(){
 document.addEventListener('DOMContentLoaded', function(){ kwMidiStepperRender() })
 if(document.readyState === 'complete' || document.readyState === 'interactive') kwMidiStepperRender()
 
+/* ═══════════════════════════════════════════════════════════════════════
+   MODO ENSAYO (BETA) — web
+   Un cajón que se despliega abajo del reproductor y toca el audio que el
+   administrador de la organización dejó para la canción (archivo importado en
+   el dispositivo de cada persona, o un video de YouTube). Las marcas de
+   sección (tiempo -> sección de la canción) viven en la tabla ensayo_audio y
+   son de toda la organización. Apagado por defecto: se activa en Preferencias.
+   No toca el modo DAW, ni el modo Global ni el Individual.
+   ═══════════════════════════════════════════════════════════════════════ */
+var ENS_LS_ON = 'keynonia_ensayo_beta'
+var ENS_LS_SIG = 'keynonia_ensayo_siguiente'
+var ENS_LS_MODO = 'keynonia_ensayo_modo'
+
+var ens = {
+  cfg: null, cancionId: null, orgId: null, esAdmin: false, visible: false,
+  fuente: 'archivo', marcas: [],
+  dur: 0, t: 0, tocando: false, vel: 1, loop: false, loopIdx: 0,
+  abierto: true, modo: 'individual', autoSig: false,
+  vista: 'play',               // play | enlace | marcar | editar
+  menu: false,
+  archivoListo: false, ytListo: false, ytErr: '',
+  paso: 0, esperandoRegreso: false, errImport: '', nombreImportado: '',
+  wave: null, timer: null, ultKey: '', autoplaySiguiente: false, pasando: false,
+  draft: [], snap: '', confirmando: false, confirmaTipo: '',
+  dTab: 'archivo', dLink: '', dName: '', dYT: '', dYTName: '', dErr: '',
+  secSel: null, guardando: false, canal: null
+}
+var ENS_NB = 110
+var ensUrlActual = null
+var ensPrevTimer = null
+var ensTickDur = 0
+
+function ensOn(){ try { return localStorage.getItem(ENS_LS_ON) === '1' } catch(e){ return false } }
+function ensEl(id){ return document.getElementById(id) }
+function ensSecs(){ return (repCancion && repCancion.datos && repCancion.datos.secciones) || [] }
+function ensSecPorId(id){ var s = ensSecs(); for(var i=0;i<s.length;i++){ if(s[i].id === id) return s[i] } return null }
+function ensNombreSec(id){ var s = ensSecPorId(id); return s ? (s.nombre || s.abreviacion || '?') : '(sección borrada)' }
+function ensMmss(s){ s = Math.max(0, s || 0); var m = Math.floor(s/60), r = Math.floor(s%60); return m + ':' + (r < 10 ? '0' : '') + r }
+function ensIdx(t, lista){ var i = 0; for(var k=0;k<lista.length;k++){ if(t >= lista[k].t) i = k } return i }
+function ensNormMarcas(x){
+  if(!Array.isArray(x)) return []
+  return x.filter(function(m){ return m && typeof m.t === 'number' && m.s })
+          .map(function(m){ return { s: m.s, t: Math.round(m.t*10)/10 } })
+          .sort(function(a,b){ return a.t - b.t })
+}
+
+/* ───────── origen del sonido: archivo (<audio>) o YouTube (misma interfaz) ───────── */
+var ensAud = null          // <audio>
+var ensSrc = null          // origen activo
+var ensYtp = null          // reproductor de YouTube
+var ensYtApi = false
+var ENS_YT = {
+  _ended: false, _rate: 1, onended: null, volume: 1,
+  get currentTime(){ return (ensYtp && ensYtp.getCurrentTime) ? ensYtp.getCurrentTime() : 0 },
+  set currentTime(v){ if(ensYtp && ensYtp.seekTo){ this._ended = false; ensYtp.seekTo(v, true) } },
+  get duration(){ return (ensYtp && ensYtp.getDuration) ? (ensYtp.getDuration() || 0) : 0 },
+  get ended(){ return this._ended },
+  get paused(){ return !(ensYtp && ensYtp.getPlayerState && ensYtp.getPlayerState() === 1) },
+  set playbackRate(r){ this._rate = r; if(ensYtp && ensYtp.setPlaybackRate) ensYtp.setPlaybackRate(r) },
+  get playbackRate(){ return this._rate },
+  play: function(){ this._ended = false; if(ensYtp && ensYtp.playVideo) ensYtp.playVideo(); return Promise.resolve() },
+  pause: function(){ if(ensYtp && ensYtp.pauseVideo) ensYtp.pauseVideo() }
+}
+ENS_YT.onended = function(){ if(ens.tocando) ensFinDeCancion() }
+
+function ensYtIdDe(url){
+  url = (url || '').trim()
+  var m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|live\/))([A-Za-z0-9_-]{11})/)
+  return m ? m[1] : ''
+}
+
+function ensYtCargar(id){
+  ens.ytListo = false; ens.ytErr = ''
+  function crear(){
+    if(ensYtp && ensYtp.cueVideoById){ ensYtp.cueVideoById(id); ensYtListo(); return }
+    ensYtp = new YT.Player('ens-ytbox', {
+      width: '100%', height: '100%', videoId: id,
+      playerVars: { playsinline: 1, rel: 0, modestbranding: 1, controls: 0, disablekb: 1, fs: 0 },
+      events: {
+        onReady: function(){ ensYtListo() },
+        onStateChange: ensYtEstado,
+        onError: function(e){
+          ens.ytListo = false
+          ens.ytErr = (e.data === 101 || e.data === 150) ? 'Este video no permite reproducirse fuera de YouTube.'
+                    : (e.data === 100 ? 'No se encontró el video (¿es privado o fue borrado?).'
+                    : 'No se pudo reproducir ese enlace (código ' + e.data + ').')
+          ensRender()
+        }
+      }
+    })
+  }
+  if(window.YT && window.YT.Player){ crear(); return }
+  window.onYouTubeIframeAPIReady = crear
+  if(!ensYtApi){
+    ensYtApi = true
+    var sc = document.createElement('script'); sc.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(sc)
+    setTimeout(function(){ if(!(window.YT && window.YT.Player)){ ens.ytErr = 'No se pudo cargar YouTube (¿sin internet?).'; ensRender() } }, 8000)
+  }
+}
+function ensYtListo(){
+  ens.ytListo = true
+  if(ens.fuente === 'youtube'){ ensSrc = ENS_YT; ensFuenteLista() }
+  var n = 0, iv = setInterval(function(){
+    n++; var d = ENS_YT.duration
+    if(d > 0){ clearInterval(iv); if(ens.fuente === 'youtube'){ ens.dur = d; ensRender() } }
+    else if(n > 240) clearInterval(iv)
+  }, 250)
+}
+function ensYtEstado(e){
+  var st = e.data
+  if(st === 0){ ENS_YT._ended = true; if(ENS_YT.onended) ENS_YT.onended() }
+  else if(st === 1 && !ens.tocando && ens.fuente === 'youtube'){ ENS_YT._ended = false; ens.tocando = true; ensArrancarTimer(); ensRender() }
+  else if(st === 2 && ens.tocando && ens.fuente === 'youtube'){ ens.tocando = false; ensPararTimer(); ensRender() }
+}
+
+/* ───────── audio importado: se guarda en el dispositivo (IndexedDB) ───────── */
+function ensIdb(){
+  return new Promise(function(ok, no){
+    var r = indexedDB.open('keynonia-ensayo', 1)
+    r.onupgradeneeded = function(){ r.result.createObjectStore('audio') }
+    r.onsuccess = function(){ ok(r.result) }
+    r.onerror = function(){ no(r.error) }
+  })
+}
+function ensIdbPut(key, val){ return ensIdb().then(function(db){ return new Promise(function(ok, no){
+  var tx = db.transaction('audio', 'readwrite'); tx.objectStore('audio').put(val, key); tx.oncomplete = ok; tx.onerror = function(){ no(tx.error) } }) }) }
+function ensIdbGet(key){ return ensIdb().then(function(db){ return new Promise(function(ok, no){
+  var q = db.transaction('audio').objectStore('audio').get(key); q.onsuccess = function(){ ok(q.result) }; q.onerror = no }) }) }
+function ensIdbDel(key){ return ensIdb().then(function(db){ return new Promise(function(ok){
+  var tx = db.transaction('audio', 'readwrite'); tx.objectStore('audio').delete(key); tx.oncomplete = ok }) }) }
+
+function ensCargarBlob(blob){
+  return new Promise(function(ok, no){
+    if(ensUrlActual) URL.revokeObjectURL(ensUrlActual)
+    ensUrlActual = URL.createObjectURL(blob)
+    ensAud.onloadedmetadata = function(){
+      ens.dur = ensAud.duration || 0
+      ens.archivoListo = true
+      ensAud.playbackRate = ens.vel
+      ensAud.onended = function(){ if(ens.tocando) ensFinDeCancion() }
+      blob.arrayBuffer().then(ensCalcularOnda).then(function(){ ok() }, function(){ ok() })
+    }
+    ensAud.onerror = function(){ ens.archivoListo = false; no(new Error('no-audio')) }
+    ensAud.src = ensUrlActual; ensAud.load()
+  })
+}
+function ensCalcularOnda(buf){
+  var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return
+  var ctx = new AC()
+  return new Promise(function(ok){
+    ctx.decodeAudioData(buf, function(ab){
+      var ch = ab.getChannelData(0), n = ch.length, p = Math.floor(n / ENS_NB), pk = [], mx = 0
+      for(var i=0;i<ENS_NB;i++){
+        var sum = 0, c = 0, ini = i*p, fin = Math.min(n, ini+p), salto = Math.max(1, Math.floor((fin-ini)/400))
+        for(var j=ini;j<fin;j+=salto){ sum += ch[j]*ch[j]; c++ }
+        var v = Math.sqrt(sum/Math.max(1, c)); pk.push(v); if(v > mx) mx = v
+      }
+      ens.wave = pk.map(function(v){ return Math.max(0.08, Math.min(1, Math.pow(v/(mx||1), 0.75))) })
+      try { ctx.close() } catch(e){}
+      ok()
+    }, function(){ ok() })
+  })
+}
+function ensEsAudio(f){ return (f.type && f.type.indexOf('audio') === 0) || /\.(mp3|wav|m4a|aac|ogg|flac|opus)$/i.test(f.name) }
+
+/* ───────── carga de la configuración de la canción ───────── */
+async function ensAlAbrirCancion(cancion, esPreview){
+  ensDetener()
+  ens.cancionId = null
+  ensMostrar(false)
+  if(!ensOn() || esPreview || !currentUser || !cancion) return
+  if(repRepertorioOrigenId === 'demo') return
+  var org = orgs.find(function(o){ return o.activa })
+  if(!org) return
+  var id = cancion.id
+  ens.cancionId = id
+  ens.orgId = cancion.organizacion_id || org.id
+  ens.esAdmin = org.rol === 'administrador'
+  try { ens.modo = localStorage.getItem(ENS_LS_MODO) === 'grupal' ? 'grupal' : 'individual' } catch(e){}
+  try { ens.autoSig = localStorage.getItem(ENS_LS_SIG) === '1' } catch(e){}
+  ens.vista = 'play'; ens.menu = false; ens.confirmando = false; ens.loop = false; ens.t = 0
+  ens.cfg = null; ens.marcas = []; ens.dur = 0; ens.wave = null
+  ens.archivoListo = false; ens.ytListo = false; ens.ytErr = ''; ens.paso = 0; ens.errImport = ''
+
+  var r = await supabase.from('ensayo_audio').select('*').eq('cancion_id', id).maybeSingle()
+  if(ens.cancionId !== id) return
+  if(r.error){ console.warn('Modo ensayo: no se pudo leer la configuración', r.error); }
+  ens.cfg = r.data || null
+  await ensAplicarCfg()
+  if(ens.cancionId !== id) return
+  ensMostrar(true)
+  ensRender()
+  ensGrupoSuscribir()
+}
+
+/* Decide qué fuente usar y la prepara */
+async function ensAplicarCfg(){
+  var cfg = ens.cfg
+  ens.fuente = (cfg && cfg.fuente === 'youtube') ? 'youtube' : 'archivo'
+  ens.marcas = ensNormMarcas(cfg ? (ens.fuente === 'youtube' ? cfg.marcas_yt : cfg.marcas_archivo) : [])
+  ensSrc = null; ens.archivoListo = false; ens.ytListo = false; ens.wave = null
+  if(!cfg) return
+  if(ens.fuente === 'youtube'){
+    var vid = ensYtIdDe(cfg.yt_url)
+    if(vid) ensYtCargar(vid)
+    else ens.ytErr = 'El enlace de YouTube guardado no es válido.'
+  } else if(cfg.enlace_url){
+    try {
+      var rec = await ensIdbGet(ens.cancionId)
+      if(rec && rec.blob && (!rec.enlace || rec.enlace === cfg.enlace_url)){
+        await ensCargarBlob(rec.blob)
+        ensSrc = ensAud
+        ensFuenteLista()
+      }
+    } catch(e){ console.warn('Modo ensayo: no se pudo leer el audio guardado', e) }
+  }
+}
+function ensFuenteLista(){
+  ensSrc = ens.fuente === 'youtube' ? ENS_YT : ensAud
+  if(ens.fuente === 'youtube') ens.dur = ENS_YT.duration || ens.dur
+  try { ensSrc.playbackRate = ens.vel } catch(e){}
+  if(ens.autoplaySiguiente){ ens.autoplaySiguiente = false; ensPlay() }
+  ensRender()
+}
+function ensTieneFuente(){
+  var c = ens.cfg
+  if(!c) return false
+  return ens.fuente === 'youtube' ? !!c.yt_url : !!c.enlace_url
+}
+function ensListo(){
+  return !!ensSrc && (ens.fuente === 'youtube' ? ens.ytListo : ens.archivoListo)
+}
+
+/* ───────── visibilidad ───────── */
+function ensMostrar(si){
+  var d = ensEl('ens-drawer'); if(!d) return
+  // el músico solo ve el cajón si el administrador dejó algo para esta canción
+  var ver = si && (ens.esAdmin || ensTieneFuente())
+  ens.visible = !!ver
+  d.style.display = ver ? '' : 'none'
+  d.classList.toggle('con-nav', !!repRepertorioOrigenId)
+  if(!ver){ var w = ensEl('ens-ytwrap'); if(w) w.style.display = 'none' }
+}
+function ensAlCerrar(){
+  ensDetener(); ens.cancionId = null; ensMostrar(false); ensGrupoDesuscribir()
+}
+function ensDetener(){
+  ensPararTimer()
+  try { if(ensSrc) ensSrc.pause() } catch(e){}
+  try { if(ensAud) ensAud.pause() } catch(e){}
+  try { if(ensYtp && ensYtp.pauseVideo) ensYtp.pauseVideo() } catch(e){}
+  if(ensPrevTimer){ clearTimeout(ensPrevTimer); ensPrevTimer = null }
+  ens.tocando = false; ens.t = 0; ens.loop = false; ens.menu = false
+}
+
+/* ───────── reloj / reproducción ───────── */
+function ensArrancarTimer(){ if(!ens.timer) ens.timer = setInterval(ensTick, 60) }
+function ensPararTimer(){ if(ens.timer){ clearInterval(ens.timer); ens.timer = null } }
+function ensClave(){ return ensIdx(ens.t, ens.marcas) + '/' + ens.vista + '/' + ens.loop + '/' + ens.loopIdx + '/' + ens.tocando }
+
+function ensTick(){
+  if(!ens.tocando || !ensSrc) return
+  ens.t = ensSrc.currentTime
+  if(ens.fuente === 'youtube'){ var dd = ENS_YT.duration; if(dd > 0 && Math.abs(dd - ens.dur) > 0.5) ens.dur = dd }
+  if(ens.loop){ var L = ensRangoLoop(); if(L && ens.t >= L[1] - 0.06){ ensSrc.currentTime = L[0]; ens.t = L[0] } }
+  if(ensSrc.ended){ ensFinDeCancion(); return }
+  var k = ensIdx(ens.t, ens.marcas)
+  if(k !== ens.ultSec && ens.marcas.length){ ens.ultSec = k; var m = ens.marcas[k]; if(m && ensSecPorId(m.s)) repActivarSeccion(m.s, true) }
+  if(ensClave() !== ens.ultKey){ ensRender(); return }
+  ensVivo()
+}
+function ensVivo(){
+  var dur = ens.dur || 1, pos = ens.t / dur, lo = null, hi = null
+  if(ens.loop){ var L = ensRangoLoop(); if(L){ lo = L[0]/dur; hi = L[1]/dur } }
+  var bars = document.querySelectorAll('#ens-dyn .ens-wave i')
+  for(var i=0;i<bars.length;i++){
+    var p = i/ENS_NB
+    bars[i].className = (ens.loop && lo !== null && p >= lo && p < hi) ? 'lp' : (p <= pos ? 'pl' : '')
+  }
+  var tm = document.querySelectorAll('#ens-dyn .ens-time')
+  for(var k=0;k<tm.length;k++) tm[k].textContent = ensMmss(ens.t)
+}
+function ensPlay(){
+  if(ens.tocando || !ensListo()) return
+  var p = ensSrc.play()
+  ens.tocando = true; ensArrancarTimer()
+  if(p && p.catch) p.catch(function(){ ens.tocando = false; ensPararTimer(); ensRender() })
+  ensRender()
+}
+function ensPausa(){
+  try { if(ensSrc) ensSrc.pause() } catch(e){}
+  ens.tocando = false; ensPararTimer(); ensRender()
+}
+function ensToggle(){
+  ens.tocando ? ensPausa() : ensPlay()
+  // en modo grupal solo el administrador manda: su play/pausa viaja a los demás
+  ensGrupoEnviar(ens.tocando)
+}
+function ensIrA(seg){
+  ens.t = Math.max(0, Math.min(ens.dur || 0, seg))
+  if(ensSrc) ensSrc.currentTime = ens.t
+  if(ens.loop) ens.loopIdx = ensIdx(ens.t, ens.marcas)
+  var m = ens.marcas[ensIdx(ens.t, ens.marcas)]
+  if(m && ensSecPorId(m.s)) repActivarSeccion(m.s, true)
+  ensRender()
+}
+function ensAlInicio(){ ensIrA(ens.loop ? (ensRangoLoop() || [0])[0] : 0) }
+var ENS_VELS = [1, 0.75, 1.25, 1.5]
+function ensCambiarVel(){
+  ens.vel = ENS_VELS[(ENS_VELS.indexOf(ens.vel) + 1) % ENS_VELS.length]
+  try { if(ensSrc) ensSrc.playbackRate = ens.vel } catch(e){}
+  ensRender()
+}
+function ensRangoLoop(){
+  if(!ens.marcas.length) return null
+  var i = Math.min(ens.loopIdx, ens.marcas.length - 1)
+  var fin = (i + 1 < ens.marcas.length) ? ens.marcas[i+1].t : ens.dur
+  return [ens.marcas[i].t, fin]
+}
+function ensToggleLoop(){
+  if(!ens.marcas.length){ showToast('Para repetir una sección el administrador debe establecer las secciones', '#e67e22'); return }
+  ens.loop = !ens.loop
+  if(ens.loop){ ens.loopIdx = ensIdx(ens.t, ens.marcas) }
+  ensRender()
+}
+function ensClickOnda(ev){
+  var r = ev.currentTarget.getBoundingClientRect()
+  ensIrA(((ev.clientX - r.left) / r.width) * (ens.dur || 0))
+}
+
+/* Al terminar el audio COMPLETO: si «Siguiente» está activado, pasa a la siguiente canción y le da play */
+function ensFinDeCancion(){
+  if(ens.pasando) return
+  ens.pasando = true
+  ensPararTimer(); ens.tocando = false; ens.t = ens.dur
+  var hayMas = false
+  if(ens.autoSig && repRepertorioOrigenId){
+    var cache = repSongsCache || []
+    var idx = cache.findIndex(function(rc){ return rc.mis_canciones && rc.mis_canciones.id === repCancionId })
+    hayMas = idx >= 0 && idx + 1 < cache.length
+  }
+  ens.pasando = false
+  if(ens.autoSig && hayMas){
+    ens.autoplaySiguiente = true
+    setTimeout(function(){ ens.autoplaySiguiente = false }, 15000)
+    repSiguienteCancion()
+  } else {
+    if(ens.autoSig) showToast('Fin del repertorio', '#e67e22')
+    ensRender()
+  }
+}
+function ensToggleSig(){
+  ens.autoSig = !ens.autoSig
+  try { localStorage.setItem(ENS_LS_SIG, ens.autoSig ? '1' : '0') } catch(e){}
+  ensRender()
+}
+
+/* ───────── modo grupal: solo el play/pausa del administrador viaja ───────── */
+function ensGrupoSuscribir(){
+  ensGrupoDesuscribir()
+  if(ens.modo !== 'grupal' || !ens.orgId) return
+  try {
+    ens.canal = supabase.channel('ensayo-' + ens.orgId, { config: { broadcast: { self: false } } })
+    ens.canal.on('broadcast', { event: 'pp' }, function(msg){
+      var p = msg && msg.payload
+      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      if(p.cancion !== ens.cancionId || !ensListo()) return
+      if(p.play && !ens.tocando) ensPlay()
+      else if(!p.play && ens.tocando) ensPausa()
+    }).subscribe()
+  } catch(e){ console.warn('Modo ensayo: no se pudo abrir el canal grupal', e) }
+}
+function ensGrupoDesuscribir(){
+  if(ens.canal){ try { supabase.removeChannel(ens.canal) } catch(e){} ens.canal = null }
+}
+function ensGrupoEnviar(play){
+  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  try { ens.canal.send({ type: 'broadcast', event: 'pp', payload: { cancion: ens.cancionId, play: !!play } }) } catch(e){}
+}
+function ensSetModo(m){
+  ens.modo = m
+  try { localStorage.setItem(ENS_LS_MODO, m) } catch(e){}
+  if(m === 'grupal') ensGrupoSuscribir(); else ensGrupoDesuscribir()
+  ensRender()
+}
+
+/* ───────── importar el audio (músico) ───────── */
+function ensDescargar(){
+  if(!ens.cfg || !ens.cfg.enlace_url) return
+  ens.esperandoRegreso = true
+  window.open(ens.cfg.enlace_url, '_blank', 'noopener')
+  ens.paso = 0
+  ensRender()
+}
+function ensYaLoTengo(){ ens.esperandoRegreso = false; ens.paso = 1; ens.errImport = ''; ensRender() }
+document.addEventListener('visibilitychange', function(){
+  if(!document.hidden && ens.esperandoRegreso && ens.visible){ ens.esperandoRegreso = false; ens.paso = 1; ensRender() }
+})
+function ensElegirArchivo(){ var f = ensEl('ens-file'); f.value = ''; f.click() }
+async function ensAlElegir(inp){
+  var file = inp.files && inp.files[0]; if(!file) return
+  if(!ensEsAudio(file)){ ens.errImport = 'Ese archivo no es una canción. Busca el archivo de audio.'; ensRender(); return }
+  try {
+    await ensCargarBlob(file)
+    ensSrc = ensAud
+    ens.errImport = ''; ens.paso = 2; ens.nombreImportado = file.name
+    ensIdbPut(ens.cancionId, { blob: file, name: file.name, enlace: ens.cfg ? ens.cfg.enlace_url : null }).catch(function(){})
+    ensRender()
+    ensSonarPrueba()
+  } catch(e){ ens.errImport = 'No se pudo abrir ese archivo como audio.'; ensRender() }
+}
+function ensSonarPrueba(){
+  if(!ensAud || !ens.archivoListo) return
+  if(ensPrevTimer){ clearTimeout(ensPrevTimer) }
+  try {
+    ensAud.currentTime = Math.min(20, Math.max(0, (ens.dur || 20)/2 - 3)); ensAud.volume = 0
+    var p = ensAud.play(); if(p && p.catch) p.catch(function(){})
+    var n = 0, v = setInterval(function(){ n++; ensAud.volume = Math.min(1, n/6); if(n >= 6) clearInterval(v) }, 60)
+    ensPrevTimer = setTimeout(function(){
+      var m = 0, d = setInterval(function(){ m++; ensAud.volume = Math.max(0, 1 - m/6)
+        if(m >= 6){ clearInterval(d); if(!ens.tocando){ ensAud.pause(); ensAud.volume = 1; ensAud.currentTime = 0 } } }, 60)
+    }, 4600)
+  } catch(e){}
+}
+function ensIrAlEnsayo(){
+  if(ensPrevTimer){ clearTimeout(ensPrevTimer); ensPrevTimer = null }
+  try { ensAud.pause(); ensAud.volume = 1; ensAud.currentTime = 0 } catch(e){}
+  ens.paso = 0; ensFuenteLista()
+}
+async function ensQuitarAudioLocal(){
+  ensDetener()
+  try { await ensIdbDel(ens.cancionId) } catch(e){}
+  ens.archivoListo = false; ens.wave = null; ensSrc = null; ens.paso = 0
+  ensRender()
+}
+
+/* ───────── dibujo ───────── */
+function ensOndaHTML(){
+  var n = ENS_NB, dur = ens.dur || 1, pos = ens.t / dur, lo = null, hi = null
+  if(ens.loop){ var L = ensRangoLoop(); if(L){ lo = L[0]/dur; hi = L[1]/dur } }
+  var w = (ens.fuente === 'archivo' && ens.wave) ? ens.wave : null
+  var bars = ''
+  for(var i=0;i<n;i++){
+    var p = i/n, h = w ? Math.round(w[i]*100) : 30
+    var cl = (ens.loop && lo !== null && p >= lo && p < hi) ? 'lp' : (p <= pos ? 'pl' : '')
+    bars += '<i class="' + cl + '" style="height:' + h + '%"></i>'
+  }
+  return '<div class="ens-wave" onclick="ensClickOnda(event)">' + bars + '</div>'
+}
+function ensSegsHTML(lista, conLoop){
+  if(!lista.length) return ''
+  var i = ensIdx(ens.t, lista), dur = ens.dur || 1
+  return '<div class="ens-segs">' + lista.map(function(m, k){
+    var fin = (k+1 < lista.length) ? lista[k+1].t : dur
+    var w = Math.max(0.2, (fin - m.t) / dur * 100)
+    var cl = (conLoop && ens.loop && k === Math.min(ens.loopIdx, lista.length-1)) ? 'loop' : (k === i ? 'on' : '')
+    return '<div class="ens-seg ' + cl + '" style="flex:' + w + ' 1 0" title="' + esc(ensNombreSec(m.s)) + '" onclick="event.stopPropagation();ensIrA(' + m.t + ')"></div>'
+  }).join('') + '</div>'
+}
+function ensPlayerHTML(lista, conLoop){
+  return '<div class="ens-pl">' +
+    (conLoop ? '<button class="ens-ic' + (ens.loop ? ' on' : '') + '" onclick="ensToggleLoop()" title="Repetir esta sección">∞</button>' : '') +
+    '<button class="ens-ic" onclick="ensAlInicio()" title="Volver al inicio">⏮</button>' +
+    '<div class="ens-mid">' + ensOndaHTML() + ensSegsHTML(lista, conLoop) + '</div>' +
+    '<div class="ens-end"><div class="ens-time">' + ensMmss(ens.t) + '</div>' +
+      '<button class="ens-vel" onclick="ensCambiarVel()">×' + ens.vel + '</button></div>' +
+    '<button class="ens-pp" onclick="ensToggle()">' + (ens.tocando ? '❚❚' : '▶') + '</button>' +
+  '</div>'
+}
+
+function ensRender(){
+  var d = ensEl('ens-drawer'); if(!d || !ens.visible) return
+  d.classList.toggle('closed', !ens.abierto)
+  var more = ensEl('ens-more'); if(more) more.style.display = ens.esAdmin ? '' : 'none'
+  var menu = ensEl('ens-menu')
+  if(menu){
+    menu.classList.toggle('on', ens.menu && ens.esAdmin)
+    menu.innerHTML = '<div class="ens-mtag">Solo administradores</div>' +
+      '<button class="ens-mitem" onclick="ensIrVista(\'enlace\')">Subir o cambiar audio o enlace</button>' +
+      '<button class="ens-mitem" onclick="ensIrVista(\'marcar\')">Establecer secciones</button>' +
+      '<button class="ens-mitem" onclick="ensIrVista(\'editar\')">Editar secciones y orden</button>'
+  }
+  // el video flota siempre en su sitio (si se recarga, se corta): solo se muestra/oculta
+  var yw = ensEl('ens-ytwrap')
+  if(yw){
+    var verVideo = ens.fuente === 'youtube' && (ens.vista === 'play' || ens.vista === 'marcar') && ensTieneFuente()
+    yw.style.display = (verVideo && !ens.ytErr) ? '' : 'none'
+  }
+  var dyn = ensEl('ens-dyn'); if(!dyn) return
+  var html
+  if(ens.vista === 'enlace') html = ensVistaEnlace()
+  else if(ens.vista === 'marcar') html = ensVistaMarcar()
+  else if(ens.vista === 'editar') html = ensVistaEditar()
+  else html = ensVistaPlay()
+  dyn.innerHTML = html
+  ens.ultKey = ensClave()
+  ensRenderModal()
+}
+
+function ensVistaPlay(){
+  // Falta el audio en ESTE dispositivo (archivo): guía de descargar e importar
+  if(ens.fuente === 'archivo' && ensTieneFuente() && !ens.archivoListo) return ensVistaImportar()
+  if(!ensTieneFuente()){
+    return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.</div>'
+  }
+  var info = ''
+  if(ens.fuente === 'youtube' && ens.ytErr) info = '<div class="ens-err">' + esc(ens.ytErr) + '</div>'
+  else if(ens.fuente === 'youtube' && !ens.ytListo) info = '<div class="ens-msg">Cargando el video…</div>'
+  var modo =
+    '<div class="ens-mode">' +
+      '<div class="ens-sw"><button class="' + (ens.modo === 'individual' ? 'on' : '') + '" onclick="ensSetModo(\'individual\')">Individual</button>' +
+      '<button class="' + (ens.modo === 'grupal' ? 'on' : '') + '" onclick="ensSetModo(\'grupal\')">Grupal</button></div>' +
+      '<button class="ens-sig' + (ens.autoSig ? ' on' : '') + '" onclick="ensToggleSig()" title="Al terminar la canción, pasa a la siguiente y le da play">' +
+        (ens.autoSig ? '⏭ Siguiente: activado' : '⏭ Siguiente: desactivado') + '</button>' +
+    '</div>' +
+    (ens.modo === 'grupal'
+      ? '<div class="ens-grp"><span class="ens-pulse"></span>' + (ens.esAdmin ? 'Diriges: tu play y pausa llegan a los demás' : 'El administrador controla el play y la pausa · lo demás es tuyo') + '</div>'
+      : '')
+  var pl = ensListo() ? ensPlayerHTML(ens.marcas, true) : ''
+  var sinMarcas = (ensListo() && !ens.marcas.length)
+    ? '<div class="ens-nota">' + (ens.esAdmin ? 'Aún no hay secciones marcadas: usa ⋯ → Establecer secciones.' : 'El administrador aún no marcó las secciones de este audio.') + '</div>' : ''
+  var quitar = (ens.fuente === 'archivo' && ens.archivoListo)
+    ? '<button class="ens-link" onclick="ensQuitarAudioLocal()">Quitar el audio de este dispositivo</button>' : ''
+  return info + modo + pl + sinMarcas + quitar
+}
+
+function ensVistaImportar(){
+  var c = ens.cfg || {}
+  var nombre = esc(c.archivo_nombre || 'el archivo')
+  var inner
+  if(ens.paso === 2){
+    inner = '<div class="ens-ok">✓</div><div class="ens-big">Audio listo</div>' +
+      '<div class="ens-small">' + esc(ens.nombreImportado) + ' · ' + ensMmss(ens.dur) + '<br>No tendrás que volver a hacer esto en este dispositivo.</div>' +
+      '<button class="ens-btn" onclick="ensIrAlEnsayo()">Ir al ensayo →</button>' +
+      '<button class="ens-btn gh" onclick="ensSonarPrueba()">Escuchar de nuevo</button>'
+  } else if(ens.paso === 1){
+    inner = (ens.errImport ? '<div class="ens-err">' + esc(ens.errImport) + '</div>' : '') +
+      '<div class="ens-big">Paso 2: elige el archivo</div>' +
+      '<div class="ens-small">Busca el archivo de audio que se descargó:</div>' +
+      '<div class="ens-file">' + nombre + '</div>' +
+      '<button class="ens-btn" onclick="ensElegirArchivo()">Elegir archivo</button>'
+  } else {
+    inner = '<div class="ens-lider">Tu líder preparó el audio de esta canción</div>' +
+      '<div class="ens-big">Paso 1: descarga el audio</div>' +
+      '<div class="ens-small">Se abre en otra pestaña. Cuando termine, vuelve acá y seguimos.</div>' +
+      '<button class="ens-btn" onclick="ensDescargar()">Descargar el audio</button>' +
+      '<button class="ens-link" onclick="ensYaLoTengo()">Ya lo tengo descargado</button>'
+  }
+  return '<div class="ens-imp">' + inner + '</div>'
+}
+
+/* ───────── administrador: menú y editores ───────── */
+function ensToggleDrawer(){ ens.abierto = !ens.abierto; ens.menu = false; ensRender() }
+function ensToggleMenu(ev){ if(ev) ev.stopPropagation(); ens.menu = !ens.menu; ensRender() }
+function ensFotoMarcas(){ return JSON.stringify(ens.draft) }
+function ensCopiaMarcas(){ return JSON.parse(JSON.stringify(ens.marcas)) }
+
+function ensIrVista(v){
+  ens.menu = false; ens.confirmando = false; ens.dErr = ''
+  if((v === 'marcar' || v === 'editar') && !ensListo()){
+    showToast('Primero sube un audio o pon un enlace de YouTube, y espera a que cargue', '#e67e22'); ensRender(); return
+  }
+  ensPausa()
+  ens.vista = v
+  ens.loop = false
+  if(v === 'enlace'){
+    var c = ens.cfg || {}
+    ens.dTab = ens.fuente
+    ens.dLink = c.enlace_url || ''; ens.dName = c.archivo_nombre || ''
+    ens.dYT = c.yt_url || ''; ens.dYTName = c.yt_nombre || ''
+  } else {
+    ens.draft = ensCopiaMarcas(); ens.snap = ensFotoMarcas(); ens.secSel = null
+  }
+  ensRender()
+}
+function ensHayCambios(){
+  if(ens.vista === 'enlace'){
+    var c = ens.cfg || {}
+    if(ens.dTab !== ens.fuente) return true
+    return ens.dTab === 'archivo'
+      ? (ens.dLink.trim() !== (c.enlace_url || '') || ens.dName.trim() !== (c.archivo_nombre || ''))
+      : (ens.dYT.trim() !== (c.yt_url || '') || ens.dYTName.trim() !== (c.yt_nombre || ''))
+  }
+  return ensFotoMarcas() !== ens.snap
+}
+function ensIncompleto(){ return false }
+function ensPedirVolver(){
+  if(ensHayCambios()){ ens.confirmando = true; ensRender() } else ensSalir()
+}
+function ensSalir(){
+  ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ensPausa()
+}
+function ensRenderModal(){
+  var m = ensEl('ens-modal'); if(!m) return
+  if(!ens.confirmando){ m.style.display = 'none'; m.innerHTML = ''; return }
+  m.style.display = 'flex'
+  m.innerHTML = '<div class="ens-modal-c"><div class="ens-modal-t">¿Deseas guardar los cambios antes de salir?</div>' +
+    '<div class="ens-modal-s">Si no los guardas, se pierden y todo queda como estaba.</div>' +
+    '<div class="ens-modal-b"><button class="ens-btn gh" onclick="ensSalir()">No guardar</button>' +
+    '<button class="ens-btn" onclick="ensGuardar()">Guardar</button></div></div>'
+}
+function ensBarra(titulo){
+  return '<div class="ens-ed-top"><button class="ens-back" onclick="ensPedirVolver()">‹ Volver</button><b>' + titulo + '</b></div>'
+}
+function ensBtnGuardar(extra){
+  var ok = ensHayCambios() && !ens.guardando && (extra === undefined ? true : extra)
+  return '<button class="ens-btn" style="margin-top:10px" onclick="ensGuardar()"' + (ok ? '' : ' disabled') + '>' + (ens.guardando ? 'Guardando…' : 'Guardar') + '</button>'
+}
+
+/* — subir o cambiar audio o enlace — */
+function ensVistaEnlace(){
+  var cuerpo
+  if(ens.dTab === 'archivo'){
+    cuerpo = '<div class="ens-lbl">Enlace del archivo de audio</div>' +
+      '<input class="ens-inp" placeholder="https://…" value="' + esc(ens.dLink) + '" oninput="ensDraft(\'dLink\',this.value)">' +
+      '<div class="ens-lbl">¿Cómo se llama el archivo?</div>' +
+      '<input class="ens-inp" placeholder="Alaba.mp3" value="' + esc(ens.dName) + '" oninput="ensDraft(\'dName\',this.value)">' +
+      '<div class="ens-nota">Las marcas de sección de este audio se conservan. Cada persona verá «Descargar el audio» y lo guardará en su propio dispositivo.</div>'
+  } else {
+    cuerpo = '<div class="ens-lbl">Enlace de YouTube</div>' +
+      '<input class="ens-inp" placeholder="https://www.youtube.com/watch?v=…" value="' + esc(ens.dYT) + '" oninput="ensDraft(\'dYT\',this.value)">' +
+      (ens.dErr ? '<div class="ens-err" style="margin:-4px 0 8px">' + esc(ens.dErr) + '</div>' : '') +
+      '<div class="ens-lbl">¿Cómo se llama este video?</div>' +
+      '<input class="ens-inp" placeholder="Alaba (video oficial)" value="' + esc(ens.dYTName) + '" oninput="ensDraft(\'dYTName\',this.value)">' +
+      '<div class="ens-nota">Todos verán el video dentro del modo ensayo, sin descargar nada. YouTube tiene <b>sus propias marcas</b>, separadas de las del audio. Si cambias a otro video, las marcas pueden no calzar: rehazlas en «Establecer secciones».</div>'
+  }
+  return ensBarra('Subir o cambiar audio o enlace') +
+    '<div class="ens-tabs"><button class="' + (ens.dTab === 'archivo' ? 'on' : '') + '" onclick="ensSetTab(\'archivo\')">Subir o cambiar audio</button>' +
+    '<button class="' + (ens.dTab === 'youtube' ? 'on' : '') + '" onclick="ensSetTab(\'youtube\')">Enlace de YouTube</button></div>' +
+    cuerpo +
+    '<button class="ens-btn" id="ens-btn-g" style="margin-top:10px" onclick="ensGuardar()"' + (ensPuedeGuardarEnlace() ? '' : ' disabled') + '>' + (ens.guardando ? 'Guardando…' : 'Guardar') + '</button>'
+}
+function ensPuedeGuardarEnlace(){
+  if(ens.guardando || !ensHayCambios()) return false
+  return ens.dTab === 'archivo' ? !!ens.dLink.trim() : !!ens.dYT.trim()
+}
+function ensDraft(campo, v){
+  ens[campo] = v; ens.dErr = ''
+  var b = ensEl('ens-btn-g'); if(b) b.disabled = !ensPuedeGuardarEnlace()
+}
+function ensSetTab(t){ ens.dTab = t; ens.dErr = ''; ensRender() }
+
+/* — establecer secciones: se escucha y se marca al llegar a cada parte — */
+function ensVistaMarcar(){
+  var secs = ensSecs(), n = ens.draft.length
+  var sigIdx = (ens.secSel !== null && ens.secSel !== undefined) ? ens.secSel : Math.min(n, secs.length - 1)
+  if(!secs.length) return ensBarra('Establecer secciones') + '<div class="ens-msg">Esta canción no tiene secciones.</div>'
+  var sig = secs[Math.max(0, Math.min(sigIdx, secs.length - 1))]
+  var lista = ens.draft.slice().reverse().map(function(m){
+    var s = ensSecPorId(m.s)
+    return '<div class="ens-row"><span class="ens-tm">' + ensMmss(m.t) + '</span><span class="ens-nm">' + esc(ensNombreSec(m.s)) + '</span>' +
+      '<em>' + (s && s.midiNote != null ? esc(repMidiName(s.midiNote)) : '') + '</em></div>'
+  }).join('')
+  var opts = secs.map(function(s, k){
+    return '<option value="' + k + '"' + (s.id === sig.id ? ' selected' : '') + '>' + esc(s.nombre || s.abreviacion || ('Sección ' + (k+1))) + '</option>'
+  }).join('')
+  return ensBarra('Establecer secciones') + ensEtiqueta() +
+    '<div class="ens-nota" style="margin-top:0">Dale play y aprieta el botón justo cuando empieza cada parte. Cada marca queda en la sección que dice abajo.</div>' +
+    '<div class="ens-player-box">' + ensPlayerHTML(ens.draft, false) + '</div>' +
+    '<div class="ens-next"><span>Marca ' + (n + 1) + ' · sección:</span><select class="ens-sel" onchange="ensSetSecSel(this.value)">' + opts + '</select></div>' +
+    '<button class="ens-btn big" onclick="ensPonerMarca()">⚑ Marcar aquí · ' + esc(sig.nombre || sig.abreviacion || '') + '</button>' +
+    '<div class="ens-mini-links"><button class="ens-link" ' + (n ? '' : 'disabled') + ' onclick="ensDeshacerMarca()">↩ Deshacer la última</button>' +
+      '<button class="ens-link" onclick="ensEmpezarMarcas()">↺ Empezar de nuevo</button></div>' +
+    '<div class="ens-list">' + lista + '</div>' +
+    ensBtnGuardar()
+}
+function ensEtiqueta(){
+  return '<div class="ens-tag">Estás editando las marcas de: <b>' + (ens.fuente === 'youtube' ? 'Video de YouTube' : 'Audio (archivo)') + '</b></div>'
+}
+function ensSetSecSel(v){ ens.secSel = parseInt(v, 10); ensRender() }
+function ensPonerMarca(){
+  var secs = ensSecs(); if(!secs.length) return
+  var n = ens.draft.length
+  var k = (ens.secSel !== null && ens.secSel !== undefined) ? ens.secSel : Math.min(n, secs.length - 1)
+  var s = secs[Math.max(0, Math.min(k, secs.length - 1))]
+  var ult = n ? ens.draft[n-1].t : -1
+  var t = Math.max(Math.round((ensSrc ? ensSrc.currentTime : ens.t) * 10) / 10, n ? ult + 0.5 : 0)
+  ens.draft.push({ s: s.id, t: t })
+  ens.secSel = null    // la próxima propuesta vuelve a ser la siguiente en el orden de la canción
+  ensRender()
+}
+function ensDeshacerMarca(){ if(ens.draft.length){ ens.draft.pop(); ens.secSel = null; ensRender() } }
+function ensEmpezarMarcas(){ ensPausa(); ens.draft = []; ens.secSel = null; ensIrA(0) }
+
+/* — editar secciones y orden — */
+function ensVistaEditar(){
+  var secs = ensSecs(), n = ens.draft.length
+  var filas = ens.draft.map(function(m, k){
+    var opts = secs.map(function(s){ return '<option value="' + esc(s.id) + '"' + (s.id === m.s ? ' selected' : '') + '>' + esc(s.nombre || s.abreviacion || '?') + '</option>' }).join('')
+    if(!ensSecPorId(m.s)) opts = '<option value="' + esc(m.s) + '" selected>(sección borrada)</option>' + opts
+    return '<div class="ens-row">' +
+      '<button class="ens-mini" onclick="ensMover(' + k + ',-1)"' + (k === 0 ? ' disabled' : '') + ' title="Subir">↑</button>' +
+      '<button class="ens-mini" onclick="ensMover(' + k + ',1)"' + (k === n-1 ? ' disabled' : '') + ' title="Bajar">↓</button>' +
+      '<button class="ens-mini" onclick="ensNudge(' + k + ',-1)" title="1 segundo antes">−</button>' +
+      '<span class="ens-tm">' + ensMmss(m.t) + '</span>' +
+      '<button class="ens-mini" onclick="ensNudge(' + k + ',1)" title="1 segundo después">+</button>' +
+      '<select class="ens-sel flex" onchange="ensCambiaSec(' + k + ',this.value)">' + opts + '</select>' +
+      '<button class="ens-mini" onclick="ensBorrarMarca(' + k + ')" title="Quitar esta marca">×</button>' +
+    '</div>'
+  }).join('')
+  return ensBarra('Editar secciones y orden') + ensEtiqueta() +
+    (n ? '<div class="ens-list tall">' + filas + '</div>' : '<div class="ens-msg">Aún no hay marcas. Usa «Establecer secciones».</div>') +
+    '<div class="ens-nota">↑ ↓ mueven la sección con su duración y los tiempos se recalculan. − + ajustan el segundo de inicio. El desplegable cambia a qué sección de la canción corresponde cada marca.</div>' +
+    ensBtnGuardar()
+}
+function ensNudge(k, d){
+  var L = ens.draft, m = L[k], prev = k > 0 ? L[k-1].t + 1 : 0, nxt = k + 1 < L.length ? L[k+1].t - 1 : (ens.dur || 0) - 1
+  m.t = Math.max(prev, Math.min(nxt, Math.round((m.t + d) * 10) / 10)); ensRender()
+}
+function ensCambiaSec(k, id){ ens.draft[k].s = id; ensRender() }
+function ensBorrarMarca(k){ ens.draft.splice(k, 1); ensRender() }
+function ensMover(k, d){
+  var L = ens.draft, j = k + d; if(j < 0 || j >= L.length) return
+  var dur = ens.dur || 0
+  var datos = L.map(function(m, x){ return { s: m.s, d: ((x+1 < L.length) ? L[x+1].t : dur) - m.t } })
+  var tmp = datos[k]; datos[k] = datos[j]; datos[j] = tmp
+  var acc = L[0].t
+  datos.forEach(function(x, i){ L[i].s = x.s; L[i].t = Math.round(acc * 10) / 10; acc += x.d })
+  ensRender()
+}
+
+/* — guardar en la base de datos (solo administradores) — */
+async function ensGuardar(){
+  if(!ens.esAdmin || ens.guardando) return
+  var c = ens.cfg || {}
+  var fila = {
+    cancion_id: ens.cancionId, organizacion_id: ens.orgId,
+    fuente: c.fuente || 'archivo',
+    enlace_url: c.enlace_url || null, archivo_nombre: c.archivo_nombre || null,
+    yt_url: c.yt_url || null, yt_nombre: c.yt_nombre || null,
+    marcas_archivo: c.marcas_archivo || [], marcas_yt: c.marcas_yt || [],
+    updated_at: new Date().toISOString(), updated_by: currentUser.id
+  }
+  var tras = null
+  if(ens.vista === 'enlace'){
+    if(ens.dTab === 'archivo'){
+      var link = ens.dLink.trim()
+      if(!/^https?:\/\//i.test(link)){ ens.confirmando = false; showToast('El enlace debe empezar con http:// o https://', '#e67e22'); ensRender(); return }
+      fila.fuente = 'archivo'; fila.enlace_url = link; fila.archivo_nombre = ens.dName.trim() || null
+      tras = function(){ ens.paso = 0; ens.esperandoRegreso = false }
+    } else {
+      var id = ensYtIdDe(ens.dYT)
+      if(!id){ ens.dErr = 'Ese enlace no parece de YouTube. Pega el enlace del video.'; ens.confirmando = false; ensRender(); return }
+      fila.fuente = 'youtube'; fila.yt_url = ens.dYT.trim(); fila.yt_nombre = ens.dYTName.trim() || 'Video de YouTube'
+      // primera vez en YouTube: parte con una copia de las marcas del audio
+      if(!Array.isArray(fila.marcas_yt) || !fila.marcas_yt.length) fila.marcas_yt = fila.marcas_archivo || []
+    }
+  } else {
+    var lista = ens.draft.map(function(m){ return { s: m.s, t: m.t } })
+    if(ens.fuente === 'youtube') fila.marcas_yt = lista; else fila.marcas_archivo = lista
+  }
+  ens.guardando = true; ens.confirmando = false; ensRender()
+  var r = await supabase.from('ensayo_audio').upsert(fila, { onConflict: 'cancion_id' }).select().maybeSingle()
+  ens.guardando = false
+  if(r.error){
+    console.warn('Modo ensayo: no se pudo guardar', r.error)
+    showToast('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.', '#e74c3c'); ensRender(); return
+  }
+  ens.cfg = r.data || fila
+  if(tras) tras()
+  var vistaAntes = ens.vista
+  ens.vista = 'play'; ens.draft = []
+  if(vistaAntes === 'enlace'){
+    var cambio = true
+    await ensAplicarCfg()
+    ensMostrar(true)
+    showToast(ens.dTab === 'youtube' ? 'Video de YouTube guardado' : 'Enlace guardado', '#27ae60')
+  } else {
+    ens.marcas = ensNormMarcas(ens.fuente === 'youtube' ? ens.cfg.marcas_yt : ens.cfg.marcas_archivo)
+    showToast('Marcas guardadas para toda la organización', '#27ae60')
+  }
+  ensRender()
+}
+
+/* ───────── Preferencias: encender / apagar (apagado por defecto) ───────── */
+function ensSyncPrefBtn(){
+  var b = ensEl('rep-pref-ens'); if(!b) return
+  var on = ensOn()
+  b.classList.toggle('active', on)
+  b.textContent = on ? 'Activado' : 'Desactivado'
+}
+function ensTogglePref(){
+  var on = !ensOn()
+  try { localStorage.setItem(ENS_LS_ON, on ? '1' : '0') } catch(e){}
+  ensSyncPrefBtn()
+  if(on){
+    if(repCancion) ensAlAbrirCancion(repCancion, repModoPreview)
+    showToast('Modo ensayo (beta) activado', '#27ae60')
+  } else {
+    ensAlCerrar()
+    showToast('Modo ensayo desactivado', '#7f8c8d')
+  }
+}
+
+/* ───────── arranque ───────── */
+function ensInit(){
+  ensAud = ensEl('ens-aud')
+  ensSyncPrefBtn()
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensInit); else ensInit()
+
+;(function(){
+  var api = { ensToggleDrawer: ensToggleDrawer, ensToggleMenu: ensToggleMenu, ensIrVista: ensIrVista, ensPedirVolver: ensPedirVolver,
+    ensSalir: ensSalir, ensGuardar: ensGuardar, ensSetTab: ensSetTab, ensDraft: ensDraft, ensSetSecSel: ensSetSecSel,
+    ensPonerMarca: ensPonerMarca, ensDeshacerMarca: ensDeshacerMarca, ensEmpezarMarcas: ensEmpezarMarcas,
+    ensNudge: ensNudge, ensCambiaSec: ensCambiaSec, ensBorrarMarca: ensBorrarMarca, ensMover: ensMover,
+    ensToggle: ensToggle, ensToggleLoop: ensToggleLoop, ensAlInicio: ensAlInicio, ensCambiarVel: ensCambiarVel,
+    ensClickOnda: ensClickOnda, ensIrA: ensIrA, ensToggleSig: ensToggleSig, ensSetModo: ensSetModo,
+    ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
+    ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
+    ensTogglePref: ensTogglePref }
+  Object.keys(api).forEach(function(k){ window[k] = api[k] })
+})()
+
+
 aplicarNavegacionPendiente()
 </script>
 
@@ -7933,6 +8856,22 @@ aplicarNavegacionPendiente()
       <div class="rep-lyrics-content" id="rep-lyrics-content"></div>
     </div>
   </div>
+  <!-- MODO ENSAYO (BETA): cajón inferior con el audio que dejó el administrador -->
+  <div class="ens-drawer" id="ens-drawer" style="display:none">
+    <div class="ens-menu" id="ens-menu"></div>
+    <div class="ens-head">
+      <span class="ens-beta">beta</span>
+      <div class="ens-handle" onclick="ensToggleDrawer()" title="Esconder o mostrar el reproductor"><span></span></div>
+      <button class="ens-more" id="ens-more" onclick="ensToggleMenu(event)" style="display:none" title="Opciones del administrador">⋯</button>
+    </div>
+    <div class="ens-body">
+      <div class="ens-yt" id="ens-ytwrap" style="display:none"><div id="ens-ytbox"></div></div>
+      <div id="ens-dyn"></div>
+    </div>
+  </div>
+  <audio id="ens-aud" preload="auto"></audio>
+  <input type="file" id="ens-file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac,.opus" style="display:none" onchange="ensAlElegir(this)">
+  <div class="ens-modal" id="ens-modal"></div>
   <!-- Franja inferior solo para celular: Anterior a la izquierda, Siguiente a la derecha -->
   <div class="rep-mobile-nav" id="rep-mobile-nav">
     <button class="rep-mnav-btn" onclick="repAnteriorCancion()">
@@ -7973,6 +8912,7 @@ aplicarNavegacionPendiente()
   <div class="rep-pref-row"><span class="rep-pref-label">Interlineado</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('lineH',-0.1)">&#8722;</button><span class="rep-step-val" id="rep-lh-val">1.1</span><button class="rep-step-btn" onclick="repAjustarPref('lineH',0.1)">+</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Columnas</span><div class="rep-col-group"><button class="rep-col-btn active" id="rep-col1-btn" onclick="repSetCols(1)">1</button><button class="rep-col-btn" id="rep-col2-btn" onclick="repSetCols(2)">2</button><button class="rep-col-btn" id="rep-col3-btn" onclick="repSetCols(3)">3</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Diagramas</span><button class="rep-pref-toggle" id="rep-pref-diag" onclick="acdToggleActivo()">Guitarra / Piano</button></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Modo ensayo<span class="ens-beta-tag">beta</span></span><button class="rep-pref-toggle" id="rep-pref-ens" onclick="ensTogglePref()">Desactivado</button></div>
 </div>
 
 <!-- MODAL AGREGAR CANCIÓN DESDE CATÁLOGO -->
