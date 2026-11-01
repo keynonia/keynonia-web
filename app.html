@@ -7467,7 +7467,7 @@ var ens = {
   cfg: null, cancionId: null, orgId: null, esAdmin: false, visible: false,
   fuente: 'archivo', marcas: [],
   dur: 0, t: 0, tocando: false, vel: 1, loop: false, loopIdx: 0,
-  abierto: true, modo: 'individual', autoSig: false,
+  abierto: true, modo: 'individual', autoSig: false, sigGrupo: null,
   vista: 'play',               // play | enlace | marcar | editar
   menu: false,
   archivoListo: false, ytListo: false, ytErr: '',
@@ -7788,6 +7788,7 @@ function ensIrA(seg){
   var m = ens.marcas[ensIdx(ens.t, ens.marcas)]
   if(m && ensSecPorId(m.s)) repActivarSeccion(m.s, true)
   ensRender()
+  if(ens.vista === 'play') ensGrupoEnviarSalto()   // en grupal, el salto del administrador lo siguen los demás
 }
 function ensAlInicio(){ ensIrA(ens.loop ? (ensRangoLoop() || [0])[0] : 0) }
 var ENS_VELS = [1, 0.75, 1.25, 1.5]
@@ -7819,28 +7820,44 @@ function ensFinDeCancion(){
   ens.pasando = true
   ensPararTimer(); ens.tocando = false; ens.t = ens.dur
   var hayMas = false
-  if(ens.autoSig && repRepertorioOrigenId){
+  var sig = ensSigEfectivo()
+  if(sig && repRepertorioOrigenId){
     var cache = repSongsCache || []
     var idx = cache.findIndex(function(rc){ return rc.mis_canciones && rc.mis_canciones.id === repCancionId })
     hayMas = idx >= 0 && idx + 1 < cache.length
   }
   ens.pasando = false
-  if(ens.autoSig && hayMas){
+  if(sig && hayMas){
     ens.autoplaySiguiente = true
     setTimeout(function(){ ens.autoplaySiguiente = false }, 15000)
     repSiguienteCancion()
   } else {
-    if(ens.autoSig) showToast('Fin del repertorio', '#e67e22')
+    if(sig) showToast('Fin del repertorio', '#e67e22')
     ensRender()
   }
 }
 function ensToggleSig(){
+  if(ens.modo === 'grupal' && !ens.esAdmin){ showToast('En grupal, el administrador decide «Siguiente»', '#e67e22'); return }
   ens.autoSig = !ens.autoSig
+  ensGrupoEnviarSig()
   try { localStorage.setItem(ENS_LS_SIG, ens.autoSig ? '1' : '0') } catch(e){}
   ensRender()
 }
 
 /* ───────── modo grupal: solo el play/pausa del administrador viaja ───────── */
+/* En grupal manda el administrador: play/pausa, saltos de posición y el botón «Siguiente».
+   La posición viaja como sección + desfase dentro de ella, así funciona aunque uno use Audio y otro YouTube. */
+function ensSigEfectivo(){
+  return (ens.modo === 'grupal' && !ens.esAdmin && ens.sigGrupo !== null) ? ens.sigGrupo : ens.autoSig
+}
+function ensPosPayload(){
+  var m = ens.marcas[ensIdx(ens.t, ens.marcas)]
+  return { cancion: ens.cancionId, t: ens.t, s: m ? m.s : null, off: m ? ens.t - m.t : 0 }
+}
+function ensPosDesde(p){
+  if(p.s){ var m = ens.marcas.find(function(x){ return x.s === p.s }); if(m) return m.t + (p.off || 0) }
+  return p.t || 0
+}
 function ensGrupoSuscribir(){
   ensGrupoDesuscribir()
   if(ens.modo !== 'grupal' || !ens.orgId) return
@@ -7849,10 +7866,27 @@ function ensGrupoSuscribir(){
     ens.canal.on('broadcast', { event: 'pp' }, function(msg){
       var p = msg && msg.payload
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      if(typeof p.sig === 'boolean'){ ens.sigGrupo = p.sig; ensRender() }
       if(p.cancion !== ens.cancionId || !ensListo()) return
-      if(p.play && !ens.tocando) ensPlay()
-      else if(!p.play && ens.tocando) ensPausa()
-    }).subscribe()
+      if(p.play){
+        if(typeof p.t === 'number'){ var d = ensPosDesde(p); if(Math.abs(d - ens.t) > 1.5) ensIrA(d) }
+        if(!ens.tocando) ensPlay()
+      } else if(ens.tocando) ensPausa()
+    }).on('broadcast', { event: 'sk' }, function(msg){
+      var p = msg && msg.payload
+      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      if(p.cancion !== ens.cancionId || !ensListo()) return
+      ensIrA(ensPosDesde(p))
+    }).on('broadcast', { event: 'sg' }, function(msg){
+      var p = msg && msg.payload
+      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      ens.sigGrupo = !!p.on; ensRender()
+    }).on('broadcast', { event: 'hi' }, function(){
+      // alguien nuevo entró al grupo: el administrador le cuenta cómo van las cosas
+      if(ens.esAdmin && ens.modo === 'grupal') ensGrupoEnviar(ens.tocando)
+    }).subscribe(function(st){
+      if(st === 'SUBSCRIBED' && !ens.esAdmin){ try { ens.canal.send({ type: 'broadcast', event: 'hi', payload: {} }) } catch(e){} }
+    })
   } catch(e){ console.warn('Modo ensayo: no se pudo abrir el canal grupal', e) }
 }
 function ensGrupoDesuscribir(){
@@ -7860,7 +7894,16 @@ function ensGrupoDesuscribir(){
 }
 function ensGrupoEnviar(play){
   if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
-  try { ens.canal.send({ type: 'broadcast', event: 'pp', payload: { cancion: ens.cancionId, play: !!play } }) } catch(e){}
+  var pl = ensPosPayload(); pl.play = !!play; pl.sig = !!ens.autoSig
+  try { ens.canal.send({ type: 'broadcast', event: 'pp', payload: pl }) } catch(e){}
+}
+function ensGrupoEnviarSalto(){
+  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  try { ens.canal.send({ type: 'broadcast', event: 'sk', payload: ensPosPayload() }) } catch(e){}
+}
+function ensGrupoEnviarSig(){
+  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  try { ens.canal.send({ type: 'broadcast', event: 'sg', payload: { on: !!ens.autoSig } }) } catch(e){}
 }
 function ensSetModo(m){
   ens.modo = m
@@ -7995,8 +8038,8 @@ function ensVistaPlay(){
     '<div class="ens-mode">' +
       '<div class="ens-sw"><button class="' + (ens.modo === 'individual' ? 'on' : '') + '" onclick="ensSetModo(\'individual\')">Individual</button>' +
       '<button class="' + (ens.modo === 'grupal' ? 'on' : '') + '" onclick="ensSetModo(\'grupal\')">Grupal</button></div>' +
-      '<button class="ens-sig' + (ens.autoSig ? ' on' : '') + '" onclick="ensToggleSig()" title="Al terminar la canción, pasa a la siguiente y le da play">' +
-        (ens.autoSig ? '⏭ Siguiente: activado' : '⏭ Siguiente: desactivado') + '</button>' +
+      '<button class="ens-sig' + (ensSigEfectivo() ? ' on' : '') + '" onclick="ensToggleSig()" title="Al terminar la canción, pasa a la siguiente y le da play' + ((ens.modo === 'grupal' && !ens.esAdmin) ? ' (en grupal lo decide el administrador)' : '') + '">' +
+        (ensSigEfectivo() ?'⏭ Siguiente: activado' : '⏭ Siguiente: desactivado') + '</button>' +
     '</div>' +
     (ens.modo === 'grupal'
       ? '<div class="ens-grp"><span class="ens-pulse"></span>' + (ens.esAdmin ? 'Diriges: tu play y pausa llegan a los demás' : 'El administrador controla el play y la pausa · lo demás es tuyo') + '</div>'
