@@ -784,6 +784,8 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-sw button.on{background:var(--accent);color:#fff}
 .ens-sig{margin-left:auto;flex-shrink:0;background:#16181c;border:1px solid #2b2f36;color:#9aa0a6;border-radius:7px;padding:6px 10px;font-family:inherit;font-size:.64rem;font-weight:700;cursor:pointer;white-space:nowrap}
 .ens-sig.on{background:rgba(29,184,154,.14);border-color:rgba(29,184,154,.5);color:#1DB89A}
+.ens-src{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:.66rem;color:var(--text2)}
+.ens-src .ens-sw{margin-left:auto}
 .ens-grp{display:flex;align-items:center;gap:6px;font-size:.64rem;color:#c9b6ff;margin:-3px 0 9px}
 .ens-pulse{width:6px;height:6px;border-radius:50%;background:#9B7FE8;animation:ensPl 1.3s ease-in-out infinite;flex-shrink:0}
 @keyframes ensPl{0%,100%{opacity:1}50%{opacity:.3}}
@@ -7648,9 +7650,37 @@ async function ensAlAbrirCancion(cancion, esPreview){
 }
 
 /* Decide qué fuente usar y la prepara */
-async function ensAplicarCfg(){
+function ensGetPrefFuente(){ try { return localStorage.getItem('keynonia_ensayo_fuente_' + ens.cancionId) } catch(e){ return null } }
+function ensSetPrefFuente(f){ try { if(f) localStorage.setItem('keynonia_ensayo_fuente_' + ens.cancionId, f); else localStorage.removeItem('keynonia_ensayo_fuente_' + ens.cancionId) } catch(e){} }
+/* Si el administrador dejó audio Y YouTube, cada persona elige con cuál ensayar (queda recordado en su dispositivo).
+   Si no ha elegido, se parte con la que el administrador dejó como predeterminada. */
+function ensFuenteInicial(cfg, forzar){
+  if(!cfg) return 'archivo'
+  var disp = { archivo: !!cfg.enlace_url, youtube: !!cfg.yt_url }
+  var pref = forzar || ensGetPrefFuente()
+  if(pref && disp[pref]) return pref
+  if(cfg.fuente && disp[cfg.fuente]) return cfg.fuente
+  if(disp.archivo) return 'archivo'
+  if(disp.youtube) return 'youtube'
+  return 'archivo'
+}
+async function ensCambiarFuente(f){
+  if(f === ens.fuente) return
+  ensPausa(); ens.loop = false; ens.t = 0; ens.paso = 0; ens.errImport = ''
+  ensSetPrefFuente(f)
+  await ensAplicarCfg(f)
+  ensMostrar(true); ensRender()
+}
+function ensSelectorFuente(){
+  var c = ens.cfg
+  if(!c || !c.enlace_url || !c.yt_url) return ''
+  return '<div class="ens-src"><span>Escuchar con:</span><div class="ens-sw">' +
+    '<button class="' + (ens.fuente === 'archivo' ? 'on' : '') + '" onclick="ensCambiarFuente(\'archivo\')">Audio</button>' +
+    '<button class="' + (ens.fuente === 'youtube' ? 'on' : '') + '" onclick="ensCambiarFuente(\'youtube\')">YouTube</button></div></div>'
+}
+async function ensAplicarCfg(forzar){
   var cfg = ens.cfg
-  ens.fuente = (cfg && cfg.fuente === 'youtube') ? 'youtube' : 'archivo'
+  ens.fuente = ensFuenteInicial(cfg, forzar)
   ens.marcas = ensNormMarcas(cfg ? (ens.fuente === 'youtube' ? cfg.marcas_yt : cfg.marcas_archivo) : [])
   ensSrc = null; ens.archivoListo = false; ens.ytListo = false; ens.wave = null
   if(!cfg) return
@@ -7676,7 +7706,8 @@ function ensFuenteLista(){
   if(ens.autoplaySiguiente){ ens.autoplaySiguiente = false; ensPlay() }
   ensRender()
 }
-function ensTieneFuente(){
+function ensTieneFuente(){ var c = ens.cfg; return !!(c && (c.enlace_url || c.yt_url)) }
+function ensTieneFuenteActual(){
   var c = ens.cfg
   if(!c) return false
   return ens.fuente === 'youtube' ? !!c.yt_url : !!c.enlace_url
@@ -7937,7 +7968,7 @@ function ensRender(){
   // el video flota siempre en su sitio (si se recarga, se corta): solo se muestra/oculta
   var yw = ensEl('ens-ytwrap')
   if(yw){
-    var verVideo = ens.fuente === 'youtube' && (ens.vista === 'play' || ens.vista === 'marcar') && ensTieneFuente()
+    var verVideo = ens.fuente === 'youtube' && (ens.vista === 'play' || ens.vista === 'marcar') && ensTieneFuenteActual()
     yw.style.display = (verVideo && !ens.ytErr) ? '' : 'none'
   }
   var dyn = ensEl('ens-dyn'); if(!dyn) return
@@ -7953,7 +7984,7 @@ function ensRender(){
 
 function ensVistaPlay(){
   // Falta el audio en ESTE dispositivo (archivo): guía de descargar e importar
-  if(ens.fuente === 'archivo' && ensTieneFuente() && !ens.archivoListo) return ensVistaImportar()
+  if(ens.fuente === 'archivo' && ensTieneFuenteActual() && !ens.archivoListo) return ensSelectorFuente() + ensVistaImportar()
   if(!ensTieneFuente()){
     return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.</div>'
   }
@@ -7975,7 +8006,7 @@ function ensVistaPlay(){
     ? '<div class="ens-nota">' + (ens.esAdmin ? 'Aún no hay secciones marcadas: usa ⋯ → Establecer secciones.' : 'El administrador aún no marcó las secciones de este audio.') + '</div>' : ''
   var quitar = (ens.fuente === 'archivo' && ens.archivoListo)
     ? '<button class="ens-link" onclick="ensQuitarAudioLocal()">Quitar el audio de este dispositivo</button>' : ''
-  return info + modo + pl + sinMarcas + quitar
+  return ensSelectorFuente() + info + modo + pl + sinMarcas + quitar
 }
 
 function ensVistaImportar(){
@@ -8019,7 +8050,7 @@ function ensIrVista(v){
   ens.loop = false
   if(v === 'enlace'){
     var c = ens.cfg || {}
-    ens.dTab = ens.fuente
+    ens.dTab = (c.fuente === 'youtube' || c.fuente === 'archivo') ? c.fuente : 'archivo'
     ens.dLink = c.enlace_url || ''; ens.dName = c.archivo_nombre || ''
     ens.dYT = c.yt_url || ''; ens.dYTName = c.yt_nombre || ''
   } else {
@@ -8030,7 +8061,7 @@ function ensIrVista(v){
 function ensHayCambios(){
   if(ens.vista === 'enlace'){
     var c = ens.cfg || {}
-    if(ens.dTab !== ens.fuente) return true
+    if(c.fuente && ens.dTab !== c.fuente && (ens.dTab === 'archivo' ? !!c.enlace_url : !!c.yt_url)) return true   // «Guardar» la deja como la predeterminada
     return ens.dTab === 'archivo'
       ? (ens.dLink.trim() !== (c.enlace_url || '') || ens.dName.trim() !== (c.archivo_nombre || ''))
       : (ens.dYT.trim() !== (c.yt_url || '') || ens.dYTName.trim() !== (c.yt_nombre || ''))
@@ -8069,19 +8100,22 @@ function ensVistaEnlace(){
       '<input class="ens-inp" placeholder="https://…" value="' + esc(ens.dLink) + '" oninput="ensDraft(\'dLink\',this.value)">' +
       '<div class="ens-lbl">¿Cómo se llama el archivo?</div>' +
       '<input class="ens-inp" placeholder="Alaba.mp3" value="' + esc(ens.dName) + '" oninput="ensDraft(\'dName\',this.value)">' +
-      '<div class="ens-nota">Las marcas de sección de este audio se conservan. Cada persona verá «Descargar el audio» y lo guardará en su propio dispositivo.</div>'
+      '<div class="ens-nota">Las marcas de sección de este audio se conservan. Cada persona verá «Descargar el audio» y lo guardará en su propio dispositivo.</div>' +
+      ((ens.cfg && ens.cfg.enlace_url) ? '<button class="ens-link" onclick="ensQuitarFuente(\'archivo\')">Quitar el enlace del audio</button>' : '')
   } else {
     cuerpo = '<div class="ens-lbl">Enlace de YouTube</div>' +
       '<input class="ens-inp" placeholder="https://www.youtube.com/watch?v=…" value="' + esc(ens.dYT) + '" oninput="ensDraft(\'dYT\',this.value)">' +
       (ens.dErr ? '<div class="ens-err" style="margin:-4px 0 8px">' + esc(ens.dErr) + '</div>' : '') +
       '<div class="ens-lbl">¿Cómo se llama este video?</div>' +
       '<input class="ens-inp" placeholder="Alaba (video oficial)" value="' + esc(ens.dYTName) + '" oninput="ensDraft(\'dYTName\',this.value)">' +
-      '<div class="ens-nota">Todos verán el video dentro del modo ensayo, sin descargar nada. YouTube tiene <b>sus propias marcas</b>, separadas de las del audio. Si cambias a otro video, las marcas pueden no calzar: rehazlas en «Establecer secciones».</div>'
+      '<div class="ens-nota">Todos verán el video dentro del modo ensayo, sin descargar nada. YouTube tiene <b>sus propias marcas</b>, separadas de las del audio. Si cambias a otro video, las marcas pueden no calzar: rehazlas en «Establecer secciones».</div>' +
+      ((ens.cfg && ens.cfg.yt_url) ? '<button class="ens-link" onclick="ensQuitarFuente(\'youtube\')">Quitar el enlace de YouTube</button>' : '')
   }
   return ensBarra('Subir o cambiar audio o enlace') +
     '<div class="ens-tabs"><button class="' + (ens.dTab === 'archivo' ? 'on' : '') + '" onclick="ensSetTab(\'archivo\')">Subir o cambiar audio</button>' +
     '<button class="' + (ens.dTab === 'youtube' ? 'on' : '') + '" onclick="ensSetTab(\'youtube\')">Enlace de YouTube</button></div>' +
     cuerpo +
+    '<div class="ens-nota">Puedes dejar <b>las dos</b>: cada participante elige entre Audio y YouTube. «Guardar» deja la pestaña activa como la que se muestra al empezar.</div>' +
     '<button class="ens-btn" id="ens-btn-g" style="margin-top:10px" onclick="ensGuardar()"' + (ensPuedeGuardarEnlace() ? '' : ' disabled') + '>' + (ens.guardando ? 'Guardando…' : 'Guardar') + '</button>'
 }
 function ensPuedeGuardarEnlace(){
@@ -8215,7 +8249,7 @@ async function ensGuardar(){
   var vistaAntes = ens.vista
   ens.vista = 'play'; ens.draft = []
   if(vistaAntes === 'enlace'){
-    var cambio = true
+    ensSetPrefFuente(null)
     await ensAplicarCfg()
     ensMostrar(true)
     showToast(ens.dTab === 'youtube' ? 'Video de YouTube guardado' : 'Enlace guardado', '#27ae60')
@@ -8223,6 +8257,25 @@ async function ensGuardar(){
     ens.marcas = ensNormMarcas(ens.fuente === 'youtube' ? ens.cfg.marcas_yt : ens.cfg.marcas_archivo)
     showToast('Marcas guardadas para toda la organización', '#27ae60')
   }
+  ensRender()
+}
+
+async function ensQuitarFuente(tab){
+  if(!ens.esAdmin || !ens.cfg) return
+  if(!window.confirm(tab === 'archivo' ? '¿Quitar el enlace del audio? Las marcas se conservan.' : '¿Quitar el enlace de YouTube? Las marcas se conservan.')) return
+  var c = ens.cfg
+  var fila = { cancion_id: ens.cancionId, organizacion_id: ens.orgId, fuente: c.fuente || 'archivo',
+    enlace_url: c.enlace_url || null, archivo_nombre: c.archivo_nombre || null, yt_url: c.yt_url || null, yt_nombre: c.yt_nombre || null,
+    marcas_archivo: c.marcas_archivo || [], marcas_yt: c.marcas_yt || [], updated_at: new Date().toISOString(), updated_by: currentUser.id }
+  if(tab === 'archivo'){ fila.enlace_url = null; fila.archivo_nombre = null; if(fila.fuente === 'archivo') fila.fuente = fila.yt_url ? 'youtube' : 'archivo' }
+  else { fila.yt_url = null; fila.yt_nombre = null; if(fila.fuente === 'youtube') fila.fuente = 'archivo' }
+  var r = await supabase.from('ensayo_audio').upsert(fila, { onConflict: 'cancion_id' }).select().maybeSingle()
+  if(r.error){ showToast('No se pudo quitar el enlace. Inténtalo de nuevo.', '#e74c3c'); return }
+  ens.cfg = r.data || fila
+  ens.vista = 'play'; ens.confirmando = false
+  ensSetPrefFuente(null)
+  await ensAplicarCfg(); ensMostrar(true)
+  showToast('Enlace quitado', '#27ae60')
   ensRender()
 }
 
@@ -8270,7 +8323,7 @@ if(document.readyState === 'loading') document.addEventListener('DOMContentLoade
     ensClickOnda: ensClickOnda, ensIrA: ensIrA, ensToggleSig: ensToggleSig, ensSetModo: ensSetModo,
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
-    ensTogglePref: ensTogglePref }
+    ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
 })()
 
