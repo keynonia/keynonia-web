@@ -7808,6 +7808,7 @@ function ensToggleLoop(){
   ens.loop = !ens.loop
   if(ens.loop){ ens.loopIdx = ensIdx(ens.t, ens.marcas) }
   ensRender()
+  ensGrupoEnviarLoop()
 }
 function ensClickOnda(ev){
   var r = ev.currentTarget.getBoundingClientRect()
@@ -7858,6 +7859,26 @@ function ensPosDesde(p){
   if(p.s){ var m = ens.marcas.find(function(x){ return x.s === p.s }); if(m) return m.t + (p.off || 0) }
   return p.t || 0
 }
+/* El loop del administrador (activar/desactivar y qué sección) lo replican los demás en grupal */
+function ensLoopPayload(){
+  var pl = ensPosPayload(); pl.loop = !!ens.loop
+  var m = ens.loop ? ens.marcas[Math.min(ens.loopIdx, ens.marcas.length - 1)] : null
+  pl.ls = m ? m.s : null
+  return pl
+}
+function ensAplicarLoopGrupo(p){
+  if(!p.loop){ if(ens.loop){ ens.loop = false; ensRender() } return }
+  if(!ens.marcas.length) return
+  var i = p.ls ? ens.marcas.findIndex(function(x){ return x.s === p.ls }) : -1
+  if(typeof p.t === 'number'){ var d = ensPosDesde(p); if(Math.abs(d - ens.t) > 1.5){ ens.loop = false; ensIrA(d) } }
+  ens.loop = true
+  ens.loopIdx = i >= 0 ? i : ensIdx(ens.t, ens.marcas)
+  ensRender()
+}
+function ensGrupoEnviarLoop(){
+  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  try { ens.canal.send({ type: 'broadcast', event: 'lp', payload: ensLoopPayload() }) } catch(e){}
+}
 function ensGrupoSuscribir(){
   ensGrupoDesuscribir()
   if(ens.modo !== 'grupal' || !ens.orgId) return
@@ -7868,6 +7889,7 @@ function ensGrupoSuscribir(){
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
       if(typeof p.sig === 'boolean'){ ens.sigGrupo = p.sig; ensRender() }
       if(p.cancion !== ens.cancionId || !ensListo()) return
+      if(typeof p.loop === 'boolean') ensAplicarLoopGrupo(p)
       if(p.play){
         if(typeof p.t === 'number'){ var d = ensPosDesde(p); if(Math.abs(d - ens.t) > 1.5) ensIrA(d) }
         if(!ens.tocando) ensPlay()
@@ -7877,6 +7899,11 @@ function ensGrupoSuscribir(){
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
       if(p.cancion !== ens.cancionId || !ensListo()) return
       ensIrA(ensPosDesde(p))
+    }).on('broadcast', { event: 'lp' }, function(msg){
+      var p = msg && msg.payload
+      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      if(p.cancion !== ens.cancionId || !ensListo()) return
+      ensAplicarLoopGrupo(p)
     }).on('broadcast', { event: 'sg' }, function(msg){
       var p = msg && msg.payload
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
@@ -7894,7 +7921,7 @@ function ensGrupoDesuscribir(){
 }
 function ensGrupoEnviar(play){
   if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
-  var pl = ensPosPayload(); pl.play = !!play; pl.sig = !!ens.autoSig
+  var pl = ensLoopPayload(); pl.play = !!play; pl.sig = !!ens.autoSig
   try { ens.canal.send({ type: 'broadcast', event: 'pp', payload: pl }) } catch(e){}
 }
 function ensGrupoEnviarSalto(){
