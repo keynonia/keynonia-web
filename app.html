@@ -7940,14 +7940,12 @@ function ensSetModo(m){
 /* ───────── importar el audio (músico) ───────── */
 function ensDescargar(){
   if(!ens.cfg || !ens.cfg.enlace_url) return
-  ens.esperandoRegreso = true
-  // en la app de escritorio (Tauri) se abre con el navegador del sistema; en la web, en una pestaña nueva
+  // en la app de escritorio (Tauri) se abre con el navegador del sistema; en la web, en una pestaña nueva.
+  // No cambia nada en pantalla: «Descargar archivo» y «Subir archivo» están siempre disponibles.
   try {
     if(window.__TAURI__ && window.__TAURI__.core) window.__TAURI__.core.invoke('abrir_url', { url: ens.cfg.enlace_url })
     else window.open(ens.cfg.enlace_url, '_blank', 'noopener')
   } catch(e){ window.open(ens.cfg.enlace_url, '_blank', 'noopener') }
-  ens.paso = 0
-  ensRender()
 }
 function ensYaLoTengo(){ ens.esperandoRegreso = false; ens.paso = 1; ens.errImport = ''; ensRender() }
 document.addEventListener('visibilitychange', function(){
@@ -8090,18 +8088,16 @@ function ensVistaImportar(){
       '<div class="ens-small">' + esc(ens.nombreImportado) + ' · ' + ensMmss(ens.dur) + '<br>No tendrás que volver a hacer esto en este dispositivo.</div>' +
       '<button class="ens-btn" onclick="ensIrAlEnsayo()">Ir al ensayo →</button>' +
       '<button class="ens-btn gh" onclick="ensSonarPrueba()">Escuchar de nuevo</button>'
-  } else if(ens.paso === 1){
-    inner = (ens.errImport ? '<div class="ens-err">' + esc(ens.errImport) + '</div>' : '') +
-      '<div class="ens-big">Paso 2: elige el archivo</div>' +
-      '<div class="ens-small">Busca el archivo de audio que se descargó:</div>' +
-      '<div class="ens-file">' + nombre + '</div>' +
-      '<button class="ens-btn" onclick="ensElegirArchivo()">Elegir archivo</button>'
   } else {
+    // Las dos acciones están siempre a la vista: se puede descargar de nuevo cuantas veces haga falta,
+    // y subir el archivo en cualquier momento (sin pasos que se queden "pegados").
     inner = '<div class="ens-lider">Tu líder preparó el audio de esta canción</div>' +
-      '<div class="ens-big">Paso 1: descarga el audio</div>' +
-      '<div class="ens-small">Se abre en otra pestaña. Cuando termine, vuelve acá y seguimos.</div>' +
-      '<button class="ens-btn" onclick="ensDescargar()">Descargar el audio</button>' +
-      '<button class="ens-link" onclick="ensYaLoTengo()">Ya lo tengo descargado</button>'
+      (ens.errImport ? '<div class="ens-err">' + esc(ens.errImport) + '</div>' : '') +
+      '<div class="ens-big">Descarga el audio y súbelo aquí</div>' +
+      '<div class="ens-small">1. «Descargar archivo» abre el enlace en tu navegador.<br>2. Cuando lo tengas descargado, toca «Subir archivo» y elígelo.</div>' +
+      '<div class="ens-file">' + nombre + '</div>' +
+      '<button class="ens-btn" onclick="ensDescargar()">Descargar archivo</button>' +
+      '<button class="ens-btn" onclick="ensElegirArchivo()">Subir archivo</button>'
   }
   return '<div class="ens-imp">' + inner + '</div>'
 }
