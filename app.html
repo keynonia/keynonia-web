@@ -7915,7 +7915,7 @@ function ensTick(){
   if(ens.loop){ var L = ensRangoLoop(); if(L && ens.t >= L[1] - 0.06){ ensSrc.currentTime = L[0]; ens.t = L[0] } }
   if(ensSrc.ended){ ensFinDeCancion(); return }
   var k = ensIdx(ens.t, ens.marcas)
-  if(k !== ens.ultSec && ens.marcas.length){ ens.ultSec = k; var m = ens.marcas[k]; if(m && ensSecPorId(m.s)) repActivarSeccion(m.s, true) }
+  if(ens.vista === 'play' && k !== ens.ultSec && ens.marcas.length){ ens.ultSec = k; var m = ens.marcas[k]; if(m && ensSecPorId(m.s)) repActivarSeccion(m.s, true) }
   if(ensClave() !== ens.ultKey){ ensRender(); return }
   ensVivo()
 }
@@ -8615,10 +8615,20 @@ function ensPonerMarca(){
   var t = Math.max(Math.round((ensSrc ? ensSrc.currentTime : ens.t) * 10) / 10, n ? ult + 0.5 : 0)
   ens.draft.push({ s: s.id, t: t })
   ens.secSel = null    // la próxima propuesta vuelve a ser la siguiente en el orden de la canción
+  ensMarcarSeccionVista()
   ensRender()
 }
-function ensDeshacerMarca(){ if(ens.draft.length){ ens.draft.pop(); ens.secSel = null; ensRender() } }
-function ensEmpezarMarcas(){ ensPausa(); ens.draft = []; ens.secSel = null; ensIrA(0) }
+/* Mientras se marcan secciones, la sección ya marcada se resalta en la canción de arriba (y baja sola),
+   igual que cuando se elige una sección: así se ve dónde vas */
+function ensMarcarSeccionVista(){
+  var u = ens.draft.length ? ens.draft[ens.draft.length - 1] : null
+  if(u && ensSecPorId(u.s)) { repActivarSeccion(u.s, true); return }
+  repActiveSec = null
+  document.querySelectorAll('.rep-lyr-section.activa').forEach(function(e){ e.classList.remove('activa') })
+  document.querySelectorAll('.rep-sec-btn.active').forEach(function(e){ e.classList.remove('active') })
+}
+function ensDeshacerMarca(){ if(ens.draft.length){ ens.draft.pop(); ens.secSel = null; ensMarcarSeccionVista(); ensRender() } }
+function ensEmpezarMarcas(){ ensPausa(); ens.draft = []; ens.secSel = null; ensMarcarSeccionVista(); ensIrA(0) }
 
 /* — establecer marcas por acorde: un clic por acorde, con milésimas — */
 function ensAccSlotSiguiente(){
