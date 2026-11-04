@@ -883,6 +883,14 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-ac.sin{opacity:.35;border-style:dashed}
 .ens-nowchord{text-align:center;margin:10px 0 8px;font-size:.7rem;color:var(--text2)}
 .ens-nowchord b{display:block;font-size:1.7rem;color:#fff;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+.ens-nowchord.ens-listo b{color:#2ecc71}
+.ens-nowchord.ens-listo span{display:block;font-size:.74rem;margin-top:3px;color:var(--text2)}
+.ens-btn:disabled{opacity:.45;cursor:default}
+.ens-btn.ens-btn-sec{background:var(--bg3);border:1px solid var(--border);color:var(--text)}
+.ens-nuevasec{margin-top:12px;padding:12px;border:1px solid var(--border);border-radius:11px;background:var(--bg2)}
+.ens-nuevasec .ens-sel{width:100%;padding:9px;margin-bottom:11px;font-size:.8rem}
+@keyframes cqpop{0%{transform:scale(1)}40%{transform:scale(1.18)}100%{transform:scale(1)}}
+.rep-cq.pop{animation:cqpop .45s ease-out}
 .ens-row.sel{border-color:#F08A2A}
 /* Cuadritos de «Seguir acordes» y de «Establecer marcas por acorde»: van sobre los acordes de la canción */
 .rep-cq{border-radius:.4em;padding:.22em var(--pr,.6em) .22em var(--pl,.6em);margin:0 calc(-1*var(--pr,.6em)) 0 calc(-1*var(--pl,.6em));box-shadow:inset 0 0 0 2px var(--sec-color,#5B9DFF);cursor:pointer;transition:background .08s;-webkit-box-decoration-break:clone;box-decoration-break:clone}
@@ -7783,6 +7791,7 @@ function ensEsAudio(f){ return (f.type && f.type.indexOf('audio') === 0) || /\.(
 async function ensAlAbrirCancion(cancion, esPreview){
   ensDetener()
   ens.cancionId = null
+  ens.cuadros = false   // la canción nueva se dibuja sin cuadritos: ensRender los vuelve a poner si «Seguir acordes» sigue activo
   ensMostrar(false)
   if(!ensOn() || esPreview || !currentUser || !cancion) return
   if(repRepertorioOrigenId === 'demo') return
@@ -7988,6 +7997,11 @@ function ensFinDeCancion(){
   ensPararTimer(); ens.tocando = false; ens.t = ens.dur
   var hayMas = false
   var sig = ensSigEfectivo()
+  if(sig && ens.vista !== 'play'){   // editando marcas/enlace: NUNCA pasar de canción (se perdería lo no guardado)
+    ens.pasando = false
+    showToast('«Siguiente» no actúa mientras editas. Guarda tus marcas.', '#e67e22')
+    ensRender(); return
+  }
   if(sig && repRepertorioOrigenId){
     var cache = repSongsCache || []
     var idx = cache.findIndex(function(rc){ return rc.mis_canciones && rc.mis_canciones.id === repCancionId })
@@ -8355,7 +8369,7 @@ function ensPintarCuadros(){
   for(x=0;x<q.length;x++) q[x].classList.remove('on', 'hecho', 'sig', 'sin')
   ens.accEl = null
   var slots = ensSlots(), enAcordes = ens.vista === 'acordes'
-  var objetivo = enAcordes ? ensAccSlotSiguiente() : -1
+  var objetivo = enAcordes ? (ensAccCompleto() ? -1 : ensAccSlotSiguiente()) : -1
   var act = null
   ens.accIdx = enAcordes ? -1 : ensAccIdxAt(ens.t)
   slots.forEach(function(sl, k){
@@ -8368,6 +8382,11 @@ function ensPintarCuadros(){
       if(k === ens.accIdx){ el.classList.add('on'); ens.accEl = el }
     }
   })
+  if(enAcordes && ens.accUltimo){
+    var pop = ensCuadro(ens.accUltimo)
+    if(pop){ pop.classList.add('pop'); try { pop.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } catch(e){} }
+    ens.accUltimo = null
+  }
   if(act){ try { act.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } catch(e){} }
 }
 /* Se llama en cada tick: solo cambia el cuadrito que suena (sin redibujar nada) */
@@ -8523,7 +8542,7 @@ function ensPedirVolver(){
   if(ensHayCambios()){ ens.confirmando = true; ensRender() } else ensSalir()
 }
 function ensSalir(){
-  ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ensPausa()
+  ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ens.nuevaSec = null; ensPausa()
 }
 function ensRenderModal(){
   var m = ensEl('ens-modal'); if(!m) return
@@ -8637,6 +8656,14 @@ function ensAccSlotSiguiente(){
   for(var k=0;k<slots.length;k++){ if(!ensAccBuscar(ens.accDraft, slots[k])) return k }
   return Math.max(0, slots.length - 1)
 }
+/* ¿ya están todos los acordes marcados (y no se está re-marcando uno elegido a mano)? */
+function ensAccCompleto(){
+  var slots = ensSlots()
+  if(!slots.length) return false
+  if(ens.accSel !== null && ens.accSel !== undefined) return false
+  for(var k=0;k<slots.length;k++){ if(!ensAccBuscar(ens.accDraft, slots[k])) return false }
+  return true
+}
 function ensVistaAcordes(){
   var slots = ensSlots()
   if(!slots.length) return ensBarra('Establecer marcas por acorde') + ensEtiqueta() + '<div class="ens-msg">Esta canción no tiene acordes entre corchetes [ ] en sus secciones.</div>'
@@ -8654,12 +8681,15 @@ function ensVistaAcordes(){
          : '<span class="ens-tm ens-tms" style="opacity:.35">—</span>') +
       '</div>'
   }).join('')
-  var secSl = ensSecPorId(sl.s)
+  var secSl = ensSecPorId(sl.s), completo = ensAccCompleto()
   return ensBarra('Establecer marcas por acorde') + ensEtiqueta() +
     '<div class="ens-nota" style="margin-top:0">Dale play (puedes bajar la velocidad con ×) y toca el botón, o la barra espaciadora, justo cuando suena cada acorde. Cada corchete de la letra es un acorde. Con − y + afinas de a 10 milésimas.</div>' +
     '<div class="ens-player-box">' + ensPlayerHTML(ens.marcas, false) + '</div>' +
-    '<div class="ens-nowchord">Marcar ahora · ' + esc(secSl ? (secSl.nombre || secSl.abreviacion || '') : '') + ' · acorde ' + (sl.i + 1) + '<b>' + esc(ensLabelAcorde(sl.raw)) + '</b></div>' +
-    '<button class="ens-btn big" onmousedown="event.preventDefault()" onclick="ensPonerAcorde()">⚑ Marcar aquí · ' + esc(ensLabelAcorde(sl.raw)) + '</button>' +
+    (completo
+      ? '<div class="ens-nowchord ens-listo">✓ Marcaste todos los acordes<b>¡Listo!</b><span>Revisa abajo y toca «Guardar»</span></div>' +
+        '<button class="ens-btn big" disabled>⚑ Todos los acordes marcados</button>'
+      : '<div class="ens-nowchord">Marcar ahora · ' + esc(secSl ? (secSl.nombre || secSl.abreviacion || '') : '') + ' · acorde ' + (sl.i + 1) + '<b>' + esc(ensLabelAcorde(sl.raw)) + '</b></div>' +
+        '<button class="ens-btn big" onmousedown="event.preventDefault()" onclick="ensPonerAcorde()">⚑ Marcar aquí · ' + esc(ensLabelAcorde(sl.raw)) + '</button>') +
     '<div class="ens-mini-links"><button class="ens-link" ' + (ens.accPila && ens.accPila.length ? '' : 'disabled') + ' onclick="ensAccDeshacer()">↩ Deshacer la última</button>' +
       '<button class="ens-link" onclick="ensAccEmpezar()">↺ Empezar de nuevo</button></div>' +
     '<div class="ens-nota" style="margin:6px 0 0;text-align:center">' + hechos + ' de ' + slots.length + ' acordes marcados</div>' +
@@ -8675,6 +8705,7 @@ function ensAccScrollSel(){
 function ensAccSel(x){ ens.accSel = x; ensRender() }
 function ensPonerAcorde(){
   var slots = ensSlots(); if(!slots.length || !ensSrc) return
+  if(ensAccCompleto()) return   // ya está todo marcado: no se pisa el último por accidente (para re-marcar, elige un acorde con ⚑)
   var k = ensAccSlotSiguiente(), sl = slots[k]
   var t = Math.round(ensSrc.currentTime * 1000) / 1000
   var ex = ensAccBuscar(ens.accDraft, sl)
@@ -8683,7 +8714,17 @@ function ensPonerAcorde(){
   if(ex) ex.t = t; else ens.accDraft.push({ s: sl.s, o: sl.o, i: sl.i, t: t })
   ens.accDraft.sort(function(a, b){ return a.t - b.t })
   ens.accSel = null
+  ens.accUltimo = { s: sl.s, i: sl.i }
+  var terminado = ensAccCompleto()
   ensRender()
+  if(terminado){
+    ensPausa()
+    // baja sola hasta «Guardar» para que se vea que ya terminaste
+    setTimeout(function(){
+      var b = document.querySelector('#ens-dyn > .ens-btn:last-of-type, #ens-dyn > .ens-btn:last-child')
+      if(b){ try { b.scrollIntoView({ behavior: 'smooth', block: 'end' }) } catch(e){} }
+    }, 60)
+  }
 }
 function ensAccDeshacer(){
   if(!ens.accPila || !ens.accPila.length) return
@@ -8735,7 +8776,52 @@ function ensVistaEditar(){
   return ensBarra('Editar secciones y orden') + ensEtiqueta() +
     (n ? '<div class="ens-list tall">' + filas + '</div>' : '<div class="ens-msg">Aún no hay marcas. Usa «Establecer secciones».</div>') +
     '<div class="ens-nota">↑ ↓ mueven la sección con su duración y los tiempos se recalculan. − + ajustan el segundo de inicio. El desplegable cambia a qué sección de la canción corresponde cada marca.</div>' +
+    ensFormNuevaSec() +
     ensBtnGuardar()
+}
+/* Añadir una sección nueva: se elige cuál es y en qué momento empieza; su lugar en la lista lo decide ese tiempo */
+function ensParseTiempo(txt){
+  var m = String(txt || '').trim().replace(',', '.').match(/^(?:(\d+):)?(\d+(?:\.\d+)?)$/)
+  if(!m) return null
+  return (m[1] ? parseInt(m[1], 10) * 60 : 0) + parseFloat(m[2])
+}
+function ensFormNuevaSec(){
+  var f = ens.nuevaSec
+  if(!f || !f.abierto) return '<button class="ens-btn ens-btn-sec" style="margin-top:10px" onclick="ensAbrirNuevaSec()">＋ Añadir nueva sección</button>'
+  var secs = ensSecs()
+  var opts = secs.map(function(s){ return '<option value="' + esc(s.id) + '"' + (s.id === f.s ? ' selected' : '') + '>' + esc(s.nombre || s.abreviacion || '?') + '</option>' }).join('')
+  return '<div class="ens-nuevasec">' +
+    '<div class="ens-lbl">¿Qué sección es?</div>' +
+    '<select class="ens-sel" onchange="ensNuevaSecCampo(\'s\',this.value)">' + opts + '</select>' +
+    '<div class="ens-lbl">¿En qué momento empieza? (min:seg, por ejemplo 1:25)</div>' +
+    '<input class="ens-inp" value="' + esc(f.t) + '" inputmode="decimal" oninput="ensNuevaSecCampo(\'t\',this.value)" placeholder="0:00">' +
+    (f.err ? '<div class="ens-err" style="margin:4px 0">' + esc(f.err) + '</div>' : '') +
+    '<div class="ens-nota" style="margin:6px 0">La sección queda en la lista según su tiempo.</div>' +
+    '<div class="ens-mini-links"><button class="ens-btn" onclick="ensAnadirSec()">Añadir a la lista</button>' +
+    '<button class="ens-link" onclick="ensCerrarNuevaSec()">Cancelar</button></div></div>'
+}
+function ensAbrirNuevaSec(){
+  var secs = ensSecs(), L = ens.draft
+  var ult = L.length ? L[L.length - 1].t : 0
+  var sugerido = Math.min(Math.max(0, (ens.dur || 0) - 1), ult + 10)
+  ens.nuevaSec = { abierto: true, s: secs.length ? secs[0].id : '', t: ensMmss(sugerido), err: '' }
+  ensRender()
+}
+function ensCerrarNuevaSec(){ ens.nuevaSec = null; ensRender() }
+function ensNuevaSecCampo(c, v){ if(ens.nuevaSec){ ens.nuevaSec[c] = v; ens.nuevaSec.err = '' } }
+function ensAnadirSec(){
+  var f = ens.nuevaSec; if(!f) return
+  var t = ensParseTiempo(f.t)
+  var dur = ens.dur || 0
+  if(t === null){ f.err = 'Escribe el tiempo así: 1:25 (minutos:segundos).'; ensRender(); return }
+  if(dur && t > dur){ f.err = 'Ese momento es mayor que la duración del audio (' + ensMmss(dur) + ').'; ensRender(); return }
+  t = Math.round(t * 10) / 10
+  if(ens.draft.some(function(m){ return Math.abs(m.t - t) < 0.1 })){ f.err = 'Ya hay una sección que empieza en ese momento.'; ensRender(); return }
+  ens.draft.push({ s: f.s, t: t })
+  ens.draft.sort(function(a, b){ return a.t - b.t })
+  ens.nuevaSec = null
+  ensRender()
+  showToast('Sección añadida. Toca «Guardar» para dejarla fija.', '#27ae60')
 }
 function ensNudge(k, d){
   var L = ens.draft, m = L[k], prev = k > 0 ? L[k-1].t + 1 : 0, nxt = k + 1 < L.length ? L[k+1].t - 1 : (ens.dur || 0) - 1
@@ -8797,7 +8883,7 @@ async function ensGuardar(){
   ens.cfg = r.data || fila
   if(tras) tras()
   var vistaAntes = ens.vista
-  ens.vista = 'play'; ens.draft = []; ens.accDraft = []
+  ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ens.nuevaSec = null
   if(vistaAntes === 'enlace'){
     ensSetPrefFuente(null)
     await ensAplicarCfg()
@@ -8878,7 +8964,7 @@ if(document.readyState === 'loading') document.addEventListener('DOMContentLoade
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
-    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
     ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
