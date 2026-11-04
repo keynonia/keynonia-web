@@ -6307,6 +6307,8 @@ var repRepertorioOrigenId = null
 var repDemoSongsCache = []
 
 window.abrirReproductor = async function(cancionId, repertorioIdOrigen){
+  // cambios de Modo ensayo sin guardar: preguntar antes de cambiar de canción
+  if(window.ensConfirmarSalida && !ensConfirmarSalida(function(){ window.abrirReproductor(cancionId, repertorioIdOrigen) })) return
   await repAbrirCore(cancionId, 'mis_canciones', false, repertorioIdOrigen)
 }
 
@@ -6466,6 +6468,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
 }
 
 window.cerrarReproductor = function(){
+  if(window.ensConfirmarSalida && !ensConfirmarSalida(function(){ window.cerrarReproductor() })) return
   repFlushPreferencias()   // FIX: no perder el último cambio de capo/tono al cerrar
   document.getElementById('panel-reproductor').classList.remove('active')
   document.getElementById('rep-ton-sel').classList.remove('active')
@@ -7630,7 +7633,7 @@ var ens = {
   archivoListo: false, ytListo: false, ytErr: '',
   paso: 0, esperandoRegreso: false, errImport: '', nombreImportado: '',
   wave: null, timer: null, ultKey: '', autoplaySiguiente: false, pasando: false,
-  draft: [], snap: '', confirmando: false, confirmaTipo: '',
+  draft: [], snap: '', confirmando: false, confirmaTipo: '', pendiente: null,
   dTab: 'archivo', dLink: '', dName: '', dYT: '', dYTName: '', dErr: '',
   secSel: null, guardando: false, canal: null
 }
@@ -8542,16 +8545,29 @@ function ensPedirVolver(){
   if(ensHayCambios()){ ens.confirmando = true; ensRender() } else ensSalir()
 }
 function ensSalir(){
+  var pend = ens.pendiente; ens.pendiente = null
   ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ens.nuevaSec = null; ensPausa()
+  if(pend) pend()
 }
+/* Cualquier acción que interrumpa una edición (cambiar de canción, cerrar el reproductor, apagar el modo…) pasa por aquí.
+   Devuelve true si se puede continuar YA; si hay cambios sin guardar muestra «¿Guardar?» y la acción espera la respuesta. */
+function ensConfirmarSalida(accion){
+  if(ens.visible && ens.vista !== 'play' && !ens.guardando && ensHayCambios()){
+    ens.pendiente = accion || null; ens.menu = false; ens.confirmando = true; ens.abierto = true
+    ensRender(); return false
+  }
+  return true
+}
+function ensCancelarSalida(){ ens.pendiente = null; ens.confirmando = false; ensRender() }
 function ensRenderModal(){
   var m = ensEl('ens-modal'); if(!m) return
   if(!ens.confirmando){ m.style.display = 'none'; m.innerHTML = ''; return }
   m.style.display = 'flex'
-  m.innerHTML = '<div class="ens-modal-c"><div class="ens-modal-t">¿Deseas guardar los cambios antes de salir?</div>' +
+  m.innerHTML = '<div class="ens-modal-c"><div class="ens-modal-t">¿Deseas guardar los cambios antes de ' + (ens.pendiente ? 'continuar' : 'salir') + '?</div>' +
     '<div class="ens-modal-s">Si no los guardas, se pierden y todo queda como estaba.</div>' +
     '<div class="ens-modal-b"><button class="ens-btn gh" onclick="ensSalir()">No guardar</button>' +
-    '<button class="ens-btn" onclick="ensGuardar()">Guardar</button></div></div>'
+    '<button class="ens-btn" onclick="ensGuardar()">Guardar</button></div>' +
+    (ens.pendiente ? '<button class="ens-link" style="margin-top:10px;width:100%" onclick="ensCancelarSalida()">Cancelar (seguir editando)</button>' : '') + '</div>'
 }
 function ensBarra(titulo){
   return '<div class="ens-ed-top"><button class="ens-back" onclick="ensPedirVolver()">‹ Volver</button><b>' + titulo + '</b></div>'
@@ -8840,7 +8856,13 @@ function ensMover(k, d){
 }
 
 /* — guardar en la base de datos (solo administradores) — */
+/* Guardar desde el modal/botón. Si había una acción pendiente (cambiar de canción, cerrar…), se ejecuta solo si se guardó bien */
 async function ensGuardar(){
+  var pend = ens.pendiente; ens.pendiente = null
+  await ensGuardarInterno()
+  if(pend && ens.vista === 'play'){ ens.confirmando = false; ensRender(); pend() }
+}
+async function ensGuardarInterno(){
   if(!ens.esAdmin || ens.guardando) return
   var c = ens.cfg || {}
   var fila = {
@@ -8927,6 +8949,7 @@ function ensSyncPrefBtn(){
   b.textContent = on ? 'Activado' : 'Desactivado'
 }
 function ensTogglePref(){
+  if(ensOn() && window.ensConfirmarSalida && !ensConfirmarSalida(ensTogglePref)) return
   var on = !ensOn()
   try { if(on) sessionStorage.setItem(ENS_LS_ON, '1'); else sessionStorage.removeItem(ENS_LS_ON) } catch(e){}
   ensSyncPrefBtn()
@@ -8954,6 +8977,11 @@ function ensInit(){
 }
 if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensInit); else ensInit()
 
+/* cerrar o recargar la pestaña/ventana con cambios sin guardar */
+window.addEventListener('beforeunload', function(e){
+  if(ens.visible && ens.vista !== 'play' && ensHayCambios()){ e.preventDefault(); e.returnValue = ''; return '' }
+})
+
 ;(function(){
   var api = { ensToggleDrawer: ensToggleDrawer, ensToggleMenu: ensToggleMenu, ensIrVista: ensIrVista, ensPedirVolver: ensPedirVolver,
     ensSalir: ensSalir, ensGuardar: ensGuardar, ensSetTab: ensSetTab, ensDraft: ensDraft, ensSetSecSel: ensSetSecSel,
@@ -8964,7 +8992,7 @@ if(document.readyState === 'loading') document.addEventListener('DOMContentLoade
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
-    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
     ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
