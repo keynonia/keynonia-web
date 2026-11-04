@@ -859,6 +859,43 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-modal-b{display:flex;gap:8px}
 .ens-modal-b .ens-btn{padding:11px;font-size:.84rem}
 .ens-modal-b .ens-btn+.ens-btn{margin-top:0}
+/* ═════════ MODO ENSAYO · rediseño, acordes y cajón arrastrable ═════════ */
+.ens-head{touch-action:none;user-select:none;-webkit-user-select:none}
+.ens-handle{touch-action:none;cursor:grab}
+.ens-drawer.arr .ens-body{overflow:hidden}
+.ens-drawer.arr .ens-handle{cursor:grabbing}
+.ens-msep{height:1px;background:#31353d;margin:4px 6px}
+.ens-selrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0 8px;flex-wrap:wrap}
+.ens-swrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.ens-swt{display:inline-flex;align-items:center;gap:7px;background:#16181c;border:1px solid #2b2f36;color:#9aa0a6;border-radius:9px;padding:7px 9px;font-family:inherit;font-size:.68rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.ens-swt svg{width:14px;height:14px;flex-shrink:0}
+.ens-swt.on{background:rgba(29,184,154,.14);border-color:rgba(29,184,154,.5);color:#1DB89A}
+.ens-tg{width:30px;height:17px;border-radius:9px;background:#3a3f47;position:relative;flex-shrink:0;transition:background .15s}
+.ens-tg i{position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:transform .15s}
+.ens-swt.on .ens-tg{background:#1DB89A}
+.ens-swt.on .ens-tg i{transform:translateX(13px)}
+.ens-acs{position:relative;max-height:150px;overflow-y:auto;margin:2px 0 10px;border:1px solid #1d2026;border-radius:10px;background:#0f1114}
+.ens-ag{padding:7px 9px 5px}
+.ens-agt{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;color:var(--c)}
+.ens-asq{display:flex;flex-wrap:wrap;gap:5px}
+.ens-ac{min-width:40px;height:34px;padding:0 8px;border-radius:7px;border:2px solid var(--c);background:transparent;color:#e8eaed;font-family:ui-monospace,Menlo,monospace;font-size:.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .08s}
+.ens-ac.on{background:var(--c);color:#0b0c0e;transform:scale(1.1);box-shadow:0 0 0 2px rgba(255,255,255,.28)}
+.ens-ac.sin{opacity:.35;border-style:dashed}
+.ens-nowchord{text-align:center;margin:10px 0 8px;font-size:.7rem;color:var(--text2)}
+.ens-nowchord b{display:block;font-size:1.7rem;color:#fff;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+.ens-row.sel{border-color:#F08A2A}
+.ens-ac-dot{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:middle}
+.ens-tms{min-width:74px;cursor:pointer}
+/* Grados */
+.rep-gr-row{display:flex;gap:8px}
+.rep-gr-btn{flex:1;height:38px;border:1px solid var(--border);border-radius:8px;background:var(--bg3);color:var(--text);cursor:pointer;font-family:inherit;font-size:.82rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:7px}
+.rep-gr-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.rep-gr-btn small{font-size:.58rem;font-weight:600;opacity:.8}
+.rep-salad{display:inline-flex;align-items:center;gap:1px;font-family:'Poppins',sans-serif;font-weight:800;line-height:1}
+.rep-salad b{display:inline-block;font-weight:800}
+.rep-salad b:nth-child(1){transform:translateY(-4px) rotate(-9deg);font-size:1.05em}
+.rep-salad b:nth-child(2){transform:translateY(3px) rotate(7deg);font-size:.82em}
+.rep-salad b:nth-child(3){transform:translateY(-2px) rotate(-5deg);font-size:.96em}
 @media(max-width:640px){
   .ens-drawer.con-nav{margin-bottom:calc(58px + env(safe-area-inset-bottom,0px))}
   .ens-drawer{max-height:68vh}
@@ -4462,7 +4499,7 @@ async function verificarTodosTonosCompletos() {
   tonosNotificadosIds.add(repActualId)
 
   try {
-    const { error } = await supabase.functions.invoke('enviar-tonos-completos', {
+    const { data: resTonos, error } = await supabase.functions.invoke('enviar-tonos-completos', {
       body: {
         nombreRepertorio: rep.titulo,
         nombreOrganizacion: orgActivo.nombre,
@@ -4474,6 +4511,8 @@ async function verificarTodosTonosCompletos() {
       showToast('✓ Todos los tonos definidos. (Error al notificar: ' + (error.message || 'ver consola') + ')', '#e67e22')
       return
     }
+    // El servidor solo avisa al equipo cuando los tonos los completa un miembro (no un administrador)
+    if (resTonos && resTonos.enviado === false) { showToast('✓ Todos los tonos están definidos.'); return }
   } catch(e) {
     console.error('enviar-tonos-completos excepción:', e)
     showToast('✓ Todos los tonos definidos. (Sin conexión al notificar)', '#e67e22')
@@ -5366,6 +5405,75 @@ function repTrText(text,f,to){
   return out
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// GRADOS: los acordes se muestran como grados de la escala en vez de notas. Es solo una vista
+// (no cambia lo guardado). Números: sistema Nashville (en canciones menores se cuentan desde la
+// relativa mayor: Am = 6m). Romanos: desde la tónica de la canción (en menor: i, III, iv, v, VI, VII).
+// ═══════════════════════════════════════════════════════════════════════════
+var repGrados = ''          // '' | 'num' | 'rom'
+var repGradoPend = ''
+var REP_GR_NUM = ['1','b2','2','b3','3','4','#4','5','b6','6','b7','7']
+var REP_GR_ROM_MAYOR = ['I','bII','II','bIII','III','IV','#IV','V','bVI','VI','bVII','VII']
+var REP_GR_ROM_MENOR = ['I','bII','II','III','#III','IV','#IV','V','VI','#VI','VII','#VII']
+var REP_SALAD_HTML = '<span class="rep-salad"><b>1</b><b>2</b><b>3</b></span>'
+function repGradosOn(){ return repGrados === 'num' || repGrados === 'rom' }
+function repGradoTok(t){
+  var m = t.match(/^([A-G][#b]?)(.*)$/); if(!m) return t
+  var bi = REP_CHROM.indexOf(repNorm(m[1])), ti = REP_CHROM.indexOf(repNorm(repOrigKey))
+  if(bi < 0 || ti < 0) return t
+  var r = m[2] || '', minor = repScale === 'minor'
+  if(repGrados === 'num'){
+    var ref = minor ? (ti + 3) % 12 : ti
+    return REP_GR_NUM[(bi - ref + 12) % 12] + r
+  }
+  var rom = (minor ? REP_GR_ROM_MENOR : REP_GR_ROM_MAYOR)[(bi - ti + 12) % 12]
+  var mm = rom.match(/^([b#]?)(.*)$/), acc = mm[1], rn = mm[2]
+  if(/^(?:dim|°)/.test(r)) return acc + rn.toLowerCase() + '°' + r.replace(/^(?:dim|°)/, '')
+  if(/^(?:min|m)(?!aj)/.test(r)) return acc + rn.toLowerCase() + r.replace(/^(?:min|m)/, '')
+  return acc + rn + r
+}
+function repGradosText(text){
+  if(!text) return text
+  var out = '', i = 0
+  while(i < text.length){
+    if(text[i] === '['){
+      var j = text.indexOf(']', i)
+      if(j < 0){ out += text.slice(i); break }
+      var toks = text.slice(i+1, j).split(' ').filter(function(x){ return x.length > 0 }).map(function(tk){
+        if(tk.indexOf('/') >= 0) return tk.split('/').map(function(x){ return repGradoTok(x) }).join('/')
+        return repGradoTok(tk)
+      })
+      out += '[' + toks.join(' ') + ']'
+      i = j + 1
+    } else { out += text[i]; i++ }
+  }
+  return out
+}
+// Texto de acordes tal como se debe VER: en grados, o transpuesto al tono elegido
+function repTrView(text){ return repGradosOn() ? repGradosText(text) : repTrText(text, repOrigKey, repCurKey) }
+function repLeerGradosLS(id){ try { var v = localStorage.getItem('keynonia_grados_' + id); return (v === 'num' || v === 'rom') ? v : '' } catch(e){ return '' } }
+function repGuardarGradosLS(){ try { var k = 'keynonia_grados_' + repCancionId; if(repGradosOn()) localStorage.setItem(k, repGrados); else localStorage.removeItem(k) } catch(e){} }
+// Botón de afuera: nota, o la «ensalada de números» / el grado cuando está en modo grados
+function repActualizarBotonTono(){
+  var b = document.getElementById('rep-ton-btn'); if(!b) return
+  if(repGrados === 'num'){ b.innerHTML = REP_SALAD_HTML; b.title = 'Grados (números)' }
+  else if(repGrados === 'rom'){ b.textContent = 'VI'; b.title = 'Grados (romanos)' }
+  else { b.textContent = repCurKey + (repScale === 'minor' ? 'm' : ''); b.title = 'Tonalidad' }
+  b.classList.toggle('rep-gr-on', repGradosOn())
+}
+function repPintarGradosPanel(){
+  var n = document.getElementById('rep-gr-num'), r = document.getElementById('rep-gr-rom')
+  if(n) n.classList.toggle('active', repGradoPend === 'num')
+  if(r) r.classList.toggle('active', repGradoPend === 'rom')
+  var grid = document.getElementById('rep-ton-grid')
+  if(grid) grid.querySelectorAll('.rep-tk-btn').forEach(function(b){ b.classList.toggle('active', !repGradoPend && repBaseKey(b.dataset.key) === repPendKey) })
+}
+window.repSetGrados = function(m){
+  repGradoPend = (repGradoPend === m) ? '' : m
+  repHasPend = true
+  repPintarGradosPanel()
+}
+
 function repFmtContent(content){
   var lines=content.split('\n'), res=''
   var sl=repPrefs.showL, sc=repPrefs.showC
@@ -5418,7 +5526,7 @@ function repUpdateDisplay(){
   var secciones=(repCancion.datos && repCancion.datos.secciones) || []
   var html=''
   secciones.forEach(function(sec){
-    var trans=repTrText(sec.contenido||'', repOrigKey, repCurKey)
+    var trans=repTrView(sec.contenido||'')
     var colorCls=sec.color || REP_TYPE_CLS[sec.tipo] || 'sky'
     var midiStr=(typeof sec.midiNote==='number') ? '<span class="rep-sec-midi">MIDI: '+repMidiName(sec.midiNote)+'</span>' : ''
     var dmStr=(repPrefs.showDM && sec.dm) ? '<div class="rep-sec-dm">('+esc(sec.dm)+')</div>' : ''
@@ -5430,6 +5538,7 @@ function repUpdateDisplay(){
   el.innerHTML=html
   el.className='rep-lyrics-content'+(repPrefs.cols===3?' three-col':repPrefs.cols===2?' two-col':'')+(repPrefs.showL && repPrefs.showC ? ' ambos-vis' : '')
   acdActualizar()
+  try { if(typeof ensRefrescarAcordes === 'function') ensRefrescarAcordes() } catch(e){}
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -5864,7 +5973,7 @@ function repBuildTonGrid(){
   var keys = repScale==='minor' ? REP_CHROM_MINOR : REP_CHROM
   keys.forEach(function(k){
     var btn=document.createElement('button')
-    btn.className='rep-tk-btn'+(repBaseKey(k)===repPendKey?' active':'')
+    btn.className='rep-tk-btn'+(!repGradoPend && repBaseKey(k)===repPendKey?' active':'')
     btn.textContent=k
     btn.dataset.key=k
     btn.addEventListener('click',function(){
@@ -5872,6 +5981,8 @@ function repBuildTonGrid(){
       btn.classList.add('active')
       repPendKey=repBaseKey(k)
       repHasPend=true
+      repGradoPend=''
+      repPintarGradosPanel()
       repBuildCapo(repBaseKey(k))
     })
     grid.appendChild(btn)
@@ -5949,15 +6060,19 @@ window.repAbrirSelectorTono = function(){
   document.getElementById('rep-pref-panel').classList.remove('active')
   repPendKey=repCurKey
   repHasPend=false
+  repGradoPend=repGrados
   document.getElementById('rep-ton-sel').classList.add('active')
   repBuildTonGrid()
+  repPintarGradosPanel()
   repBuildCapo(repCurKey)
 }
 
 window.repAplicarTono = function(){
   if(repHasPend){
-    repCurKey=repPendKey
-    document.getElementById('rep-ton-btn').textContent = repCurKey + (repScale==='minor'?'m':'')
+    repGrados=repGradoPend
+    repGuardarGradosLS()
+    if(!repGradoPend) repCurKey=repPendKey
+    repActualizarBotonTono()
     repUpdateDisplay()
     repBuildCapo(repCurKey)
     repHasPend=false
@@ -6209,6 +6324,8 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repOrigKey = repBaseKey(cancion.tono || 'C')
   repScale = cancion.escala || 'major'
   repCurKey = repOrigKey
+  repGrados = repLeerGradosLS(cancionId)
+  repGradoPend = ''
   repCapoPos = 0
   repTransposePos = 0
   repUltimoAjuste = 'capo'
@@ -6269,7 +6386,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
     }
   }
 
-  document.getElementById('rep-ton-btn').textContent = repCurKey + (repScale==='minor'?'m':'')
+  repActualizarBotonTono()
   repAplicarPrefs()
   repBuildSecs()
   repSetupSecsScroll()
@@ -6713,7 +6830,7 @@ window.repImprimir = function(){
 
   var body = ''
   secciones.forEach(function(sec){
-    var trans = repTrText(sec.contenido||'', repOrigKey, repCurKey)
+    var trans = repTrView(sec.contenido||'')
     var dmStr = (repPrefs.showDM && sec.dm) ? '<div class="ph-dm">('+esc(sec.dm)+')</div>' : ''
     var inner = repFmtContent(trans)
       .replace(/rep-chord-line/g,'ph-chord')
@@ -7460,13 +7577,15 @@ if(document.readyState === 'complete' || document.readyState === 'interactive') 
 var ENS_LS_ON = 'keynonia_ensayo_beta'
 var ENS_LS_SIG = 'keynonia_ensayo_siguiente'
 var ENS_LS_MODO = 'keynonia_ensayo_modo'
+var ENS_LS_SEGUIR = 'keynonia_ensayo_seguir_acordes'
 
 var ens = {
   cfg: null, cancionId: null, orgId: null, esAdmin: false, visible: false,
   fuente: 'archivo', marcas: [],
+  acordes: [], accDraft: [], accSel: null, seguir: false, accIdx: -1, slots: null, accTimes: null,
   dur: 0, t: 0, tocando: false, vel: 1, loop: false, loopIdx: 0,
   abierto: true, modo: 'individual', autoSig: false, sigGrupo: null,
-  vista: 'play',               // play | enlace | marcar | editar
+  vista: 'play',               // play | enlace | marcar | editar | acordes
   menu: false,
   archivoListo: false, ytListo: false, ytErr: '',
   paso: 0, esperandoRegreso: false, errImport: '', nombreImportado: '',
@@ -7495,6 +7614,17 @@ function ensNormMarcas(x){
   if(!Array.isArray(x)) return []
   return x.filter(function(m){ return m && typeof m.t === 'number' && m.s })
           .map(function(m){ return { s: m.s, t: Math.round(m.t*10)/10 } })
+          .sort(function(a,b){ return a.t - b.t })
+}
+
+function ensMs(s){ s = Math.max(0, s || 0); var m = Math.floor(s/60), r = s - m*60; var rs = r.toFixed(3); if(r < 10) rs = '0' + rs; return m + ':' + rs }
+/* Marcas por acorde: cada corchete [ ] de la letra es un acorde (una pulsación). Se guardan como
+   { s: id de la sección, o: n-ésima vez que aparece esa sección en el audio (0 = primera), i: nº del corchete dentro
+   de la sección, t: segundos con milésimas }. Son independientes de las marcas de sección. */
+function ensNormAcordes(x){
+  if(!Array.isArray(x)) return []
+  return x.filter(function(m){ return m && typeof m.t === 'number' && m.s && typeof m.i === 'number' })
+          .map(function(m){ return { s: m.s, o: (typeof m.o === 'number' ? m.o : 0), i: m.i, t: Math.round(m.t*1000)/1000 } })
           .sort(function(a,b){ return a.t - b.t })
 }
 
@@ -7632,6 +7762,8 @@ async function ensAlAbrirCancion(cancion, esPreview){
   ens.esAdmin = org.rol === 'administrador'
   try { ens.modo = localStorage.getItem(ENS_LS_MODO) === 'grupal' ? 'grupal' : 'individual' } catch(e){}
   try { ens.autoSig = localStorage.getItem(ENS_LS_SIG) === '1' } catch(e){}
+  try { ens.seguir = localStorage.getItem(ENS_LS_SEGUIR) === '1' } catch(e){}
+  ens.acordes = []; ens.accDraft = []; ens.accSel = null; ens.slots = null; ens.accTimes = null; ens.accIdx = -1
   ens.vista = 'play'; ens.menu = false; ens.confirmando = false; ens.loop = false; ens.t = 0
   ens.cfg = null; ens.marcas = []; ens.dur = 0; ens.wave = null
   ens.archivoListo = false; ens.ytListo = false; ens.ytErr = ''; ens.paso = 0; ens.errImport = ''
@@ -7680,6 +7812,8 @@ async function ensAplicarCfg(forzar){
   var cfg = ens.cfg
   ens.fuente = ensFuenteInicial(cfg, forzar)
   ens.marcas = ensNormMarcas(cfg ? (ens.fuente === 'youtube' ? cfg.marcas_yt : cfg.marcas_archivo) : [])
+  ens.acordes = ensNormAcordes(cfg ? (ens.fuente === 'youtube' ? cfg.marcas_acordes_yt : cfg.marcas_acordes_archivo) : [])
+  ens.slots = null; ens.accTimes = null; ens.accIdx = -1
   ensSrc = null; ens.archivoListo = false; ens.ytListo = false; ens.wave = null
   if(!cfg) return
   if(ens.fuente === 'youtube'){
@@ -7753,6 +7887,7 @@ function ensTick(){
   ensVivo()
 }
 function ensVivo(){
+  ensVivoAcordes()
   var dur = ens.dur || 1, pos = ens.t / dur, lo = null, hi = null
   if(ens.loop){ var L = ensRangoLoop(); if(L){ lo = L[0]/dur; hi = L[1]/dur } }
   var bars = document.querySelectorAll('#ens-dyn .ens-wave i')
@@ -7789,7 +7924,7 @@ function ensIrA(seg){
   if(ens.vista === 'play') ensGrupoEnviarSalto()   // en grupal, el salto del administrador lo siguen los demás
 }
 function ensAlInicio(){ ensIrA(ens.loop ? (ensRangoLoop() || [0])[0] : 0) }
-var ENS_VELS = [1, 0.75, 1.25, 1.5]
+var ENS_VELS = [1, 0.75, 0.5, 1.25, 1.5]
 function ensCambiarVel(){
   ens.vel = ENS_VELS[(ENS_VELS.indexOf(ens.vel) + 1) % ENS_VELS.length]
   try { if(ensSrc) ensSrc.playbackRate = ens.vel } catch(e){}
@@ -7841,6 +7976,19 @@ function ensToggleSig(){
   ensGrupoEnviarSig()
   try { localStorage.setItem(ENS_LS_SIG, ens.autoSig ? '1' : '0') } catch(e){}
   ensRender()
+  showToast(ens.autoSig ? 'Siguiente activado' : 'Siguiente desactivado', ens.autoSig ? '#27ae60' : '#7f8c8d')
+}
+/* «Seguir acordes»: es una ayuda visual de cada persona (no viaja por la red). Necesita que el administrador haya marcado los acordes. */
+function ensSeguirOn(){ return !!(ens.seguir && ens.acordes.length) }
+function ensToggleSeguir(){
+  if(!ens.seguir){
+    if(!ens.acordes.length){ showToast('No hay marcas de acordes disponibles', '#e67e22'); return }
+    ens.seguir = true
+  } else ens.seguir = false
+  try { localStorage.setItem(ENS_LS_SEGUIR, ens.seguir ? '1' : '0') } catch(e){}
+  ens.accIdx = -2
+  ensRender()
+  showToast(ens.seguir ? 'Seguir acordes activado' : 'Seguir acordes desactivado', ens.seguir ? '#27ae60' : '#7f8c8d')
 }
 
 /* ───────── modo grupal: solo el play/pausa del administrador viaja ───────── */
@@ -8026,19 +8174,27 @@ function ensPlayerHTML(lista, conLoop){
 function ensRender(){
   var d = ensEl('ens-drawer'); if(!d || !ens.visible) return
   d.classList.toggle('closed', !ens.abierto)
-  var more = ensEl('ens-more'); if(more) more.style.display = ens.esAdmin ? '' : 'none'
+  // ⋯: el administrador ve todas sus opciones + «Quitar el audio de este dispositivo»; el resto de miembros
+  // ve ⋯ solo cuando tiene un audio guardado en este dispositivo (su única opción)
+  var quitarOk = (ens.fuente === 'archivo' && ens.archivoListo)
+  var more = ensEl('ens-more'); if(more) more.style.display = (ens.esAdmin || quitarOk) ? '' : 'none'
   var menu = ensEl('ens-menu')
   if(menu){
-    menu.classList.toggle('on', ens.menu && ens.esAdmin)
-    menu.innerHTML = '<div class="ens-mtag">Solo administradores</div>' +
-      '<button class="ens-mitem" onclick="ensIrVista(\'enlace\')">Subir o cambiar audio o enlace</button>' +
-      '<button class="ens-mitem" onclick="ensIrVista(\'marcar\')">Establecer secciones</button>' +
-      '<button class="ens-mitem" onclick="ensIrVista(\'editar\')">Editar secciones y orden</button>'
+    menu.classList.toggle('on', !!(ens.menu && (ens.esAdmin || quitarOk)))
+    menu.innerHTML = (ens.esAdmin
+        ? '<div class="ens-mtag">Solo administradores</div>' +
+          '<button class="ens-mitem" onclick="ensIrVista(\'enlace\')">Subir o cambiar audio o enlace</button>' +
+          '<button class="ens-mitem" onclick="ensIrVista(\'marcar\')">Establecer secciones</button>' +
+          '<button class="ens-mitem" onclick="ensIrVista(\'editar\')">Editar secciones y orden</button>' +
+          '<button class="ens-mitem" onclick="ensIrVista(\'acordes\')">Establecer marcas por acorde</button>'
+        : '') +
+      ((ens.esAdmin && quitarOk) ? '<div class="ens-msep"></div>' : '') +
+      (quitarOk ? '<button class="ens-mitem" onclick="ensQuitarAudioLocal()">Quitar el audio de este dispositivo</button>' : '')
   }
   // el video flota siempre en su sitio (si se recarga, se corta): solo se muestra/oculta
   var yw = ensEl('ens-ytwrap')
   if(yw){
-    var verVideo = ens.fuente === 'youtube' && (ens.vista === 'play' || ens.vista === 'marcar') && ensTieneFuenteActual()
+    var verVideo = ens.fuente === 'youtube' && (ens.vista === 'play' || ens.vista === 'marcar' || ens.vista === 'acordes') && ensTieneFuenteActual()
     yw.style.display = (verVideo && !ens.ytErr) ? '' : 'none'
   }
   var dyn = ensEl('ens-dyn'); if(!dyn) return
@@ -8046,37 +8202,150 @@ function ensRender(){
   if(ens.vista === 'enlace') html = ensVistaEnlace()
   else if(ens.vista === 'marcar') html = ensVistaMarcar()
   else if(ens.vista === 'editar') html = ensVistaEditar()
+  else if(ens.vista === 'acordes') html = ensVistaAcordes()
   else html = ensVistaPlay()
+  var lst0 = dyn.querySelector('.ens-list'), st0 = lst0 ? lst0.scrollTop : 0
   dyn.innerHTML = html
+  var lst1 = dyn.querySelector('.ens-list'); if(lst1) lst1.scrollTop = st0
   ens.ultKey = ensClave()
   ensRenderModal()
+  if(ens.vista === 'acordes') ensAccScrollSel(); else ensScrollAcorde()
+}
+
+var ENS_COL = { green:'#1DB89A', blue:'#5B9DFF', orange:'#E07A5F', red:'#E74C3C', purple:'#9B7FE8', yellow:'#F1C40F', sky:'#3498DB' }
+function ensColorSec(sec){ var c = (sec && (sec.color || REP_TYPE_CLS[sec.tipo])) || 'sky'; return ENS_COL[c] || '#5B9DFF' }
+function ensIcoAcordes(){ return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="3" y="3" width="7" height="7" rx="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.8"/></svg>' }
+/* Interruptor: icono + texto + switch. Verde cuando está activado. */
+function ensSwitchHTML(cls, on, click, icono, texto, titulo){
+  return '<button class="ens-swt ' + cls + (on ? ' on' : '') + '" role="switch" aria-checked="' + (on ? 'true' : 'false') + '" onclick="' + click + '" title="' + esc(titulo || '') + '">' +
+    icono + '<span class="ens-swl">' + texto + '</span><span class="ens-tg"><i></i></span></button>'
+}
+function ensSwFuente(){
+  var c = ens.cfg
+  if(!c || !c.enlace_url || !c.yt_url) return ''
+  return '<div class="ens-sw" title="Escuchar con"><button class="' + (ens.fuente === 'archivo' ? 'on' : '') + '" onclick="ensCambiarFuente(\'archivo\')">Audio</button>' +
+    '<button class="' + (ens.fuente === 'youtube' ? 'on' : '') + '" onclick="ensCambiarFuente(\'youtube\')">YouTube</button></div>'
 }
 
 function ensVistaPlay(){
   // Falta el audio en ESTE dispositivo (archivo): guía de descargar e importar
   if(ens.fuente === 'archivo' && ensTieneFuenteActual() && !ens.archivoListo) return ensSelectorFuente() + ensVistaImportar()
   if(!ensTieneFuente()){
-    return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.</div>'
+    return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>' + (ens.esAdmin ? 'Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.' : 'Tu líder aún no lo ha dejado.') + '</div>'
   }
   var info = ''
   if(ens.fuente === 'youtube' && ens.ytErr) info = '<div class="ens-err">' + esc(ens.ytErr) + '</div>'
   else if(ens.fuente === 'youtube' && !ens.ytListo) info = '<div class="ens-msg">Cargando el video…</div>'
-  var modo =
-    '<div class="ens-mode">' +
-      '<div class="ens-sw"><button class="' + (ens.modo === 'individual' ? 'on' : '') + '" onclick="ensSetModo(\'individual\')">Individual</button>' +
-      '<button class="' + (ens.modo === 'grupal' ? 'on' : '') + '" onclick="ensSetModo(\'grupal\')">Grupal</button></div>' +
-      '<button class="ens-sig' + (ensSigEfectivo() ? ' on' : '') + '" onclick="ensToggleSig()" title="Al terminar la canción, pasa a la siguiente y le da play' + ((ens.modo === 'grupal' && !ens.esAdmin) ? ' (en grupal lo decide el administrador)' : '') + '">' +
-        (ensSigEfectivo() ?'⏭ Siguiente: activado' : '⏭ Siguiente: desactivado') + '</button>' +
-    '</div>' +
-    (ens.modo === 'grupal'
-      ? '<div class="ens-grp"><span class="ens-pulse"></span>' + (ens.esAdmin ? 'Diriges: tu play y pausa llegan a los demás' : 'El administrador controla el play y la pausa · lo demás es tuyo') + '</div>'
-      : '')
   var pl = ensListo() ? ensPlayerHTML(ens.marcas, true) : ''
   var sinMarcas = (ensListo() && !ens.marcas.length)
     ? '<div class="ens-nota">' + (ens.esAdmin ? 'Aún no hay secciones marcadas: usa ⋯ → Establecer secciones.' : 'El administrador aún no marcó las secciones de este audio.') + '</div>' : ''
-  var quitar = (ens.fuente === 'archivo' && ens.archivoListo)
-    ? '<button class="ens-link" onclick="ensQuitarAudioLocal()">Quitar el audio de este dispositivo</button>' : ''
-  return ensSelectorFuente() + info + modo + pl + sinMarcas + quitar
+  // debajo del reproductor: Individual | Grupal  ·  Audio | YouTube
+  var selrow = '<div class="ens-selrow">' +
+    '<div class="ens-sw"><button class="' + (ens.modo === 'individual' ? 'on' : '') + '" onclick="ensSetModo(\'individual\')">Individual</button>' +
+    '<button class="' + (ens.modo === 'grupal' ? 'on' : '') + '" onclick="ensSetModo(\'grupal\')">Grupal</button></div>' + ensSwFuente() + '</div>'
+  // Seguir acordes (izquierda)  ·  Siguiente (derecha)
+  var swrow = '<div class="ens-swrow">' +
+    ensSwitchHTML('seg', ensSeguirOn(), 'ensToggleSeguir()', ensIcoAcordes(), 'Seguir acordes', 'Muestra un cuadrito por acorde y avanza con la canción') +
+    ensSwitchHTML('sig', ensSigEfectivo(), 'ensToggleSig()', '⏭', 'Siguiente', 'Al terminar la canción, pasa a la siguiente y le da play' + ((ens.modo === 'grupal' && !ens.esAdmin) ? ' (en grupal lo decide el administrador)' : '')) +
+    '</div>'
+  var grp = ens.modo === 'grupal'
+    ? '<div class="ens-grp"><span class="ens-pulse"></span>' + (ens.esAdmin ? 'Diriges: tu play y pausa llegan a los demás' : 'El administrador controla el play y la pausa · lo demás es tuyo') + '</div>'
+    : ''
+  var acs = (ensSeguirOn() && ensListo()) ? ensAcordesHTML() : ''
+  return info + pl + sinMarcas + selrow + swrow + acs + grp
+}
+
+/* ───────── marcas por acorde: cuadritos y seguimiento ───────── */
+function ensChordsDeSec(sec){
+  var out = [], re = /\[([^\]]*)\]/g, m, txt = (sec && sec.contenido) || ''
+  while((m = re.exec(txt)) !== null){ var t = m[1].trim(); if(t) out.push(t) }
+  return out
+}
+function ensLabelAcorde(raw){
+  try { return repTrView('[' + raw + ']').slice(1, -1) } catch(e){ return raw }
+}
+/* Lista ordenada de «casillas» (un acorde cada una), siguiendo el orden de las secciones del audio */
+function ensSlots(){
+  if(ens.slots) return ens.slots
+  var orden = []
+  if(ens.marcas.length){
+    var cont = {}
+    ens.marcas.forEach(function(m){ var o = cont[m.s] || 0; cont[m.s] = o + 1; orden.push({ s: m.s, o: o }) })
+  } else ensSecs().forEach(function(sc){ orden.push({ s: sc.id, o: 0 }) })
+  var slots = []
+  orden.forEach(function(x){
+    var sec = ensSecPorId(x.s); if(!sec) return
+    ensChordsDeSec(sec).forEach(function(raw, i){ slots.push({ s: x.s, o: x.o, i: i, raw: raw }) })
+  })
+  ens.slots = slots
+  return slots
+}
+function ensAccBuscar(lista, sl){
+  for(var k=0;k<lista.length;k++){ var m = lista[k]; if(m.s === sl.s && m.o === sl.o && m.i === sl.i) return m }
+  return null
+}
+function ensAccTimes(){
+  if(ens.accTimes) return ens.accTimes
+  var arr = []
+  ensSlots().forEach(function(sl, k){ var m = ensAccBuscar(ens.acordes, sl); if(m) arr.push({ t: m.t, k: k }) })
+  arr.sort(function(a, b){ return a.t - b.t })
+  ens.accTimes = arr
+  return arr
+}
+function ensAccIdxAt(t){
+  var arr = ensAccTimes(), r = -1
+  for(var i=0;i<arr.length;i++){ if(t >= arr[i].t - 0.03) r = arr[i].k; else break }
+  return r
+}
+function ensAccHuerfanas(){
+  var slots = ensSlots()
+  return ens.acordes.some(function(m){ return !slots.some(function(sl){ return sl.s === m.s && sl.o === m.o && sl.i === m.i }) })
+}
+function ensAcordesHTML(){
+  var slots = ensSlots()
+  if(!slots.length) return ''
+  ens.accIdx = ensAccIdxAt(ens.t)
+  var html = '', i = 0
+  while(i < slots.length){
+    var g = slots[i], j = i, sec = ensSecPorId(g.s), col = ensColorSec(sec), cuad = ''
+    while(j < slots.length && slots[j].s === g.s && slots[j].o === g.o){
+      var m = ensAccBuscar(ens.acordes, slots[j])
+      cuad += '<button class="ens-ac' + (j === ens.accIdx ? ' on' : '') + (m ? '' : ' sin') + '" data-k="' + j + '" style="--c:' + col + '" onclick="ensIrAAcorde(' + j + ')">' + esc(ensLabelAcorde(slots[j].raw)) + '</button>'
+      j++
+    }
+    html += '<div class="ens-ag"><div class="ens-agt" style="--c:' + col + '">' + esc(sec ? (sec.nombre || sec.abreviacion || '') : '') + '</div><div class="ens-asq">' + cuad + '</div></div>'
+    i = j
+  }
+  var aviso = (ens.esAdmin && ensAccHuerfanas())
+    ? '<div class="ens-nota">Los acordes de la canción cambiaron y hay marcas que ya no corresponden. Revísalas en ⋯ → Establecer marcas por acorde.</div>' : ''
+  return '<div class="ens-acs" id="ens-acs">' + html + '</div>' + aviso
+}
+function ensScrollAcorde(){
+  var box = ensEl('ens-acs'); if(!box) return
+  var act = box.querySelector('.ens-ac.on'); if(!act) return
+  box.scrollTop = Math.max(0, act.offsetTop - box.clientHeight/2 + act.offsetHeight/2)
+}
+/* Se llama en cada tick: solo cambia la clase del cuadrito activo (sin redibujar todo) */
+function ensVivoAcordes(){
+  if(!ensSeguirOn() || ens.vista !== 'play') return
+  var k = ensAccIdxAt(ens.t)
+  if(k === ens.accIdx) return
+  ens.accIdx = k
+  var box = ensEl('ens-acs'); if(!box) return
+  var els = box.querySelectorAll('.ens-ac')
+  for(var x=0;x<els.length;x++) els[x].classList.toggle('on', parseInt(els[x].getAttribute('data-k'), 10) === k)
+  ensScrollAcorde()
+}
+function ensIrAAcorde(k){
+  var sl = ensSlots()[k]; if(!sl) return
+  var m = ensAccBuscar(ens.acordes, sl)
+  if(m) ensIrA(m.t)
+}
+/* Al cambiar tonalidad o grados, los cuadritos se redibujan con los acordes nuevos */
+function ensRefrescarAcordes(){
+  ens.slots = null
+  if(!ens.visible || ens.cancionId !== repCancionId) return
+  ensRender()
 }
 
 function ensVistaImportar(){
@@ -8103,14 +8372,65 @@ function ensVistaImportar(){
 }
 
 /* ───────── administrador: menú y editores ───────── */
-function ensToggleDrawer(){ ens.abierto = !ens.abierto; ens.menu = false; ensRender() }
+function ensToggleDrawer(){
+  ens.abierto = !ens.abierto; ens.menu = false
+  var b = document.querySelector('#ens-drawer .ens-body'); if(b) b.style.height = ''
+  ensRender()
+}
+/* Arrastrar el cajón (mouse o dedo): sigue al puntero y se queda donde lo sueltes. Un toque corto lo esconde/muestra como siempre. */
+var ensDrag = null
+function ensDragIni(ev){
+  if(ev.button !== undefined && ev.button !== 0) return
+  var d = ensEl('ens-drawer'), b = d && d.querySelector('.ens-body'); if(!b) return
+  var cerrado = !ens.abierto
+  if(cerrado) d.classList.remove('closed')
+  var cur = cerrado ? 0 : b.offsetHeight
+  b.style.height = 'auto'
+  var nat = b.offsetHeight
+  b.style.height = cur + 'px'
+  ensDrag = { y: ev.clientY, cur: cur, nat: nat, moved: false, cerrado: cerrado, id: ev.pointerId, b: b, d: d, ly: ev.clientY, lt: Date.now(), v: 0, h: cur }
+  try { ev.currentTarget.setPointerCapture(ev.pointerId) } catch(e){}
+}
+function ensDragMov(ev){
+  var g = ensDrag; if(!g || ev.pointerId !== g.id) return
+  var dy = ev.clientY - g.y
+  if(!g.moved && Math.abs(dy) < 5) return
+  g.moved = true
+  g.d.classList.add('arr')
+  var h = Math.max(0, Math.min(g.nat, g.cur - dy))
+  g.b.style.height = h + 'px'
+  g.h = h
+  var now = Date.now(), dt = now - g.lt
+  g.lm = now
+  if(dt >= 30){ g.v = (ev.clientY - g.ly) / dt; g.ly = ev.clientY; g.lt = now }
+}
+function ensDragFin(ev){
+  var g = ensDrag; if(!g || ev.pointerId !== g.id) return
+  ensDrag = null
+  try { ev.currentTarget.releasePointerCapture(ev.pointerId) } catch(e){}
+  g.d.classList.remove('arr')
+  if(!g.moved){
+    g.b.style.height = ''
+    if(g.cerrado) g.d.classList.add('closed')
+    ensToggleDrawer()
+    return
+  }
+  var h = g.h
+  if(Date.now() - (g.lm || 0) > 120) g.v = 0      // si te detuviste antes de soltar, no cuenta como «lanzado»
+  if(g.v > 0.9) h = 0                 // lo soltaste rápido hacia abajo: se esconde
+  else if(g.v < -0.9) h = g.nat       // rápido hacia arriba: se abre completo
+  if(h < 36){ ens.abierto = false; g.b.style.height = '' }
+  else { ens.abierto = true; g.b.style.height = (h >= g.nat - 10) ? '' : (h + 'px') }
+  ens.menu = false
+  ensRender()
+}
 function ensToggleMenu(ev){ if(ev) ev.stopPropagation(); ens.menu = !ens.menu; ensRender() }
 function ensFotoMarcas(){ return JSON.stringify(ens.draft) }
 function ensCopiaMarcas(){ return JSON.parse(JSON.stringify(ens.marcas)) }
 
 function ensIrVista(v){
   ens.menu = false; ens.confirmando = false; ens.dErr = ''
-  if((v === 'marcar' || v === 'editar') && !ensListo()){
+  if((v === 'marcar' || v === 'editar' || v === 'acordes') && !ensListo()){
     showToast('Primero sube un audio o pon un enlace de YouTube, y espera a que cargue', '#e67e22'); ensRender(); return
   }
   ensPausa()
@@ -8121,12 +8441,16 @@ function ensIrVista(v){
     ens.dTab = (c.fuente === 'youtube' || c.fuente === 'archivo') ? c.fuente : 'archivo'
     ens.dLink = c.enlace_url || ''; ens.dName = c.archivo_nombre || ''
     ens.dYT = c.yt_url || ''; ens.dYTName = c.yt_nombre || ''
+  } else if(v === 'acordes'){
+    ens.accDraft = ens.acordes.map(function(m){ return { s: m.s, o: m.o, i: m.i, t: m.t } }); ens.accPila = []
+    ens.snap = JSON.stringify(ens.accDraft); ens.accSel = null; ens.slots = null
   } else {
     ens.draft = ensCopiaMarcas(); ens.snap = ensFotoMarcas(); ens.secSel = null
   }
   ensRender()
 }
 function ensHayCambios(){
+  if(ens.vista === 'acordes') return JSON.stringify(ens.accDraft) !== ens.snap
   if(ens.vista === 'enlace'){
     var c = ens.cfg || {}
     if(c.fuente && ens.dTab !== c.fuente && (ens.dTab === 'archivo' ? !!c.enlace_url : !!c.yt_url)) return true   // «Guardar» la deja como la predeterminada
@@ -8141,7 +8465,7 @@ function ensPedirVolver(){
   if(ensHayCambios()){ ens.confirmando = true; ensRender() } else ensSalir()
 }
 function ensSalir(){
-  ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ensPausa()
+  ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ensPausa()
 }
 function ensRenderModal(){
   var m = ensEl('ens-modal'); if(!m) return
@@ -8238,6 +8562,92 @@ function ensPonerMarca(){
 function ensDeshacerMarca(){ if(ens.draft.length){ ens.draft.pop(); ens.secSel = null; ensRender() } }
 function ensEmpezarMarcas(){ ensPausa(); ens.draft = []; ens.secSel = null; ensIrA(0) }
 
+/* — establecer marcas por acorde: un clic por acorde, con milésimas — */
+function ensAccSlotSiguiente(){
+  var slots = ensSlots()
+  if(ens.accSel !== null && ens.accSel !== undefined && slots[ens.accSel]) return ens.accSel
+  for(var k=0;k<slots.length;k++){ if(!ensAccBuscar(ens.accDraft, slots[k])) return k }
+  return Math.max(0, slots.length - 1)
+}
+function ensVistaAcordes(){
+  var slots = ensSlots()
+  if(!slots.length) return ensBarra('Establecer marcas por acorde') + ensEtiqueta() + '<div class="ens-msg">Esta canción no tiene acordes entre corchetes [ ] en sus secciones.</div>'
+  var k = ensAccSlotSiguiente(), sl = slots[k], hechos = 0
+  var filas = slots.map(function(s, x){
+    var m = ensAccBuscar(ens.accDraft, s), sec = ensSecPorId(s.s), col = ensColorSec(sec)
+    if(m) hechos++
+    return '<div class="ens-row' + (x === k ? ' sel' : '') + '" data-k="' + x + '" style="--c:' + col + '">' +
+      '<button class="ens-mini" onclick="ensAccSel(' + x + ')" title="Marcar este acorde">⚑</button>' +
+      '<span class="ens-nm"><span class="ens-ac-dot"></span>' + esc(sec ? (sec.abreviacion || sec.nombre || '') : '?') + ' · <b>' + esc(ensLabelAcorde(s.raw)) + '</b></span>' +
+      (m ? '<button class="ens-mini" onclick="ensAccNudge(' + x + ',-10)" title="10 milésimas antes">−</button>' +
+           '<span class="ens-tm ens-tms" onclick="ensIrA(' + m.t + ')" title="Ir a este acorde">' + ensMs(m.t) + '</span>' +
+           '<button class="ens-mini" onclick="ensAccNudge(' + x + ',10)" title="10 milésimas después">+</button>' +
+           '<button class="ens-mini" onclick="ensAccQuitar(' + x + ')" title="Quitar esta marca">×</button>'
+         : '<span class="ens-tm ens-tms" style="opacity:.35">—</span>') +
+      '</div>'
+  }).join('')
+  var secSl = ensSecPorId(sl.s)
+  return ensBarra('Establecer marcas por acorde') + ensEtiqueta() +
+    '<div class="ens-nota" style="margin-top:0">Dale play (puedes bajar la velocidad con ×) y toca el botón, o la barra espaciadora, justo cuando suena cada acorde. Cada corchete de la letra es un acorde. Con − y + afinas de a 10 milésimas.</div>' +
+    '<div class="ens-player-box">' + ensPlayerHTML(ens.marcas, false) + '</div>' +
+    '<div class="ens-nowchord">Marcar ahora · ' + esc(secSl ? (secSl.nombre || secSl.abreviacion || '') : '') + ' · acorde ' + (sl.i + 1) + '<b>' + esc(ensLabelAcorde(sl.raw)) + '</b></div>' +
+    '<button class="ens-btn big" onmousedown="event.preventDefault()" onclick="ensPonerAcorde()">⚑ Marcar aquí · ' + esc(ensLabelAcorde(sl.raw)) + '</button>' +
+    '<div class="ens-mini-links"><button class="ens-link" ' + (ens.accPila && ens.accPila.length ? '' : 'disabled') + ' onclick="ensAccDeshacer()">↩ Deshacer la última</button>' +
+      '<button class="ens-link" onclick="ensAccEmpezar()">↺ Empezar de nuevo</button></div>' +
+    '<div class="ens-nota" style="margin:6px 0 0;text-align:center">' + hechos + ' de ' + slots.length + ' acordes marcados</div>' +
+    '<div class="ens-list tall">' + filas + '</div>' +
+    ensBtnGuardar()
+}
+function ensAccScrollSel(){
+  var lst = document.querySelector('#ens-dyn .ens-list'); if(!lst) return
+  var row = lst.querySelector('.ens-row.sel'); if(!row) return
+  if(row.offsetTop < lst.scrollTop || row.offsetTop + row.offsetHeight > lst.scrollTop + lst.clientHeight)
+    lst.scrollTop = Math.max(0, row.offsetTop - lst.clientHeight/2)
+}
+function ensAccSel(x){ ens.accSel = x; ensRender() }
+function ensPonerAcorde(){
+  var slots = ensSlots(); if(!slots.length || !ensSrc) return
+  var k = ensAccSlotSiguiente(), sl = slots[k]
+  var t = Math.round(ensSrc.currentTime * 1000) / 1000
+  var ex = ensAccBuscar(ens.accDraft, sl)
+  if(!ens.accPila) ens.accPila = []
+  ens.accPila.push({ s: sl.s, o: sl.o, i: sl.i, prev: ex ? ex.t : null })
+  if(ex) ex.t = t; else ens.accDraft.push({ s: sl.s, o: sl.o, i: sl.i, t: t })
+  ens.accDraft.sort(function(a, b){ return a.t - b.t })
+  ens.accSel = null
+  ensRender()
+}
+function ensAccDeshacer(){
+  if(!ens.accPila || !ens.accPila.length) return
+  var u = ens.accPila.pop(), m = ensAccBuscar(ens.accDraft, u)
+  if(m){ if(u.prev === null) ens.accDraft.splice(ens.accDraft.indexOf(m), 1); else m.t = u.prev }
+  ens.accDraft.sort(function(a, b){ return a.t - b.t })
+  ens.accSel = null
+  ensRender()
+}
+function ensAccEmpezar(){ ensPausa(); ens.accDraft = []; ens.accPila = []; ens.accSel = null; ensIrA(0) }
+function ensAccNudge(x, ms){
+  var sl = ensSlots()[x]; if(!sl) return
+  var m = ensAccBuscar(ens.accDraft, sl); if(!m) return
+  m.t = Math.max(0, Math.round((m.t + ms/1000) * 1000) / 1000)
+  ens.accDraft.sort(function(a, b){ return a.t - b.t })
+  ensRender()
+}
+function ensAccQuitar(x){
+  var sl = ensSlots()[x]; if(!sl) return
+  var m = ensAccBuscar(ens.accDraft, sl); if(!m) return
+  ens.accDraft.splice(ens.accDraft.indexOf(m), 1)
+  ens.accSel = null
+  ensRender()
+}
+/* barra espaciadora / Enter = marcar el acorde mientras se está en esta vista */
+document.addEventListener('keydown', function(ev){
+  if(!ens.visible || ens.vista !== 'acordes') return
+  var tag = (ev.target && ev.target.tagName) || ''
+  if(tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+  if(ev.code === 'Space' || ev.key === ' ' || ev.key === 'Enter'){ ev.preventDefault(); if(!ev.repeat) ensPonerAcorde() }
+})
+
 /* — editar secciones y orden — */
 function ensVistaEditar(){
   var secs = ensSecs(), n = ens.draft.length
@@ -8285,6 +8695,7 @@ async function ensGuardar(){
     enlace_url: c.enlace_url || null, archivo_nombre: c.archivo_nombre || null,
     yt_url: c.yt_url || null, yt_nombre: c.yt_nombre || null,
     marcas_archivo: c.marcas_archivo || [], marcas_yt: c.marcas_yt || [],
+    marcas_acordes_archivo: c.marcas_acordes_archivo || [], marcas_acordes_yt: c.marcas_acordes_yt || [],
     updated_at: new Date().toISOString(), updated_by: currentUser.id
   }
   var tras = null
@@ -8301,6 +8712,9 @@ async function ensGuardar(){
       // primera vez en YouTube: parte con una copia de las marcas del audio
       if(!Array.isArray(fila.marcas_yt) || !fila.marcas_yt.length) fila.marcas_yt = fila.marcas_archivo || []
     }
+  } else if(ens.vista === 'acordes'){
+    var la = ens.accDraft.map(function(m){ return { s: m.s, o: m.o, i: m.i, t: m.t } }).sort(function(a, b){ return a.t - b.t })
+    if(ens.fuente === 'youtube') fila.marcas_acordes_yt = la; else fila.marcas_acordes_archivo = la
   } else {
     var lista = ens.draft.map(function(m){ return { s: m.s, t: m.t } })
     if(ens.fuente === 'youtube') fila.marcas_yt = lista; else fila.marcas_archivo = lista
@@ -8315,7 +8729,7 @@ async function ensGuardar(){
   ens.cfg = r.data || fila
   if(tras) tras()
   var vistaAntes = ens.vista
-  ens.vista = 'play'; ens.draft = []
+  ens.vista = 'play'; ens.draft = []; ens.accDraft = []
   if(vistaAntes === 'enlace'){
     ensSetPrefFuente(null)
     await ensAplicarCfg()
@@ -8323,6 +8737,8 @@ async function ensGuardar(){
     showToast(ens.dTab === 'youtube' ? 'Video de YouTube guardado' : 'Enlace guardado', '#27ae60')
   } else {
     ens.marcas = ensNormMarcas(ens.fuente === 'youtube' ? ens.cfg.marcas_yt : ens.cfg.marcas_archivo)
+    ens.acordes = ensNormAcordes(ens.fuente === 'youtube' ? ens.cfg.marcas_acordes_yt : ens.cfg.marcas_acordes_archivo)
+    ens.slots = null; ens.accTimes = null; ens.accIdx = -2
     showToast('Marcas guardadas para toda la organización', '#27ae60')
   }
   ensRender()
@@ -8334,7 +8750,9 @@ async function ensQuitarFuente(tab){
   var c = ens.cfg
   var fila = { cancion_id: ens.cancionId, organizacion_id: ens.orgId, fuente: c.fuente || 'archivo',
     enlace_url: c.enlace_url || null, archivo_nombre: c.archivo_nombre || null, yt_url: c.yt_url || null, yt_nombre: c.yt_nombre || null,
-    marcas_archivo: c.marcas_archivo || [], marcas_yt: c.marcas_yt || [], updated_at: new Date().toISOString(), updated_by: currentUser.id }
+    marcas_archivo: c.marcas_archivo || [], marcas_yt: c.marcas_yt || [],
+    marcas_acordes_archivo: c.marcas_acordes_archivo || [], marcas_acordes_yt: c.marcas_acordes_yt || [],
+    updated_at: new Date().toISOString(), updated_by: currentUser.id }
   if(tab === 'archivo'){ fila.enlace_url = null; fila.archivo_nombre = null; if(fila.fuente === 'archivo') fila.fuente = fila.yt_url ? 'youtube' : 'archivo' }
   else { fila.yt_url = null; fila.yt_nombre = null; if(fila.fuente === 'youtube') fila.fuente = 'archivo' }
   var r = await supabase.from('ensayo_audio').upsert(fila, { onConflict: 'cancion_id' }).select().maybeSingle()
@@ -8391,7 +8809,10 @@ if(document.readyState === 'loading') document.addEventListener('DOMContentLoade
     ensClickOnda: ensClickOnda, ensIrA: ensIrA, ensToggleSig: ensToggleSig, ensSetModo: ensSetModo,
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
-    ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente }
+    ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
+    ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
+    ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
 })()
 
@@ -8993,8 +9414,8 @@ aplicarNavegacionPendiente()
   <div class="ens-drawer" id="ens-drawer" style="display:none">
     <div class="ens-menu" id="ens-menu"></div>
     <div class="ens-head">
-      <div class="ens-handle" onclick="ensToggleDrawer()" title="Esconder o mostrar el reproductor"><span></span></div>
-      <button class="ens-more" id="ens-more" onclick="ensToggleMenu(event)" style="display:none" title="Opciones del administrador">⋯</button>
+      <div class="ens-handle" onpointerdown="ensDragIni(event)" onpointermove="ensDragMov(event)" onpointerup="ensDragFin(event)" onpointercancel="ensDragFin(event)" title="Toca para esconder o mostrar · arrastra para subir o bajar"><span></span></div>
+      <button class="ens-more" id="ens-more" onclick="ensToggleMenu(event)" style="display:none" title="Opciones">⋯</button>
     </div>
     <div class="ens-body">
       <div class="ens-yt" id="ens-ytwrap" style="display:none"><div id="ens-ytbox"></div></div>
@@ -9021,6 +9442,13 @@ aplicarNavegacionPendiente()
 <div class="rep-floating" id="rep-ton-sel">
   <div class="rep-floating-hdr"><span class="rep-floating-lbl">Tonalidad</span><button class="rep-ready-btn" onclick="repAplicarTono()">Aplicar</button></div>
   <div class="rep-ton-grid" id="rep-ton-grid"></div>
+  <div class="rep-capo-wrap" style="margin-top:12px">
+    <div class="rep-capo-lbl">Grados</div>
+    <div class="rep-gr-row">
+      <button class="rep-gr-btn" id="rep-gr-num" onclick="repSetGrados('num')" title="Acordes como números (1-7)"><span class="rep-salad"><b>1</b><b>2</b><b>3</b></span><small>números</small></button>
+      <button class="rep-gr-btn" id="rep-gr-rom" onclick="repSetGrados('rom')" title="Acordes como números romanos (I-VII)">VI<small>romanos</small></button>
+    </div>
+  </div>
   <div class="rep-capo-wrap">
     <div class="rep-capo-lbl">Capo</div>
     <div class="rep-capo-row" id="rep-cp-buttons"></div>
