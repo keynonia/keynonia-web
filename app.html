@@ -884,6 +884,13 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-nowchord{text-align:center;margin:10px 0 8px;font-size:.7rem;color:var(--text2)}
 .ens-nowchord b{display:block;font-size:1.7rem;color:#fff;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
 .ens-row.sel{border-color:#F08A2A}
+/* Cuadritos de «Seguir acordes» y de «Establecer marcas por acorde»: van sobre los acordes de la canción */
+.rep-cq{border-radius:4px;box-shadow:inset 0 0 0 2px var(--sec-color,#5B9DFF);cursor:pointer;transition:background .08s}
+.rep-cq.sin{opacity:.4;box-shadow:inset 0 0 0 1px var(--sec-color,#5B9DFF)}
+.rep-cq.on{background:var(--sec-color,#5B9DFF);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.65);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.rep-cq.hecho{background:var(--sec-color,#5B9DFF);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.65)}
+.rep-cq.sig{background:rgba(240,138,42,.28);box-shadow:inset 0 0 0 2px #F08A2A,0 0 0 2px rgba(240,138,42,.45);color:#fff}
+.rep-chord-chip.rep-cq{display:inline-block}
 .ens-ac-dot{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:middle}
 .ens-tms{min-width:74px;cursor:pointer}
 /* Grados */
@@ -5474,6 +5481,12 @@ window.repSetGrados = function(m){
   repPintarGradosPanel()
 }
 
+var repCqSec=null, repCqN=0
+/* Atributos de un cuadrito (solo cuando el Modo ensayo los pide): sección y número de acorde dentro de ella */
+function repCqAttr(raw){
+  if(repCqSec===null || !String(raw).trim()) return ''
+  return ' data-s="'+esc(repCqSec)+'" data-i="'+(repCqN++)+'" onclick="ensCqClick(this)"'
+}
 function repFmtContent(content){
   var lines=content.split('\n'), res=''
   var sl=repPrefs.showL, sc=repPrefs.showC
@@ -5488,7 +5501,10 @@ function repFmtContent(content){
       }
     })
     res='<div class="rep-chord-chips">'
-    chords.forEach(function(c){ res+='<span class="rep-chord-chip">'+esc(c)+'</span>' })
+    chords.forEach(function(c){
+      var cq=repCqAttr(c)
+      res+='<span class="rep-chord-chip'+(cq?' rep-cq':'')+'"'+cq+'>'+esc(c)+'</span>'
+    })
     return res+'</div>'
   }
   lines.forEach(function(line){
@@ -5503,15 +5519,15 @@ function repFmtContent(content){
       if(clean) res+='<div class="rep-lyric-line clean">'+esc(clean)+'</div>'
       return
     }
-    var cl='', ll='', inC=false, cur=''
+    var cl='', clh='', ll='', inC=false, cur=''
     for(var i=0;i<line.length;i++){
       var c=line[i]
       if(c==='['){ inC=true; cur='' }
-      else if(c===']'){ inC=false; cl+=cur; ll+=' '.repeat(cur.length) }
+      else if(c===']'){ inC=false; cl+=cur; ll+=' '.repeat(cur.length); var cq=repCqAttr(cur); clh+=cq?('<span class="rep-cq"'+cq+'>'+esc(cur)+'</span>'):esc(cur) }
       else if(inC) cur+=c
-      else { cl+=' '; ll+=c }
+      else { cl+=' '; clh+=' '; ll+=c }
     }
-    if(cl.trim()) res+='<div class="rep-chord-line">'+esc(cl)+'</div>'
+    if(cl.trim()) res+='<div class="rep-chord-line">'+clh+'</div>'
     if(ll.trim()) res+='<div class="rep-lyric-line">'+esc(ll)+'</div>'
     else if(!cl.trim()) res+='<div class="rep-lyric-line">'+esc(line)+'</div>'
   })
@@ -5525,8 +5541,11 @@ function repUpdateDisplay(){
   if(!el || !repCancion) return
   var secciones=(repCancion.datos && repCancion.datos.secciones) || []
   var html=''
+  var cqOn=false
+  try { cqOn=(typeof ensCuadrosOn==='function') && ensCuadrosOn() } catch(e){}
   secciones.forEach(function(sec){
     var trans=repTrView(sec.contenido||'')
+    repCqSec=cqOn?sec.id:null; repCqN=0
     var colorCls=sec.color || REP_TYPE_CLS[sec.tipo] || 'sky'
     var midiStr=(typeof sec.midiNote==='number') ? '<span class="rep-sec-midi">MIDI: '+repMidiName(sec.midiNote)+'</span>' : ''
     var dmStr=(repPrefs.showDM && sec.dm) ? '<div class="rep-sec-dm">('+esc(sec.dm)+')</div>' : ''
@@ -5535,6 +5554,7 @@ function repUpdateDisplay(){
         +'<div class="rep-sec-title"><span class="rep-sec-pill rep-pill-'+colorCls+'">'+esc(sec.nombre)+'</span>'+midiStr+'</div>'
         +dmStr+repFmtContent(trans)+'</div>'
   })
+  repCqSec=null
   el.innerHTML=html
   el.className='rep-lyrics-content'+(repPrefs.cols===3?' three-col':repPrefs.cols===2?' two-col':'')+(repPrefs.showL && repPrefs.showC ? ' ambos-vis' : '')
   acdActualizar()
@@ -7582,7 +7602,7 @@ var ENS_LS_SEGUIR = 'keynonia_ensayo_seguir_acordes'
 var ens = {
   cfg: null, cancionId: null, orgId: null, esAdmin: false, visible: false,
   fuente: 'archivo', marcas: [],
-  acordes: [], accDraft: [], accSel: null, seguir: false, accIdx: -1, slots: null, accTimes: null,
+  acordes: [], accDraft: [], accSel: null, seguir: false, accIdx: -1, slots: null, accTimes: null, accEl: null, cuadros: false,
   dur: 0, t: 0, tocando: false, vel: 1, loop: false, loopIdx: 0,
   abierto: true, modo: 'individual', autoSig: false, sigGrupo: null,
   vista: 'play',               // play | enlace | marcar | editar | acordes
@@ -7860,6 +7880,7 @@ function ensMostrar(si){
 }
 function ensAlCerrar(){
   ensDetener(); ens.cancionId = null; ensMostrar(false); ensGrupoDesuscribir()
+  if(ens.cuadros){ ens.cuadros = false; try { repUpdateDisplay() } catch(e){} }
 }
 function ensDetener(){
   ensPararTimer()
@@ -8209,7 +8230,10 @@ function ensRender(){
   var lst1 = dyn.querySelector('.ens-list'); if(lst1) lst1.scrollTop = st0
   ens.ultKey = ensClave()
   ensRenderModal()
-  if(ens.vista === 'acordes') ensAccScrollSel(); else ensScrollAcorde()
+  if(ens.vista === 'acordes') ensAccScrollSel()
+  var cu = ensCuadrosOn()
+  if(cu !== !!ens.cuadros){ ens.cuadros = cu; try { repUpdateDisplay() } catch(e){} }   // redibuja la canción con o sin cuadritos
+  if(cu) ensPintarCuadros()
 }
 
 var ENS_COL = { green:'#1DB89A', blue:'#5B9DFF', orange:'#E07A5F', red:'#E74C3C', purple:'#9B7FE8', yellow:'#F1C40F', sky:'#3498DB' }
@@ -8251,8 +8275,9 @@ function ensVistaPlay(){
   var grp = ens.modo === 'grupal'
     ? '<div class="ens-grp"><span class="ens-pulse"></span>' + (ens.esAdmin ? 'Diriges: tu play y pausa llegan a los demás' : 'El administrador controla el play y la pausa · lo demás es tuyo') + '</div>'
     : ''
-  var acs = (ensSeguirOn() && ensListo()) ? ensAcordesHTML() : ''
-  return info + pl + sinMarcas + selrow + swrow + acs + grp
+  var aviso = (ens.esAdmin && ensSeguirOn() && ensAccHuerfanas())
+    ? '<div class="ens-nota">Los acordes de la canción cambiaron y hay marcas que ya no corresponden. Revísalas en ⋯ → Establecer marcas por acorde.</div>' : ''
+  return info + pl + sinMarcas + selrow + swrow + aviso + grp
 }
 
 /* ───────── marcas por acorde: cuadritos y seguimiento ───────── */
@@ -8301,40 +8326,61 @@ function ensAccHuerfanas(){
   var slots = ensSlots()
   return ens.acordes.some(function(m){ return !slots.some(function(sl){ return sl.s === m.s && sl.o === m.o && sl.i === m.i }) })
 }
-function ensAcordesHTML(){
-  var slots = ensSlots()
-  if(!slots.length) return ''
-  ens.accIdx = ensAccIdxAt(ens.t)
-  var html = '', i = 0
-  while(i < slots.length){
-    var g = slots[i], j = i, sec = ensSecPorId(g.s), col = ensColorSec(sec), cuad = ''
-    while(j < slots.length && slots[j].s === g.s && slots[j].o === g.o){
-      var m = ensAccBuscar(ens.acordes, slots[j])
-      cuad += '<button class="ens-ac' + (j === ens.accIdx ? ' on' : '') + (m ? '' : ' sin') + '" data-k="' + j + '" style="--c:' + col + '" onclick="ensIrAAcorde(' + j + ')">' + esc(ensLabelAcorde(slots[j].raw)) + '</button>'
-      j++
+/* Los cuadraditos se dibujan en la CANCIÓN de arriba (letra con acordes), un cuadrito por cada corchete [ ].
+   repFmtContent los crea cuando ensCuadrosOn() es verdadero; aquí solo se pintan sus estados. */
+function ensCuadrosOn(){
+  if(!ens.visible || ens.cancionId !== repCancionId) return false
+  return ens.vista === 'acordes' || (ens.vista === 'play' && ensSeguirOn() && ensListo())
+}
+function ensCuadro(sl){
+  return document.querySelector('#rep-lyrics-content .rep-cq[data-s="' + sl.s + '"][data-i="' + sl.i + '"]')
+}
+/* Estados: en = suena ahora · sin = sin marca · hecho = ya marcado (mientras se marca) · sig = el que toca marcar */
+function ensPintarCuadros(){
+  var q = document.querySelectorAll('#rep-lyrics-content .rep-cq')
+  if(!q.length) return
+  var x
+  for(x=0;x<q.length;x++) q[x].classList.remove('on', 'hecho', 'sig', 'sin')
+  ens.accEl = null
+  var slots = ensSlots(), enAcordes = ens.vista === 'acordes'
+  var objetivo = enAcordes ? ensAccSlotSiguiente() : -1
+  var act = null
+  ens.accIdx = enAcordes ? -1 : ensAccIdxAt(ens.t)
+  slots.forEach(function(sl, k){
+    var el = ensCuadro(sl); if(!el) return
+    if(enAcordes){
+      if(ensAccBuscar(ens.accDraft, sl)) el.classList.add('hecho')
+      if(k === objetivo){ el.classList.remove('hecho'); el.classList.add('sig'); act = el }
+    } else {
+      if(!ensAccBuscar(ens.acordes, sl)) el.classList.add('sin')
+      if(k === ens.accIdx){ el.classList.add('on'); ens.accEl = el }
     }
-    html += '<div class="ens-ag"><div class="ens-agt" style="--c:' + col + '">' + esc(sec ? (sec.nombre || sec.abreviacion || '') : '') + '</div><div class="ens-asq">' + cuad + '</div></div>'
-    i = j
-  }
-  var aviso = (ens.esAdmin && ensAccHuerfanas())
-    ? '<div class="ens-nota">Los acordes de la canción cambiaron y hay marcas que ya no corresponden. Revísalas en ⋯ → Establecer marcas por acorde.</div>' : ''
-  return '<div class="ens-acs" id="ens-acs">' + html + '</div>' + aviso
+  })
+  if(act){ try { act.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } catch(e){} }
 }
-function ensScrollAcorde(){
-  var box = ensEl('ens-acs'); if(!box) return
-  var act = box.querySelector('.ens-ac.on'); if(!act) return
-  box.scrollTop = Math.max(0, act.offsetTop - box.clientHeight/2 + act.offsetHeight/2)
-}
-/* Se llama en cada tick: solo cambia la clase del cuadrito activo (sin redibujar todo) */
+/* Se llama en cada tick: solo cambia el cuadrito que suena (sin redibujar nada) */
 function ensVivoAcordes(){
-  if(!ensSeguirOn() || ens.vista !== 'play') return
+  if(ens.vista !== 'play' || !ensSeguirOn()) return
   var k = ensAccIdxAt(ens.t)
   if(k === ens.accIdx) return
   ens.accIdx = k
-  var box = ensEl('ens-acs'); if(!box) return
-  var els = box.querySelectorAll('.ens-ac')
-  for(var x=0;x<els.length;x++) els[x].classList.toggle('on', parseInt(els[x].getAttribute('data-k'), 10) === k)
-  ensScrollAcorde()
+  if(ens.accEl){ ens.accEl.classList.remove('on'); ens.accEl = null }
+  var sl = ensSlots()[k]; if(!sl) return
+  var el = ensCuadro(sl)
+  if(el){ el.classList.add('on'); ens.accEl = el; try { el.scrollIntoView({ block: 'nearest', inline: 'nearest' }) } catch(e){} }
+}
+/* Clic en un cuadrito de la canción: al reproducir salta a ese acorde; al marcar lo elige como el siguiente */
+function ensCqClick(el){
+  if(!el || !ensCuadrosOn()) return
+  var sid = el.getAttribute('data-s'), i = parseInt(el.getAttribute('data-i'), 10)
+  var slots = ensSlots(), k, hallado = -1
+  for(k=0;k<slots.length;k++){
+    if(slots[k].s !== sid || slots[k].i !== i) continue
+    if(hallado < 0) hallado = k
+    if(ens.vista === 'play' && ensAccBuscar(ens.acordes, slots[k])){ hallado = k; break }
+  }
+  if(hallado < 0) return
+  if(ens.vista === 'acordes') ensAccSel(hallado); else ensIrAAcorde(hallado)
 }
 function ensIrAAcorde(k){
   var sl = ensSlots()[k]; if(!sl) return
@@ -8810,7 +8856,7 @@ if(document.readyState === 'loading') document.addEventListener('DOMContentLoade
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
-    ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
     ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
