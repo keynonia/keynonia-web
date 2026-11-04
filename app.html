@@ -885,7 +885,7 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-nowchord b{display:block;font-size:1.7rem;color:#fff;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
 .ens-row.sel{border-color:#F08A2A}
 /* Cuadritos de «Seguir acordes» y de «Establecer marcas por acorde»: van sobre los acordes de la canción */
-.rep-cq{border-radius:6px;padding:3px 5px;margin:0 -5px;box-shadow:inset 0 0 0 2px var(--sec-color,#5B9DFF);cursor:pointer;transition:background .08s;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.rep-cq{border-radius:.4em;padding:.22em var(--pr,.6em) .22em var(--pl,.6em);margin:0 calc(-1*var(--pr,.6em)) 0 calc(-1*var(--pl,.6em));box-shadow:inset 0 0 0 2px var(--sec-color,#5B9DFF);cursor:pointer;transition:background .08s;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .rep-cq.sin{opacity:.4;box-shadow:inset 0 0 0 1px var(--sec-color,#5B9DFF)}
 .rep-cq.on{background:var(--sec-color,#5B9DFF);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.65);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
 .rep-cq.hecho{background:var(--sec-color,#5B9DFF);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.65)}
@@ -5519,14 +5519,26 @@ function repFmtContent(content){
       if(clean) res+='<div class="rep-lyric-line clean">'+esc(clean)+'</div>'
       return
     }
-    var cl='', clh='', ll='', inC=false, cur=''
+    var cl='', ll='', inC=false, cur='', parts=[]
     for(var i=0;i<line.length;i++){
       var c=line[i]
       if(c==='['){ inC=true; cur='' }
-      else if(c===']'){ inC=false; cl+=cur; ll+=' '.repeat(cur.length); var cq=repCqAttr(cur); clh+=cq?('<span class="rep-cq"'+cq+'>'+esc(cur)+'</span>'):esc(cur) }
+      else if(c===']'){ inC=false; parts.push({t:cur,pos:cl.length,cq:repCqAttr(cur)}); cl+=cur; ll+=' '.repeat(cur.length) }
       else if(inC) cur+=c
-      else { cl+=' '; clh+=' '; ll+=c }
+      else { cl+=' '; ll+=c }
     }
+    var clh='', at=0
+    // el margen de cada cuadrito se acorta si el acorde vecino está muy cerca (para que no se monten)
+    var padDe=function(gap){ return Math.min(0.6, Math.max(0.05, (gap*0.55-0.25)/2)) }
+    var cqs=parts.filter(function(p){ return p.cq })
+    parts.forEach(function(p){
+      clh+=esc(cl.slice(at,p.pos)); at=p.pos+p.t.length
+      if(!p.cq){ clh+=esc(p.t); return }
+      var k=cqs.indexOf(p), prev=cqs[k-1], next=cqs[k+1]
+      var gl=prev?(p.pos-(prev.pos+prev.t.length)):99, gr=next?(next.pos-(p.pos+p.t.length)):99
+      clh+='<span class="rep-cq"'+p.cq+' style="--pl:'+padDe(gl).toFixed(2)+'em;--pr:'+padDe(gr).toFixed(2)+'em">'+esc(p.t)+'</span>'
+    })
+    clh+=esc(cl.slice(at))
     if(cl.trim()) res+='<div class="rep-chord-line">'+clh+'</div>'
     if(ll.trim()) res+='<div class="rep-lyric-line">'+esc(ll)+'</div>'
     else if(!cl.trim()) res+='<div class="rep-lyric-line">'+esc(line)+'</div>'
