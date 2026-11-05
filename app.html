@@ -7633,7 +7633,7 @@ var ens = {
   archivoListo: false, ytListo: false, ytErr: '',
   paso: 0, esperandoRegreso: false, errImport: '', nombreImportado: '',
   wave: null, timer: null, ultKey: '', autoplaySiguiente: false, pasando: false,
-  draft: [], snap: '', confirmando: false, confirmaTipo: '', pendiente: null,
+  draft: [], snap: '', confirmando: false, confirmaTipo: '', pendiente: null, catalogo: false, cfgBase: null, override: null, alcance: null, preguntandoAlcance: false,
   dTab: 'archivo', dLink: '', dName: '', dYT: '', dYTName: '', dErr: '',
   secSel: null, guardando: false, canal: null
 }
@@ -7791,31 +7791,53 @@ function ensCalcularOnda(buf){
 function ensEsAudio(f){ return (f.type && f.type.indexOf('audio') === 0) || /\.(mp3|wav|m4a|aac|ogg|flac|opus)$/i.test(f.name) }
 
 /* ───────── carga de la configuración de la canción ───────── */
+function ensTabla(){ return ens.catalogo ? 'ensayo_catalogo' : 'ensayo_audio' }
+function ensEnRepertorio(){ return !ens.catalogo && !!repRepertorioOrigenId && repRepertorioOrigenId !== 'demo' }
+/* ens.cfgBase = lo guardado para la canción; ens.override = marcas solo de este repertorio; ens.cfg = lo que se usa (base + override) */
+function ensFusionarCfg(){
+  if(!ens.cfgBase && !ens.override){ ens.cfg = null; return }
+  ens.cfg = Object.assign({}, ens.cfgBase || {}, ens.override || {})
+}
+function ensFilaTabla(fila){
+  if(ens.catalogo){ delete fila.organizacion_id; fila.fuente = 'youtube'; fila.enlace_url = null; fila.archivo_nombre = null }
+  return fila
+}
 async function ensAlAbrirCancion(cancion, esPreview){
   ensDetener()
   ens.cancionId = null
   ens.cuadros = false   // la canción nueva se dibuja sin cuadritos: ensRender los vuelve a poner si «Seguir acordes» sigue activo
   ensMostrar(false)
-  if(!ensOn() || esPreview || !currentUser || !cancion) return
+  ens.catalogo = false
+  if(!ensOn() || !currentUser || !cancion) return
   if(repRepertorioOrigenId === 'demo') return
   var org = orgs.find(function(o){ return o.activa })
   if(!org) return
   var id = cancion.id
   ens.cancionId = id
-  ens.orgId = cancion.organizacion_id || org.id
-  ens.esAdmin = org.rol === 'administrador'
+  ens.catalogo = !!esPreview   // canción del catálogo: solo YouTube, la edita únicamente la cuenta maestra
+  ens.orgId = ens.catalogo ? null : (cancion.organizacion_id || org.id)
+  ens.esAdmin = ens.catalogo ? !!esCuentaMaestra() : org.rol === 'administrador'
   try { ens.modo = localStorage.getItem(ENS_LS_MODO) === 'grupal' ? 'grupal' : 'individual' } catch(e){}
   try { ens.autoSig = localStorage.getItem(ENS_LS_SIG) === '1' } catch(e){}
   try { ens.seguir = localStorage.getItem(ENS_LS_SEGUIR) === '1' } catch(e){}
+  if(ens.catalogo){ ens.modo = 'individual'; ens.autoSig = false }
   ens.acordes = []; ens.accDraft = []; ens.accSel = null; ens.slots = null; ens.accTimes = null; ens.accIdx = -1
   ens.vista = 'play'; ens.menu = false; ens.confirmando = false; ens.loop = false; ens.t = 0
-  ens.cfg = null; ens.marcas = []; ens.dur = 0; ens.wave = null
+  ens.cfg = null; ens.cfgBase = null; ens.override = null; ens.alcance = null; ens.preguntandoAlcance = false; ens.marcas = []; ens.dur = 0; ens.wave = null
   ens.archivoListo = false; ens.ytListo = false; ens.ytErr = ''; ens.paso = 0; ens.errImport = ''
 
-  var r = await supabase.from('ensayo_audio').select('*').eq('cancion_id', id).maybeSingle()
+  var r = await supabase.from(ensTabla()).select('*').eq('cancion_id', id).maybeSingle()
   if(ens.cancionId !== id) return
   if(r.error){ console.warn('Modo ensayo: no se pudo leer la configuración', r.error); }
-  ens.cfg = r.data || null
+  ens.cfgBase = r.data || null
+  ens.override = null
+  if(ensEnRepertorio()){
+    // marcas guardadas «solo para este repertorio»
+    var ro = await supabase.from('repertorio_canciones').select('ensayo_override').eq('repertorio_id', repRepertorioOrigenId).eq('cancion_id', id).maybeSingle()
+    if(ens.cancionId !== id) return
+    if(ro.data && ro.data.ensayo_override) ens.override = ro.data.ensayo_override
+  }
+  ensFusionarCfg()
   await ensAplicarCfg()
   if(ens.cancionId !== id) return
   ensMostrar(true)
@@ -7896,13 +7918,14 @@ function ensListo(){
 function ensMostrar(si){
   var d = ensEl('ens-drawer'); if(!d) return
   // el músico solo ve el cajón si el administrador dejó algo para esta canción
-  var ver = si && (ens.esAdmin || ensTieneFuente())
+  var ver = si && (ens.esAdmin || ensTieneFuente() || ens.catalogo)
   ens.visible = !!ver
   d.style.display = ver ? '' : 'none'
   d.classList.toggle('con-nav', !!repRepertorioOrigenId)
   if(!ver){ var w = ensEl('ens-ytwrap'); if(w) w.style.display = 'none' }
 }
 function ensAlCerrar(){
+  ens.catalogo = false
   ensDetener(); ens.cancionId = null; ensMostrar(false); ensGrupoDesuscribir()
   if(ens.cuadros){ ens.cuadros = false; try { repUpdateDisplay() } catch(e){} }
 }
@@ -8284,7 +8307,7 @@ function ensVistaPlay(){
   // Falta el audio en ESTE dispositivo (archivo): guía de descargar e importar
   if(ens.fuente === 'archivo' && ensTieneFuenteActual() && !ens.archivoListo) return ensSelectorFuente() + ensVistaImportar()
   if(!ensTieneFuente()){
-    return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>' + (ens.esAdmin ? 'Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.' : 'Tu líder aún no lo ha dejado.') + '</div>'
+    return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>' + (ens.esAdmin ? 'Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.' : (ens.catalogo ? 'Esta canción del catálogo todavía no tiene video de ensayo.' : 'Tu líder aún no lo ha dejado.')) + '</div>'
   }
   var info = ''
   if(ens.fuente === 'youtube' && ens.ytErr) info = '<div class="ens-err">' + esc(ens.ytErr) + '</div>'
@@ -8518,7 +8541,7 @@ function ensIrVista(v){
   ens.loop = false
   if(v === 'enlace'){
     var c = ens.cfg || {}
-    ens.dTab = (c.fuente === 'youtube' || c.fuente === 'archivo') ? c.fuente : 'archivo'
+    ens.dTab = ens.catalogo ? 'youtube' : ((c.fuente === 'youtube' || c.fuente === 'archivo') ? c.fuente : 'archivo')
     ens.dLink = c.enlace_url || ''; ens.dName = c.archivo_nombre || ''
     ens.dYT = c.yt_url || ''; ens.dYTName = c.yt_nombre || ''
   } else if(v === 'acordes'){
@@ -8545,7 +8568,7 @@ function ensPedirVolver(){
   if(ensHayCambios()){ ens.confirmando = true; ensRender() } else ensSalir()
 }
 function ensSalir(){
-  var pend = ens.pendiente; ens.pendiente = null
+  var pend = ens.pendiente; ens.pendiente = null; ens.preguntandoAlcance = false; ens.alcance = null
   ens.confirmando = false; ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ens.nuevaSec = null; ensPausa()
   if(pend) pend()
 }
@@ -8561,6 +8584,15 @@ function ensConfirmarSalida(accion){
 function ensCancelarSalida(){ ens.pendiente = null; ens.confirmando = false; ensRender() }
 function ensRenderModal(){
   var m = ensEl('ens-modal'); if(!m) return
+  if(ens.preguntandoAlcance){
+    m.style.display = 'flex'
+    m.innerHTML = '<div class="ens-modal-c"><div class="ens-modal-t">¿Dónde guardar este cambio?</div>' +
+      '<div class="ens-modal-s">Estás dentro de un repertorio. Puedes cambiar la canción para siempre o solo para este repertorio (en los demás repertorios queda como estaba).</div>' +
+      '<button class="ens-btn" style="margin-bottom:8px" onclick="ensElegirAlcance(\'cancion\')">Para la canción (siempre)</button>' +
+      '<button class="ens-btn gh" onclick="ensElegirAlcance(\'repertorio\')">Solo para este repertorio</button>' +
+      '<button class="ens-link" style="margin-top:10px;width:100%" onclick="ensCancelarAlcance()">Cancelar (seguir editando)</button></div>'
+    return
+  }
   if(!ens.confirmando){ m.style.display = 'none'; m.innerHTML = ''; return }
   m.style.display = 'flex'
   m.innerHTML = '<div class="ens-modal-c"><div class="ens-modal-t">¿Deseas guardar los cambios antes de ' + (ens.pendiente ? 'continuar' : 'salir') + '?</div>' +
@@ -8597,10 +8629,10 @@ function ensVistaEnlace(){
       ((ens.cfg && ens.cfg.yt_url) ? '<button class="ens-link" onclick="ensQuitarFuente(\'youtube\')">Quitar el enlace de YouTube</button>' : '')
   }
   return ensBarra('Subir o cambiar audio o enlace') +
-    '<div class="ens-tabs"><button class="' + (ens.dTab === 'archivo' ? 'on' : '') + '" onclick="ensSetTab(\'archivo\')">Subir o cambiar audio</button>' +
-    '<button class="' + (ens.dTab === 'youtube' ? 'on' : '') + '" onclick="ensSetTab(\'youtube\')">Enlace de YouTube</button></div>' +
+    (ens.catalogo ? '' : '<div class="ens-tabs"><button class="' + (ens.dTab === 'archivo' ? 'on' : '') + '" onclick="ensSetTab(\'archivo\')">Subir o cambiar audio</button>' +
+    '<button class="' + (ens.dTab === 'youtube' ? 'on' : '') + '" onclick="ensSetTab(\'youtube\')">Enlace de YouTube</button></div>') +
     cuerpo +
-    '<div class="ens-nota">Puedes dejar <b>las dos</b>: cada participante elige entre Audio y YouTube. «Guardar» deja la pestaña activa como la que se muestra al empezar.</div>' +
+    (ens.catalogo ? '<div class="ens-nota">Canción del catálogo: solo YouTube. Al agregarla a «Mis canciones», cada organización recibe una copia de este video y de las marcas.</div>' : '<div class="ens-nota">Puedes dejar <b>las dos</b>: cada participante elige entre Audio y YouTube. «Guardar» deja la pestaña activa como la que se muestra al empezar.</div>') +
     '<button class="ens-btn" id="ens-btn-g" style="margin-top:10px" onclick="ensGuardar()"' + (ensPuedeGuardarEnlace() ? '' : ' disabled') + '>' + (ens.guardando ? 'Guardando…' : 'Guardar') + '</button>'
 }
 function ensPuedeGuardarEnlace(){
@@ -8857,14 +8889,21 @@ function ensMover(k, d){
 
 /* — guardar en la base de datos (solo administradores) — */
 /* Guardar desde el modal/botón. Si había una acción pendiente (cambiar de canción, cerrar…), se ejecuta solo si se guardó bien */
+function ensTocaAlcance(){ return ens.esAdmin && ensEnRepertorio() && (ens.vista === 'marcar' || ens.vista === 'editar' || ens.vista === 'acordes') }
+function ensElegirAlcance(a){ ens.preguntandoAlcance = false; ens.alcance = a; return ensGuardar() }
+function ensCancelarAlcance(){ ens.preguntandoAlcance = false; ens.pendiente = null; ensRender() }
 async function ensGuardar(){
+  if(ens.guardando) return
+  // dentro de un repertorio: ¿para toda la canción o solo para este repertorio?
+  if(ensTocaAlcance() && !ens.alcance){ ens.confirmando = false; ens.preguntandoAlcance = true; ensRender(); return }
   var pend = ens.pendiente; ens.pendiente = null
   await ensGuardarInterno()
+  ens.alcance = null
   if(pend && ens.vista === 'play'){ ens.confirmando = false; ensRender(); pend() }
 }
 async function ensGuardarInterno(){
   if(!ens.esAdmin || ens.guardando) return
-  var c = ens.cfg || {}
+  var c = ens.cfgBase || {}
   var fila = {
     cancion_id: ens.cancionId, organizacion_id: ens.orgId,
     fuente: c.fuente || 'archivo',
@@ -8895,14 +8934,37 @@ async function ensGuardarInterno(){
     var lista = ens.draft.map(function(m){ return { s: m.s, t: m.t } })
     if(ens.fuente === 'youtube') fila.marcas_yt = lista; else fila.marcas_archivo = lista
   }
+  var clave = ens.vista === 'acordes' ? (ens.fuente === 'youtube' ? 'marcas_acordes_yt' : 'marcas_acordes_archivo') : (ens.fuente === 'youtube' ? 'marcas_yt' : 'marcas_archivo')
+  var soloRep = ens.alcance === 'repertorio' && ensEnRepertorio() && ens.vista !== 'enlace'
   ens.guardando = true; ens.confirmando = false; ensRender()
-  var r = await supabase.from('ensayo_audio').upsert(fila, { onConflict: 'cancion_id' }).select().maybeSingle()
-  ens.guardando = false
-  if(r.error){
-    console.warn('Modo ensayo: no se pudo guardar', r.error)
-    showToast('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.', '#e74c3c'); ensRender(); return
+  if(soloRep){
+    // se guarda solo en este repertorio; la canción no se toca
+    var ov = Object.assign({}, ens.override || {}); ov[clave] = fila[clave]
+    var rr = await supabase.from('repertorio_canciones').update({ ensayo_override: ov }).eq('repertorio_id', repRepertorioOrigenId).eq('cancion_id', ens.cancionId).select('ensayo_override').maybeSingle()
+    ens.guardando = false
+    if(rr.error || !rr.data){
+      console.warn('Modo ensayo: no se pudo guardar en el repertorio', rr.error)
+      showToast('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.', '#e74c3c'); ensRender(); return
+    }
+    ens.override = rr.data.ensayo_override
+  } else {
+    var r = await supabase.from(ensTabla()).upsert(ensFilaTabla(fila), { onConflict: 'cancion_id' }).select().maybeSingle()
+    if(r.error){
+      ens.guardando = false
+      console.warn('Modo ensayo: no se pudo guardar', r.error)
+      showToast('No se pudo guardar. Revisa tu conexión e inténtalo de nuevo.', '#e74c3c'); ensRender(); return
+    }
+    ens.cfgBase = r.data || fila
+    // guardado para toda la canción: reemplaza lo que este repertorio tuviera para ese mismo tipo de marcas
+    if(ensEnRepertorio() && ens.override && ens.vista !== 'enlace' && (clave in ens.override)){
+      var ov2 = Object.assign({}, ens.override); delete ov2[clave]
+      var nuevo = Object.keys(ov2).length ? ov2 : null
+      var r2 = await supabase.from('repertorio_canciones').update({ ensayo_override: nuevo }).eq('repertorio_id', repRepertorioOrigenId).eq('cancion_id', ens.cancionId)
+      if(!r2.error) ens.override = nuevo
+    }
+    ens.guardando = false
   }
-  ens.cfg = r.data || fila
+  ensFusionarCfg()
   if(tras) tras()
   var vistaAntes = ens.vista
   ens.vista = 'play'; ens.draft = []; ens.accDraft = []; ens.nuevaSec = null
@@ -8923,7 +8985,7 @@ async function ensGuardarInterno(){
 async function ensQuitarFuente(tab){
   if(!ens.esAdmin || !ens.cfg) return
   if(!window.confirm(tab === 'archivo' ? '¿Quitar el enlace del audio? Las marcas se conservan.' : '¿Quitar el enlace de YouTube? Las marcas se conservan.')) return
-  var c = ens.cfg
+  var c = ens.cfgBase || ens.cfg
   var fila = { cancion_id: ens.cancionId, organizacion_id: ens.orgId, fuente: c.fuente || 'archivo',
     enlace_url: c.enlace_url || null, archivo_nombre: c.archivo_nombre || null, yt_url: c.yt_url || null, yt_nombre: c.yt_nombre || null,
     marcas_archivo: c.marcas_archivo || [], marcas_yt: c.marcas_yt || [],
@@ -8931,9 +8993,9 @@ async function ensQuitarFuente(tab){
     updated_at: new Date().toISOString(), updated_by: currentUser.id }
   if(tab === 'archivo'){ fila.enlace_url = null; fila.archivo_nombre = null; if(fila.fuente === 'archivo') fila.fuente = fila.yt_url ? 'youtube' : 'archivo' }
   else { fila.yt_url = null; fila.yt_nombre = null; if(fila.fuente === 'youtube') fila.fuente = 'archivo' }
-  var r = await supabase.from('ensayo_audio').upsert(fila, { onConflict: 'cancion_id' }).select().maybeSingle()
+  var r = await supabase.from(ensTabla()).upsert(ensFilaTabla(fila), { onConflict: 'cancion_id' }).select().maybeSingle()
   if(r.error){ showToast('No se pudo quitar el enlace. Inténtalo de nuevo.', '#e74c3c'); return }
-  ens.cfg = r.data || fila
+  ens.cfgBase = r.data || fila; ensFusionarCfg()
   ens.vista = 'play'; ens.confirmando = false
   ensSetPrefFuente(null)
   await ensAplicarCfg(); ensMostrar(true)
@@ -8949,7 +9011,6 @@ function ensSyncPrefBtn(){
   b.textContent = on ? 'Activado' : 'Desactivado'
 }
 function ensTogglePref(){
-  if(ensOn() && window.ensConfirmarSalida && !ensConfirmarSalida(ensTogglePref)) return
   var on = !ensOn()
   try { if(on) sessionStorage.setItem(ENS_LS_ON, '1'); else sessionStorage.removeItem(ENS_LS_ON) } catch(e){}
   ensSyncPrefBtn()
@@ -8992,7 +9053,7 @@ window.addEventListener('beforeunload', function(e){
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
-    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
     ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
