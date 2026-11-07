@@ -3133,12 +3133,20 @@ function actualizarPanelSuscripcion() {
 var _pagoPollingTimer = null
 var _checkoutUrls = { mp: '', tarjeta: '' }
 
+// Las funciones de pago exigen la sesion del usuario: el servidor saca el usuario del token, no del cuerpo.
+async function _cabecerasPago() {
+  var s = await supabase.auth.getSession()
+  var tk = s && s.data && s.data.session && s.data.session.access_token
+  if (!tk) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.')
+  return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + tk, 'apikey': 'sb_publishable_POJ4tKW3DWWo3BZvT0MiGw_0ag53ZEv' }
+}
+
 window.iniciarSuscripcion = async function(planId, label) {
   try {
     var res = await fetch('https://awjkpafyrcblglnvmkyp.supabase.co/functions/v1/crear-suscripcion', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan_id: planId, user_id: currentUser.id, user_email: currentUser.email })
+      headers: await _cabecerasPago(),
+      body: JSON.stringify({ plan_id: planId })
     })
     var json = await res.json()
     if (!res.ok || !json.init_point) throw new Error(JSON.stringify(json))
@@ -3197,8 +3205,8 @@ window.confirmarCancelacionSuscripcion = async function() {
   try {
     var res = await fetch('https://awjkpafyrcblglnvmkyp.supabase.co/functions/v1/cancelar-suscripcion', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: currentUser.id })
+      headers: await _cabecerasPago(),
+      body: JSON.stringify({})
     })
     if (!res.ok) {
       // Mostrar el motivo real (ej: Mercado Pago no pudo cancelar, no se hizo ningún cambio)
@@ -3245,6 +3253,10 @@ function _iniciarEsperaPago() {
     intentos++
     if (intentos > maxIntentos) { cancelarEsperaPago(); return }
     try {
+      // Cada ~9 s se le pide al servidor que revise Mercado Pago directamente (no depende solo del webhook)
+      if (intentos % 3 === 0) {
+        try { await fetch('https://awjkpafyrcblglnvmkyp.supabase.co/functions/v1/sincronizar-suscripcion', { method: 'POST', headers: await _cabecerasPago(), body: '{}' }) } catch (e0) {}
+      }
       const { data } = await supabase
         .from('profiles')
         .select('suscripcion_activa, plan_nivel')
