@@ -79,6 +79,9 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);hei
 .section-textarea::placeholder{color:#4a4a4a;font-family:'Poppins',sans-serif;font-size:.75rem}
 .section-hint{font-size:.68rem;color:#6a6a6a;margin-top:4px}
 .section-hint code{background:var(--bg3);padding:1px 4px;border-radius:3px;color:#e74c3c;font-family:'Courier New',monospace}
+.section-hint{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.btn-corchetes{margin-left:auto;background:var(--bg3);color:#fff;border:1px solid var(--border,#333);border-radius:6px;padding:5px 10px;font-size:.72rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.btn-corchetes:active{background:#2a2a2a}
 .color-green{--c:#1DB89A;--cbg:#1a3a35}
 .color-blue{--c:#5B9DFF;--cbg:#172847}
 .color-orange{--c:#E07A5F;--cbg:#3a2418}
@@ -1328,6 +1331,24 @@ function renderSections(){
     (function(idx){ta.addEventListener('input',function(){sections[idx].content=this.value;renderPreview();});})(i);
     var hint=document.createElement('div');hint.className='section-hint';
     hint.innerHTML='Pon el acorde entre corchetes: <code>[G]</code> <code>[Em7]</code> <code>[C/E]</code>';
+    var bCor=document.createElement('button');bCor.type='button';bCor.className='btn-corchetes';bCor.textContent='[ ] Agregar corchetes';
+    (function(areaEl,idx){
+      // mousedown/touchstart sin quitar el foco: así el teclado del celular no se cierra y el cursor se conserva
+      bCor.addEventListener('mousedown',function(e){e.preventDefault();});
+      bCor.addEventListener('touchstart',function(e){e.preventDefault();bCor.click();},{passive:false});
+      bCor.addEventListener('click',function(){
+        var s=areaEl.selectionStart,e2=areaEl.selectionEnd,v=areaEl.value;
+        if(typeof s!=='number'){s=e2=v.length;}
+        var sel=v.slice(s,e2);
+        areaEl.value=v.slice(0,s)+'['+sel+']'+v.slice(e2);
+        var pos=sel?(s+sel.length+2):(s+1);   // sin selección: cursor entre los corchetes
+        areaEl.focus();
+        areaEl.setSelectionRange(pos,pos);
+        sections[idx].content=areaEl.value;
+        renderPreview();
+      });
+    })(ta,i);
+    hint.appendChild(bCor);
     var dmLabel=document.createElement('span');dmLabel.className='dm-label';dmLabel.textContent='DM — Notas del director musical';
     var dmIn=document.createElement('textarea');dmIn.className='dm-input';dmIn.rows=2;
     dmIn.placeholder='Ej: Tocar suave, ritmo libre hasta el coro…';
