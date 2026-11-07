@@ -1948,6 +1948,7 @@ async function cargarPerfil() {
   if (eraPrimeraVerificacion && enVivoEstaVisible()) cargarRepertorios()
 
   actualizarVisibilidadPorRol()
+  setTimeout(avisoPagoInit, 1500)
 
   // Si el tour ya fue completado, verificar términos aquí (safety net para usuarios que regresan)
   if (localStorage.getItem(tourKey())) {
@@ -3128,6 +3129,97 @@ function actualizarPanelSuscripcion() {
   }
   window.switchPeriodoSubs('mes')
 
+}
+
+// ── AVISO DE PAGO PENDIENTE (una vez por apertura de la app; el servidor decide el estado) ──
+var _avisoPagoMostrado = false
+function _avisoPagoOcupado() {
+  var p = document.getElementById('panel-reproductor')
+  var rep = !!(p && p.classList.contains('active'))
+  return rep || enVivoEstaVisible()
+}
+function _cerrarAvisoPago() {
+  var el = document.getElementById('aviso-pago-overlay')
+  if (el) el.remove()
+}
+window.avisoPagoPagar = async function(orgId, esTitular) {
+  if (esTitular) { _cerrarAvisoPago(); abrirPanel('panel-suscripcion'); return }
+  try {
+    var r = await supabase.rpc('asumir_pago_organizacion', { p_org: orgId })
+    if (r.error) throw r.error
+    _cerrarAvisoPago()
+    showToast('Ahora tú eres el titular del pago de la organización.')
+  } catch (e) {
+    var msg = (e && e.message) || ''
+    if (msg.indexOf('plan activo') >= 0) {
+      _cerrarAvisoPago()
+      showToast('Primero activa tu propio plan; luego podrás asumir el pago.', '#e67e22')
+      abrirPanel('panel-suscripcion')
+    } else {
+      showToast(msg || 'No se pudo asumir el pago.', '#e74c3c')
+    }
+  }
+}
+function _mostrarAvisoPago(o) {
+  _cerrarAvisoPago()
+  var congelada = o.estado === 'congelada'
+  var previo = o.estado === 'activa'
+  var titulo, texto
+  if (congelada) {
+    titulo = 'Organización en solo lectura'
+    texto = '"' + esc(o.nombre) + '" está en solo lectura por falta de pago. Tus canciones y repertorios están a salvo; al regularizar el pago vuelve todo a la normalidad.'
+  } else if (previo) {
+    titulo = 'Tu pago se acerca'
+    texto = 'El pago de "' + esc(o.nombre) + '" vence ' + (o.dias_para_cobro <= 0 ? 'hoy' : 'en ' + o.dias_para_cobro + (o.dias_para_cobro === 1 ? ' día' : ' días')) + '. Revisa que tu medio de pago esté vigente.'
+  } else {
+    var d = o.dias_restantes
+    titulo = d <= 1 ? 'Mañana se pone en solo lectura' : 'Pago pendiente'
+    texto = 'No se pudo cobrar "' + esc(o.nombre) + '". Te ' + (d === 1 ? 'queda 1 día' : 'quedan ' + d + ' días') + ' con todo funcionando para regularizarlo.'
+  }
+  var ov = document.createElement('div')
+  ov.id = 'aviso-pago-overlay'
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px'
+  var btnPagar = previo ? 'Revisar mi pago' : (o.es_titular ? 'Pagar ahora' : 'Asumir el pago')
+  ov.innerHTML = '<div style="background:var(--bg2,#1c1c1e);color:var(--text,#fff);border-radius:16px;max-width:380px;width:100%;padding:24px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.5)">' +
+    '<div style="font-size:1.05rem;font-weight:700;margin-bottom:10px">' + titulo + '</div>' +
+    '<p style="font-size:.85rem;line-height:1.6;opacity:.85;margin:0 0 20px">' + texto + '</p>' +
+    '<button id="aviso-pago-si" style="width:100%;background:#0071e3;color:#fff;border:none;padding:12px;border-radius:10px;font-size:.9rem;font-weight:600;cursor:pointer;margin-bottom:8px">' + btnPagar + '</button>' +
+    '<button id="aviso-pago-no" style="width:100%;background:transparent;color:inherit;border:1px solid rgba(128,128,128,.4);padding:11px;border-radius:10px;font-size:.88rem;cursor:pointer">Más tarde</button>' +
+    '</div>'
+  document.body.appendChild(ov)
+  document.getElementById('aviso-pago-si').onclick = function() {
+    if (previo) { _cerrarAvisoPago(); abrirPanel('panel-suscripcion') }
+    else window.avisoPagoPagar(o.organizacion_id, o.es_titular)
+  }
+  document.getElementById('aviso-pago-no').onclick = _cerrarAvisoPago
+}
+async function avisoPagoInit() {
+  if (_avisoPagoMostrado || !currentUser) return
+  try {
+    var r = await supabase.rpc('estado_pago_usuario')
+    if (r.error || !Array.isArray(r.data)) return
+    var lista = r.data
+    var gestor = lista.filter(function(o){ return (o.es_titular || o.es_admin) && (o.estado === 'gracia' || o.estado === 'congelada' || (o.estado === 'activa' && o.es_titular && o.dias_para_cobro != null && o.dias_para_cobro <= 3 && o.dias_para_cobro >= 0)) })
+    // prioridad: congelada > gracia > previo
+    var orden = { congelada: 0, gracia: 1, activa: 2 }
+    gestor.sort(function(a, b){ return orden[a.estado] - orden[b.estado] })
+    _avisoPagoMostrado = true
+    if (gestor.length) {
+      var esperar = function() {
+        if (_avisoPagoOcupado()) { setTimeout(esperar, 5000); return }
+        _mostrarAvisoPago(gestor[0])
+      }
+      esperar()
+      return
+    }
+    // Participantes: cartel discreto, sin botón de pago
+    var parte = lista.filter(function(o){ return !o.es_titular && !o.es_admin && (o.estado === 'gracia' || o.estado === 'congelada') })
+    if (parte.length) {
+      showToast(parte[0].estado === 'congelada'
+        ? 'La organización "' + parte[0].nombre + '" está en solo lectura por un pago pendiente. Avisa a tu administrador.'
+        : 'El pago de "' + parte[0].nombre + '" está pendiente. Avisa a tu administrador.', '#e67e22')
+    }
+  } catch (e) { console.warn('[aviso-pago]', e) }
 }
 
 var _pagoPollingTimer = null
