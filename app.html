@@ -8483,6 +8483,20 @@ function ensSlots(){
     var cont = {}
     ens.marcas.forEach(function(m){ var o = cont[m.s] || 0; cont[m.s] = o + 1; orden.push({ s: m.s, o: o }) })
   } else ensSecs().forEach(function(sc){ orden.push({ s: sc.id, o: 0 }) })
+  // Las secciones de la canción que NO tienen marca de sección en el audio también deben poder marcarse
+  // (antes se saltaban en silencio): se insertan en la posición que les toca según la estructura de la canción.
+  if(ens.marcas.length){
+    var estr = ensSecs(), posEstr = {}
+    estr.forEach(function(sc, ix){ if(!(sc.id in posEstr)) posEstr[sc.id] = ix })
+    var conMarca = {}
+    ens.marcas.forEach(function(m){ conMarca[m.s] = true })
+    estr.forEach(function(sc, u){
+      if(conMarca[sc.id]) return
+      var at = 0
+      for(var q = 0; q < orden.length; q++){ var pq = posEstr[orden[q].s]; if(pq !== undefined && pq < u) at = q + 1 }
+      orden.splice(at, 0, { s: sc.id, o: 0 })
+    })
+  }
   var slots = []
   orden.forEach(function(x){
     var sec = ensSecPorId(x.s); if(!sec) return
