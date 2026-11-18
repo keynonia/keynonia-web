@@ -9274,7 +9274,7 @@ function ensTogglePref(){
 var SAV_LS = 'keynonia_seguir_acordes_vivo'
 var SAV_NOTA_INICIO = 24   // C0
 var SAV_LS_AJ = 'keynonia_seguir_acordes_vivo_ajuste'
-var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false, occ: null, cur: null, ptr: -1 }
+var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false, occ: null, cur: null, ptr: -1, hold: false, holdTimer: null, tNota: 0, doble: false }
 function savOn(){ try { return localStorage.getItem(SAV_LS) === '1' } catch(e){ return false } }
 function savActivo(){ return savOn() && !ensOn() && sav.cargado && sav.cancionId === repCancionId && ens.cancionId === repCancionId }
 function savSyncPrefBtn(){
@@ -9284,7 +9284,7 @@ function savSyncPrefBtn(){
   b.textContent = on ? 'Activado' : 'Desactivado'
   var av = ensEl('rep-sav-aj-val'); if(av){ var a = savAjuste(); av.textContent = (a > 0 ? '+' : '') + a.toFixed(1) + ' s' }
 }
-function savPararTimer(){ if(sav.timer){ clearInterval(sav.timer); sav.timer = null } sav.corriendo = false }
+function savPararTimer(){ if(sav.timer){ clearInterval(sav.timer); sav.timer = null } if(sav.holdTimer){ clearTimeout(sav.holdTimer); sav.holdTimer = null } sav.corriendo = false; sav.hold = false }
 /* Modelo «sección manda»: cada nota de sección del DAW reubica los acordes en esa sección; el reloj solo avanza
    DENTRO de ella y se detiene en su último acorde (nunca invade otra sección). */
 function savAjuste(){ try { var v = parseFloat(localStorage.getItem(SAV_LS_AJ)); return isNaN(v) ? 0 : v } catch(e){ return 0 } }
@@ -9316,10 +9316,17 @@ function savTick(){
   ens.t = Math.max(sav.cur.lo, Math.min(raw, sav.cur.hi))
   ensVivoAcordes()
 }
-function savAnclar(i, desde){
+function savAnclar(i, desde, espera){
   var x = savOcc()[i]; if(!x || !savActivo()) return
   savPararTimer()
   sav.ptr = i; sav.cur = x
+  if(espera){
+    // nota de anticipo: se ve el primer acorde de la sección, pero el reloj queda quieto hasta la nota exacta
+    sav.hold = true
+    ens.t = x.lo; ensVivoAcordes()
+    sav.holdTimer = setTimeout(function(){ if(sav.cur === x && sav.hold) savAnclar(i, x.t) }, 7000)
+    return
+  }
   sav.t0 = performance.now() - ((desde == null ? x.t : desde) - x.t) * 1000
   sav.corriendo = true
   sav.timer = setInterval(savTick, 60)
@@ -9380,11 +9387,18 @@ async function savAlAbrirCancion(cancion, esPreview){
 /* Nota MIDI recibida: C0 (o la primera sección marcada) arranca la línea de tiempo en silencio */
 function savAlRecibirNota(note, target){
   if(!savActivo()) return
-  if(!savOcc().length) return
-  if(note === SAV_NOTA_INICIO){ savAnclar(0); return }   // C0: arranca en la primera sección marcada
-  if(!target) return
-  var i = savElegirOcc(target.id)
-  if(i < 0) savReposo(); else savAnclar(i)
+  var occ = savOcc(); if(!occ.length) return
+  var sid = target ? target.id : (note === SAV_NOTA_INICIO ? occ[0].s : null)   // C0 sin sección asignada = primera sección marcada
+  if(!sid) return
+  var ahora = performance.now(), cur = sav.cur
+  // misma sección otra vez, enseguida: es la nota exacta que confirma el anticipo (no una sección nueva)
+  if(cur && cur.s === sid){
+    var vent = Math.min(10, isFinite(cur.te) ? (cur.te - cur.t) * 0.5 : 10) * 1000
+    if(ahora - sav.tNota < vent){ sav.doble = true; sav.tNota = ahora; savAnclar(sav.ptr, cur.t); return }
+  }
+  sav.tNota = ahora
+  var i = savElegirOcc(sid)
+  if(i < 0) savReposo(); else savAnclar(i, null, sav.doble)
 }
 function savTogglePref(){
   var on = !savOn()
