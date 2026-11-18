@@ -705,6 +705,7 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 /* Paneles y rep-view: encima de todo */
 .panel,.rep-view{position:fixed!important;z-index:99100!important;}
 .modal-overlay{position:fixed!important;z-index:99200!important;}
+#modal-confirmar.modal-overlay{z-index:99900!important}
 .dropdown-menu{position:fixed!important;z-index:99300!important;}
 .tono-selector{position:fixed!important;z-index:99400!important;}
 .dt-overlay{position:fixed!important;z-index:99500!important;}
@@ -3861,6 +3862,68 @@ async function _enviarNotificacionA(miembroIds) {
   }
 }
 
+
+// ─── DUPLICAR REPERTORIO / VER MENSAJE ───
+// Duplicar: crea un repertorio nuevo con el mismo nombre + « (copia)» y TODOS sus datos
+// (fecha, hora, mensaje, modo de control, enlaces adicionales, canciones con su orden,
+// tono, cantantes y ajustes propios del repertorio). Solo administradores.
+var _repDuplicando = false
+window.duplicarRepActual = async function() {
+  const id = dropdownId !== null ? dropdownId : repActualId
+  cerrarDropdown()
+  if (!id || _repDuplicando) return
+  const rep = repertoriosCache.find(function(r){ return r.id === id })
+  if (!rep) return
+  var orgActivo = orgs.find(function(o){ return o.activa })
+  if (!orgActivo || orgActivo.rol !== 'administrador') { showToast('Solo un administrador puede duplicar repertorios', '#e67e22'); return }
+  if (!await confirmar('¿Duplicar el repertorio "' + rep.titulo + '"?', 'Duplicar')) return
+  _repDuplicando = true
+  try {
+    const o = await supabase.from('repertorios').select('*').eq('id', id).maybeSingle()
+    if (o.error || !o.data) throw new Error(o.error ? o.error.message : 'No se encontró el repertorio')
+    const nuevo = {
+      organizacion_id: o.data.organizacion_id,
+      titulo: (o.data.titulo || '') + ' (copia)',
+      fecha: o.data.fecha, horario: o.data.horario, descripcion: o.data.descripcion,
+      modo_control: o.data.modo_control, enlaces: o.data.enlaces,
+      creado_por: currentUser.id
+    }
+    const ins = await supabase.from('repertorios').insert(nuevo).select('id').single()
+    if (ins.error || !ins.data) throw new Error(ins.error ? ins.error.message : 'No se pudo crear la copia')
+    const canc = await supabase.from('repertorio_canciones').select('*').eq('repertorio_id', id).order('orden', { ascending: true })
+    if (canc.error) throw new Error(canc.error.message)
+    const filas = (canc.data || []).map(function(f){
+      const c = Object.assign({}, f)
+      delete c.id; delete c.created_at
+      c.repertorio_id = ins.data.id
+      return c
+    })
+    if (filas.length) {
+      const r2 = await supabase.from('repertorio_canciones').insert(filas)
+      if (r2.error) {
+        await supabase.from('repertorios').delete().eq('id', ins.data.id)   // no dejar una copia a medias
+        throw new Error(r2.error.message)
+      }
+    }
+    showToast('✓ Repertorio duplicado')
+    await cargarRepertorios()
+  } catch (e) {
+    showToast('Error al duplicar: ' + e.message, '#e74c3c')
+  } finally { _repDuplicando = false }
+}
+
+window.verMensajeRep = function() {
+  const id = dropdownId !== null ? dropdownId : repActualId
+  cerrarDropdown()
+  if (!id) return
+  const rep = repertoriosCache.find(function(r){ return r.id === id })
+  if (!rep) return
+  if (!rep.descripcion || !String(rep.descripcion).trim()) { showToast('Este repertorio no tiene mensaje', '#7f8c8d'); return }
+  document.getElementById('rep-mensaje-titulo').textContent = rep.titulo || ''
+  document.getElementById('rep-mensaje-texto').textContent = rep.descripcion
+  abrirModal('modal-rep-mensaje')
+}
+
 window.eliminarRepActual = async function() {
   const id = dropdownId !== null ? dropdownId : repActualId
   cerrarDropdown()
@@ -3983,6 +4046,7 @@ window.confirmarEliminarEnlaceRep = async function(idx) {
   if (repAdicionalEditandoIdx === idx) { repAdicionalEditandoIdx = null; document.getElementById('rep-adicional-titulo').value = ''; document.getElementById('rep-adicional-url').value = ''; document.getElementById('rep-adicional-agregar-btn').textContent = 'Agregar' }
   repAdicionalesCurrent.splice(idx, 1)
   await guardarAdicionalesRep()
+  cerrarModal('modal-rep-adicionales')   // Aceptar: se cierra todo, no vuelve al listado
 }
 
 window.agregarEnlaceRep = async function() {
@@ -4736,6 +4800,7 @@ window.confirmarEliminarEnlace = async function(idx) {
   if (enlaceEditandoIdx === idx) { enlaceEditandoIdx = null; document.getElementById('enlace-titulo').value = ''; document.getElementById('enlace-url').value = ''; document.getElementById('enlace-agregar-btn').textContent = 'Agregar' }
   enlacesCurrent.splice(idx, 1)
   await guardarEnlaces()
+  cerrarEnlaces()   // Aceptar: se cierra todo, no vuelve al listado
 }
 
 window.agregarEnlace = async function() {
@@ -6571,6 +6636,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repUpdateDisplay()
 
   try { ensAlAbrirCancion(cancion, esPreview) } catch(e) { console.warn('Modo ensayo:', e) }
+  try { savAlAbrirCancion(cancion, esPreview) } catch(e) { console.warn('Seguir acordes en vivo:', e) }
 
   document.getElementById('rep-anterior-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
   document.getElementById('rep-siguiente-btn').style.display = repRepertorioOrigenId ? 'inline-flex' : 'none'
@@ -6608,6 +6674,7 @@ window.cerrarReproductor = function(){
   document.getElementById('rep-ton-sel').classList.remove('active')
   document.getElementById('rep-pref-panel').classList.remove('active')
   try { ensAlCerrar() } catch(e) {}
+  try { savLimpiar() } catch(e) {}
   repDesconectarDAW()
   repDesconectarControladorIndividual()
   repDesconectarGlobal()
@@ -6985,6 +7052,7 @@ function repGoToMidiNote(note){
   if(!repCancion) return
   var secciones=(repCancion.datos && repCancion.datos.secciones) || []
   var target=secciones.find(function(s){ return s.midiNote===note })
+  try { savAlRecibirNota(note, target) } catch(e){}
   if(!target) return
   repActivarSeccion(target.id)
 }
@@ -8186,11 +8254,12 @@ function ensToggleSig(){
   showToast(ens.autoSig ? 'Siguiente activado' : 'Siguiente desactivado', ens.autoSig ? '#27ae60' : '#7f8c8d')
 }
 /* «Seguir acordes»: es una ayuda visual de cada persona (no viaja por la red). Necesita que el administrador haya marcado los acordes. */
-function ensSeguirOn(){ return !!(ens.seguir && ens.acordes.length) }
+function ensSeguirOn(){ return !!((ens.seguir || savActivo()) && ens.acordes.length) }
 function ensToggleSeguir(){
   if(!ens.seguir){
     if(!ens.acordes.length){ showToast('No hay marcas de acordes disponibles', '#e67e22'); return }
     ens.seguir = true
+    if(savOn()){ try { localStorage.setItem(SAV_LS, '0') } catch(e){} savLimpiar(); savSyncPrefBtn() }
   } else ens.seguir = false
   try { localStorage.setItem(ENS_LS_SEGUIR, ens.seguir ? '1' : '0') } catch(e){}
   ens.accIdx = -2
@@ -8229,8 +8298,23 @@ function ensAplicarLoopGrupo(p){
   ensRender()
 }
 function ensGrupoEnviarLoop(){
-  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  if(ens.remoto || ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
   try { ens.canal.send({ type: 'broadcast', event: 'lp', payload: ensLoopPayload() }) } catch(e){}
+}
+/* Todos los dispositivos se sincronizan: también los administradores (varios administradores o la misma cuenta en PC y teléfono).
+   Lo que se aplica por haberlo recibido NO se vuelve a enviar (ens.remoto), para que no rebote entre dispositivos. */
+function ensGrupoRecibe(){
+  if(ens.modo !== 'grupal') return false
+  if(ens.esAdmin && ens.vista !== 'play') return false   // un administrador que está editando marcas no recibe saltos ni play
+  return true
+}
+function ensAplicarSigGrupo(on){
+  if(ens.esAdmin){
+    if(ens.autoSig === on) return
+    ens.autoSig = on
+    try { localStorage.setItem(ENS_LS_SIG, on ? '1' : '0') } catch(e){}
+  } else ens.sigGrupo = on
+  ensRender()
 }
 function ensGrupoSuscribir(){
   ensGrupoDesuscribir()
@@ -8239,33 +8323,38 @@ function ensGrupoSuscribir(){
     ens.canal = supabase.channel('ensayo-' + ens.orgId, { config: { broadcast: { self: false } } })
     ens.canal.on('broadcast', { event: 'pp' }, function(msg){
       var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
-      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
-      if(typeof p.sig === 'boolean'){ ens.sigGrupo = p.sig; ensRender() }
-      if(p.cancion !== ens.cancionId || !ensListo()) return
-      if(typeof p.loop === 'boolean') ensAplicarLoopGrupo(p)
-      if(p.play){
-        if(typeof p.t === 'number'){ var d = ensPosDesde(p); if(Math.abs(d - ens.t) > 1.5) ensIrA(d) }
-        if(!ens.tocando) ensPlay()
-      } else if(ens.tocando) ensPausa()
+      if(!p || !ensGrupoRecibe()) return
+      ens.remoto = true
+      try {
+        if(typeof p.sig === 'boolean') ensAplicarSigGrupo(p.sig)
+        if(p.cancion !== ens.cancionId || !ensListo()) return
+        if(typeof p.loop === 'boolean') ensAplicarLoopGrupo(p)
+        if(p.play){
+          if(typeof p.t === 'number'){ var d = ensPosDesde(p); if(Math.abs(d - ens.t) > 1.5) ensIrA(d) }
+          if(!ens.tocando) ensPlay()
+        } else if(ens.tocando) ensPausa()
+      } finally { ens.remoto = false }
     }).on('broadcast', { event: 'sk' }, function(msg){
       var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
-      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      if(!p || !ensGrupoRecibe()) return
       if(p.cancion !== ens.cancionId || !ensListo()) return
-      ensIrA(ensPosDesde(p))
+      ens.remoto = true
+      try { ensIrA(ensPosDesde(p)) } finally { ens.remoto = false }
     }).on('broadcast', { event: 'lp' }, function(msg){
       var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
-      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
+      if(!p || !ensGrupoRecibe()) return
       if(p.cancion !== ens.cancionId || !ensListo()) return
-      ensAplicarLoopGrupo(p)
+      ens.remoto = true
+      try { ensAplicarLoopGrupo(p) } finally { ens.remoto = false }
     }).on('broadcast', { event: 'sg' }, function(msg){
       var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
-      if(!p || ens.esAdmin || ens.modo !== 'grupal') return
-      ens.sigGrupo = !!p.on; ensRender()
+      if(!p || !ensGrupoRecibe()) return
+      ensAplicarSigGrupo(!!p.on)
     }).on('broadcast', { event: 'hi' }, function(){
       // alguien nuevo entró al grupo: el administrador le cuenta cómo van las cosas
       if(ens.esAdmin && ens.modo === 'grupal') ensGrupoEnviar(ens.tocando)
     }).subscribe(function(st){
-      if(st === 'SUBSCRIBED' && !ens.esAdmin){ try { ens.canal.send({ type: 'broadcast', event: 'hi', payload: {} }) } catch(e){} }
+      if(st === 'SUBSCRIBED'){ try { ens.canal.send({ type: 'broadcast', event: 'hi', payload: {} }) } catch(e){} }
     })
   } catch(e){ console.warn('Modo ensayo: no se pudo abrir el canal grupal', e) }
 }
@@ -8273,16 +8362,16 @@ function ensGrupoDesuscribir(){
   if(ens.canal){ try { supabase.removeChannel(ens.canal) } catch(e){} ens.canal = null }
 }
 function ensGrupoEnviar(play){
-  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  if(ens.remoto || ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
   var pl = ensLoopPayload(); pl.play = !!play; pl.sig = !!ens.autoSig
   try { ens.canal.send({ type: 'broadcast', event: 'pp', payload: pl }) } catch(e){}
 }
 function ensGrupoEnviarSalto(){
-  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  if(ens.remoto || ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
   try { ens.canal.send({ type: 'broadcast', event: 'sk', payload: ensPosPayload() }) } catch(e){}
 }
 function ensGrupoEnviarSig(){
-  if(ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
+  if(ens.remoto || ens.modo !== 'grupal' || !ens.esAdmin || !ens.canal) return
   try { ens.canal.send({ type: 'broadcast', event: 'sg', payload: { on: !!ens.autoSig } }) } catch(e){}
 }
 function ensSetModo(m){
@@ -8529,6 +8618,7 @@ function ensAccHuerfanas(){
 /* Los cuadraditos se dibujan en la CANCIÓN de arriba (letra con acordes), un cuadrito por cada corchete [ ].
    repFmtContent los crea cuando ensCuadrosOn() es verdadero; aquí solo se pintan sus estados. */
 function ensCuadrosOn(){
+  if(savActivo()) return true
   if(!ens.visible || ens.cancionId !== repCancionId) return false
   return ens.vista === 'acordes' || (ens.vista === 'play' && ensSeguirOn() && ensListo())
 }
@@ -8590,11 +8680,14 @@ function ensCqClick(el){
 function ensIrAAcorde(k){
   var sl = ensSlots()[k]; if(!sl) return
   var m = ensAccBuscar(ens.acordes, sl)
-  if(m) ensIrA(m.t)
+  if(!m) return
+  if(savActivo()){ savIniciar(m.t); return }   // en vivo: tocar un cuadrito reubica la línea de tiempo silenciosa
+  ensIrA(m.t)
 }
 /* Al cambiar tonalidad o grados, los cuadritos se redibujan con los acordes nuevos */
 function ensRefrescarAcordes(){
   ens.slots = null
+  if(savActivo()){ ens.accTimes = null; ensPintarCuadros(); return }
   if(!ens.visible || ens.cancionId !== repCancionId) return
   ensRender()
 }
@@ -9153,6 +9246,7 @@ async function ensQuitarFuente(tab){
 
 /* ───────── Preferencias: encender / apagar (apagado por defecto) ───────── */
 function ensSyncPrefBtn(){
+  try { savSyncPrefBtn() } catch(e){}
   var b = ensEl('rep-pref-ens'); if(!b) return
   var on = ensOn()
   b.classList.toggle('active', on)
@@ -9163,11 +9257,98 @@ function ensTogglePref(){
   try { if(on) sessionStorage.setItem(ENS_LS_ON, '1'); else sessionStorage.removeItem(ENS_LS_ON) } catch(e){}
   ensSyncPrefBtn()
   if(on){
+    if(savOn()){ try { localStorage.setItem(SAV_LS, '0') } catch(e){} savLimpiar(); savSyncPrefBtn(); try { repUpdateDisplay() } catch(e){} showToast('Seguir acordes en vivo se desactivó (es excluyente con el Modo ensayo)', '#e67e22') }
     if(repCancion) ensAlAbrirCancion(repCancion, repModoPreview)
     showToast('Modo ensayo activado', '#27ae60')
   } else {
     ensAlCerrar()
     showToast('Modo ensayo desactivado', '#7f8c8d')
+  }
+}
+
+
+/* ───────── Seguir acordes en vivo ─────────
+   Línea de tiempo SILENCIOSA (no reproduce audio) que sigue las marcas de acorde del audio de la canción.
+   Arranca cuando la app recibe la nota MIDI de inicio (C0, o la nota de la primera sección marcada).
+   Solo funciona con el Modo ensayo apagado; es excluyente con «Seguir acordes» del modo ensayo. */
+var SAV_LS = 'keynonia_seguir_acordes_vivo'
+var SAV_NOTA_INICIO = 24   // C0
+var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false }
+function savOn(){ try { return localStorage.getItem(SAV_LS) === '1' } catch(e){ return false } }
+function savActivo(){ return savOn() && !ensOn() && sav.cargado && sav.cancionId === repCancionId && ens.cancionId === repCancionId }
+function savSyncPrefBtn(){
+  var b = ensEl('rep-pref-sav'); if(!b) return
+  var on = savOn()
+  b.classList.toggle('active', on)
+  b.textContent = on ? 'Activado' : 'Desactivado'
+}
+function savPararTimer(){ if(sav.timer){ clearInterval(sav.timer); sav.timer = null } sav.corriendo = false }
+function savTick(){
+  if(!savActivo()){ savPararTimer(); return }
+  ens.t = (performance.now() - sav.t0) / 1000
+  ensVivoAcordes()
+}
+function savIniciar(desde){
+  if(!savActivo()) return
+  savPararTimer()
+  sav.t0 = performance.now() - (desde || 0) * 1000
+  sav.corriendo = true
+  sav.timer = setInterval(savTick, 60)
+  savTick()
+}
+/* Limpia todo (cambio de canción, cierre del reproductor, apagado) */
+function savLimpiar(){
+  savPararTimer()
+  if(!sav.cargado) return
+  sav.cargado = false; sav.cancionId = null
+  if(!ensOn()){
+    ens.cancionId = null; ens.marcas = []; ens.acordes = []; ens.slots = null; ens.accTimes = null; ens.accIdx = -1; ens.t = 0
+  }
+}
+async function savAlAbrirCancion(cancion, esPreview){
+  savLimpiar()
+  if(!savOn() || ensOn() || !currentUser || !cancion || esPreview) return
+  if(repRepertorioOrigenId === 'demo') return
+  var id = cancion.id
+  var cfg = {}
+  try {
+    var r = await supabase.from('ensayo_audio').select('marcas_archivo, marcas_acordes_archivo').eq('cancion_id', id).maybeSingle()
+    if(r.data) cfg = r.data
+    if(repRepertorioOrigenId){
+      var ro = await supabase.from('repertorio_canciones').select('ensayo_override').eq('repertorio_id', repRepertorioOrigenId).eq('cancion_id', id).maybeSingle()
+      if(ro.data && ro.data.ensayo_override) cfg = Object.assign({}, cfg, ro.data.ensayo_override)
+    }
+  } catch(e){ console.warn('Seguir acordes en vivo: no se pudo leer', e); return }
+  if(repCancionId !== id || !savOn() || ensOn()) return
+  var acordes = ensNormAcordes(cfg.marcas_acordes_archivo)
+  if(!acordes.length){ showToast('Esta canción no tiene marcas de acordes en el audio', '#e67e22'); return }
+  ens.cancionId = id; ens.marcas = ensNormMarcas(cfg.marcas_archivo); ens.acordes = acordes
+  ens.accDraft = []; ens.accSel = null; ens.slots = null; ens.accTimes = null; ens.accIdx = -2
+  ens.vista = 'play'; ens.t = -1
+  sav.cancionId = id; sav.cargado = true
+  try { repUpdateDisplay() } catch(e){}
+  ensPintarCuadros()
+}
+/* Nota MIDI recibida: C0 (o la primera sección marcada) arranca la línea de tiempo en silencio */
+function savAlRecibirNota(note, target){
+  if(!savActivo()) return
+  var primera = ens.marcas[0]
+  if(note === SAV_NOTA_INICIO){ savIniciar(0); return }
+  if(target && primera && target.id === primera.s) savIniciar(primera.t || 0)
+}
+function savTogglePref(){
+  var on = !savOn()
+  if(on && ensOn()){ showToast('Desactiva el Modo ensayo para usar Seguir acordes en vivo', '#e67e22'); return }
+  try { localStorage.setItem(SAV_LS, on ? '1' : '0') } catch(e){}
+  if(on){ ens.seguir = false; try { localStorage.setItem(ENS_LS_SEGUIR, '0') } catch(e){} }
+  savSyncPrefBtn()
+  if(on){
+    if(repCancion) savAlAbrirCancion(repCancion, repModoPreview)
+    showToast('Seguir acordes en vivo activado', '#27ae60')
+  } else {
+    savLimpiar()
+    try { repUpdateDisplay() } catch(e){}
+    showToast('Seguir acordes en vivo desactivado', '#7f8c8d')
   }
 }
 
@@ -9201,7 +9382,7 @@ window.addEventListener('beforeunload', function(e){
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
-    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, savTogglePref: savTogglePref, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
     ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
@@ -9282,6 +9463,14 @@ aplicarNavegacionPendiente()
   <div class="dropdown-item" onclick="abrirAdicionalesRep()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
     Adicionales
+  </div>
+  <div class="dropdown-item" onclick="verMensajeRep()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Ver mensaje del repertorio
+  </div>
+  <div class="dropdown-item dropdown-item-admin" onclick="duplicarRepActual()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+    Duplicar repertorio
   </div>
   <div class="dropdown-item dropdown-item-admin" onclick="notificarMusicos()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -9864,6 +10053,18 @@ aplicarNavegacionPendiente()
   <div class="rep-pref-row"><span class="rep-pref-label">Columnas</span><div class="rep-col-group"><button class="rep-col-btn active" id="rep-col1-btn" onclick="repSetCols(1)">1</button><button class="rep-col-btn" id="rep-col2-btn" onclick="repSetCols(2)">2</button><button class="rep-col-btn" id="rep-col3-btn" onclick="repSetCols(3)">3</button></div></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Diagramas</span><button class="rep-pref-toggle" id="rep-pref-diag" onclick="acdToggleActivo()">Guitarra / Piano</button></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Modo ensayo</span><button class="rep-pref-toggle" id="rep-pref-ens" onclick="ensTogglePref()">Desactivado</button></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Seguir acordes en vivo</span><button class="rep-pref-toggle" id="rep-pref-sav" onclick="savTogglePref()">Desactivado</button></div>
+</div>
+
+<!-- MODAL VER MENSAJE DEL REPERTORIO -->
+<div class="modal-overlay" id="modal-rep-mensaje">
+  <div class="modal">
+    <div class="modal-title" id="rep-mensaje-titulo"></div>
+    <div id="rep-mensaje-texto" style="white-space:pre-wrap;word-break:break-word;max-height:55vh;overflow-y:auto;color:var(--text);font-size:.95rem;line-height:1.5;margin-top:10px"></div>
+    <div style="display:flex;justify-content:center;margin-top:22px">
+      <span style="color:var(--accent);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarModal('modal-rep-mensaje')">Cerrar</span>
+    </div>
+  </div>
 </div>
 
 <!-- MODAL AGREGAR CANCIÓN DESDE CATÁLOGO -->
