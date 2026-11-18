@@ -8681,7 +8681,7 @@ function ensIrAAcorde(k){
   var sl = ensSlots()[k]; if(!sl) return
   var m = ensAccBuscar(ens.acordes, sl)
   if(!m) return
-  if(savActivo()){ savIniciar(m.t); return }   // en vivo: tocar un cuadrito reubica la línea de tiempo silenciosa
+  if(savActivo()){ savReubicar(m.t); return }   // en vivo: tocar un cuadrito reubica la línea de tiempo silenciosa
   ensIrA(m.t)
 }
 /* Al cambiar tonalidad o grados, los cuadritos se redibujan con los acordes nuevos */
@@ -9273,7 +9273,8 @@ function ensTogglePref(){
    Solo funciona con el Modo ensayo apagado; es excluyente con «Seguir acordes» del modo ensayo. */
 var SAV_LS = 'keynonia_seguir_acordes_vivo'
 var SAV_NOTA_INICIO = 24   // C0
-var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false }
+var SAV_LS_AJ = 'keynonia_seguir_acordes_vivo_ajuste'
+var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false, occ: null, cur: null, ptr: -1 }
 function savOn(){ try { return localStorage.getItem(SAV_LS) === '1' } catch(e){ return false } }
 function savActivo(){ return savOn() && !ensOn() && sav.cargado && sav.cancionId === repCancionId && ens.cancionId === repCancionId }
 function savSyncPrefBtn(){
@@ -9281,24 +9282,71 @@ function savSyncPrefBtn(){
   var on = savOn()
   b.classList.toggle('active', on)
   b.textContent = on ? 'Activado' : 'Desactivado'
+  var av = ensEl('rep-sav-aj-val'); if(av){ var a = savAjuste(); av.textContent = (a > 0 ? '+' : '') + a.toFixed(1) + ' s' }
 }
 function savPararTimer(){ if(sav.timer){ clearInterval(sav.timer); sav.timer = null } sav.corriendo = false }
+/* Modelo «sección manda»: cada nota de sección del DAW reubica los acordes en esa sección; el reloj solo avanza
+   DENTRO de ella y se detiene en su último acorde (nunca invade otra sección). */
+function savAjuste(){ try { var v = parseFloat(localStorage.getItem(SAV_LS_AJ)); return isNaN(v) ? 0 : v } catch(e){ return 0 } }
+function savAjustar(d){
+  var v = Math.round((savAjuste() + d) * 10) / 10
+  if(v < -5 || v > 5) return
+  try { localStorage.setItem(SAV_LS_AJ, String(v)) } catch(e){}
+  savSyncPrefBtn()
+}
+function savOcc(){
+  if(sav.occ) return sav.occ
+  var cont = {}, arr = []
+  ens.marcas.forEach(function(m, i){
+    var o = cont[m.s] || 0; cont[m.s] = o + 1
+    var nx = ens.marcas[i + 1]
+    arr.push({ s: m.s, o: o, t: m.t, te: nx ? nx.t : Infinity })
+  })
+  arr.forEach(function(x){
+    var ts = ens.acordes.filter(function(a){ return a.t >= x.t - 0.05 && a.t < x.te }).map(function(a){ return a.t })
+    x.lo = ts.length ? Math.min.apply(null, ts) : x.t
+    x.hi = ts.length ? Math.max.apply(null, ts) : x.t
+  })
+  sav.occ = arr
+  return arr
+}
 function savTick(){
-  if(!savActivo()){ savPararTimer(); return }
-  ens.t = (performance.now() - sav.t0) / 1000
+  if(!savActivo() || !sav.cur){ savPararTimer(); return }
+  var raw = (performance.now() - sav.t0) / 1000 + sav.cur.t + savAjuste()
+  ens.t = Math.max(sav.cur.lo, Math.min(raw, sav.cur.hi))
   ensVivoAcordes()
 }
-function savIniciar(desde){
-  if(!savActivo()) return
+function savAnclar(i, desde){
+  var x = savOcc()[i]; if(!x || !savActivo()) return
   savPararTimer()
-  sav.t0 = performance.now() - (desde || 0) * 1000
+  sav.ptr = i; sav.cur = x
+  sav.t0 = performance.now() - ((desde == null ? x.t : desde) - x.t) * 1000
   sav.corriendo = true
   sav.timer = setInterval(savTick, 60)
   savTick()
 }
+function savReposo(){
+  savPararTimer(); sav.cur = null
+  if(savActivo()){ ens.t = -1; ensVivoAcordes() }
+}
+function savElegirOcc(sid){
+  var occ = savOcc(), cand = []
+  occ.forEach(function(x, i){ if(x.s === sid) cand.push(i) })
+  if(!cand.length) return -1
+  for(var k = 0; k < cand.length; k++) if(cand[k] > sav.ptr) return cand[k]
+  var mejor = cand[0]
+  cand.forEach(function(i){ if(Math.abs(i - sav.ptr) < Math.abs(mejor - sav.ptr)) mejor = i })
+  return mejor
+}
+/* Tocar un cuadrito de acorde: reubica el reloj en ese instante, dentro de su sección */
+function savReubicar(tt){
+  var occ = savOcc()
+  for(var i = 0; i < occ.length; i++){ if(tt >= occ[i].t - 0.05 && tt < occ[i].te){ savAnclar(i, tt); return } }
+}
 /* Limpia todo (cambio de canción, cierre del reproductor, apagado) */
 function savLimpiar(){
   savPararTimer()
+  sav.occ = null; sav.cur = null; sav.ptr = -1
   if(!sav.cargado) return
   sav.cargado = false; sav.cancionId = null
   if(!ensOn()){
@@ -9332,9 +9380,11 @@ async function savAlAbrirCancion(cancion, esPreview){
 /* Nota MIDI recibida: C0 (o la primera sección marcada) arranca la línea de tiempo en silencio */
 function savAlRecibirNota(note, target){
   if(!savActivo()) return
-  var primera = ens.marcas[0]
-  if(note === SAV_NOTA_INICIO){ savIniciar(0); return }
-  if(target && primera && target.id === primera.s) savIniciar(primera.t || 0)
+  if(!savOcc().length) return
+  if(note === SAV_NOTA_INICIO){ savAnclar(0); return }   // C0: arranca en la primera sección marcada
+  if(!target) return
+  var i = savElegirOcc(target.id)
+  if(i < 0) savReposo(); else savAnclar(i)
 }
 function savTogglePref(){
   var on = !savOn()
@@ -9382,7 +9432,7 @@ window.addEventListener('beforeunload', function(e){
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
     ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
-    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, savTogglePref: savTogglePref, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
+    ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, savTogglePref: savTogglePref, savAjustar: savAjustar, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
     ensDragIni: ensDragIni, ensDragMov: ensDragMov, ensDragFin: ensDragFin, ensRefrescarAcordes: ensRefrescarAcordes }
   Object.keys(api).forEach(function(k){ window[k] = api[k] })
@@ -10054,6 +10104,7 @@ aplicarNavegacionPendiente()
   <div class="rep-pref-row"><span class="rep-pref-label">Diagramas</span><button class="rep-pref-toggle" id="rep-pref-diag" onclick="acdToggleActivo()">Guitarra / Piano</button></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Modo ensayo</span><button class="rep-pref-toggle" id="rep-pref-ens" onclick="ensTogglePref()">Desactivado</button></div>
   <div class="rep-pref-row"><span class="rep-pref-label">Seguir acordes en vivo</span><button class="rep-pref-toggle" id="rep-pref-sav" onclick="savTogglePref()">Desactivado</button></div>
+  <div class="rep-pref-row"><span class="rep-pref-label">Ajuste acordes en vivo</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="savAjustar(-0.1)">&#8722;</button><span class="rep-step-val" id="rep-sav-aj-val">0.0 s</span><button class="rep-step-btn" onclick="savAjustar(0.1)">+</button></div></div>
 </div>
 
 <!-- MODAL VER MENSAJE DEL REPERTORIO -->
