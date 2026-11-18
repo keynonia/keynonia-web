@@ -9273,7 +9273,7 @@ function ensTogglePref(){
    Solo funciona con el Modo ensayo apagado; es excluyente con «Seguir acordes» del modo ensayo. */
 var SAV_LS = 'keynonia_seguir_acordes_vivo'
 var SAV_NOTA_INICIO = 24   // C0
-var SAV_LS_AJ = 'keynonia_seguir_acordes_vivo_ajuste'
+var SAV_LS_AJ = 'keynonia_seguir_acordes_vivo_ajuste2'   // clave nueva: el ajuste vuelve a 0 (ahora se parte del primer acorde)
 var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false, occ: null, cur: null, ptr: -1, hold: false, holdTimer: null, tNota: 0, doble: false }
 function savOn(){ try { return localStorage.getItem(SAV_LS) === '1' } catch(e){ return false } }
 function savActivo(){ return savOn() && !ensOn() && sav.cargado && sav.cancionId === repCancionId && ens.cancionId === repCancionId }
@@ -9324,10 +9324,10 @@ function savAnclar(i, desde, espera){
     // nota de anticipo: se ve el primer acorde de la sección, pero el reloj queda quieto hasta la nota exacta
     sav.hold = true
     ens.t = x.lo; ensVivoAcordes()
-    sav.holdTimer = setTimeout(function(){ if(sav.cur === x && sav.hold) savAnclar(i, x.t) }, 7000)
+    sav.holdTimer = setTimeout(function(){ if(sav.cur === x && sav.hold) savAnclar(i) }, 7000)
     return
   }
-  sav.t0 = performance.now() - ((desde == null ? x.t : desde) - x.t) * 1000
+  sav.t0 = performance.now() - ((desde == null ? x.lo : desde) - x.t) * 1000   // sin «desde»: arranca en el PRIMER ACORDE de la sección
   sav.corriendo = true
   sav.timer = setInterval(savTick, 60)
   savTick()
@@ -9394,7 +9394,7 @@ function savAlRecibirNota(note, target){
   // misma sección otra vez, enseguida: es la nota exacta que confirma el anticipo (no una sección nueva)
   if(cur && cur.s === sid){
     var vent = Math.min(10, isFinite(cur.te) ? (cur.te - cur.t) * 0.5 : 10) * 1000
-    if(ahora - sav.tNota < vent){ sav.doble = true; sav.tNota = ahora; savAnclar(sav.ptr, cur.t); return }
+    if(ahora - sav.tNota < vent){ sav.doble = true; sav.tNota = ahora; savAnclar(sav.ptr); return }
   }
   sav.tNota = ahora
   var i = savElegirOcc(sid)
