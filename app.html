@@ -8238,7 +8238,7 @@ function ensGrupoSuscribir(){
   try {
     ens.canal = supabase.channel('ensayo-' + ens.orgId, { config: { broadcast: { self: false } } })
     ens.canal.on('broadcast', { event: 'pp' }, function(msg){
-      var p = msg && msg.payload
+      var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
       if(typeof p.sig === 'boolean'){ ens.sigGrupo = p.sig; ensRender() }
       if(p.cancion !== ens.cancionId || !ensListo()) return
@@ -8248,17 +8248,17 @@ function ensGrupoSuscribir(){
         if(!ens.tocando) ensPlay()
       } else if(ens.tocando) ensPausa()
     }).on('broadcast', { event: 'sk' }, function(msg){
-      var p = msg && msg.payload
+      var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
       if(p.cancion !== ens.cancionId || !ensListo()) return
       ensIrA(ensPosDesde(p))
     }).on('broadcast', { event: 'lp' }, function(msg){
-      var p = msg && msg.payload
+      var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
       if(p.cancion !== ens.cancionId || !ensListo()) return
       ensAplicarLoopGrupo(p)
     }).on('broadcast', { event: 'sg' }, function(msg){
-      var p = msg && msg.payload
+      var p = msg && (msg.payload || msg)  // la app móvil manda los campos sin «payload»
       if(!p || ens.esAdmin || ens.modo !== 'grupal') return
       ens.sigGrupo = !!p.on; ensRender()
     }).on('broadcast', { event: 'hi' }, function(){
