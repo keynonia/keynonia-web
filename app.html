@@ -6459,8 +6459,6 @@ function kxSyncPrefs(){
   var d = document.getElementById('dd-formato')
   if(d) d.querySelectorAll('.kx-dd-opt').forEach(function(o){ o.style.display = (parseInt(o.getAttribute('data-v'), 10) <= max) ? '' : 'none' })
   kxDdSync('dd-formato', String(Math.min(repPrefs.cols, max)))
-  var r = document.getElementById('kx-tam-resumen')
-  if(r) r.textContent = 'Letra ' + repPrefs.lyrSz.toFixed(2) + ' \u00b7 Acorde ' + repPrefs.chdSz.toFixed(2) + ' \u00b7 Interl. ' + repPrefs.lineH.toFixed(1)
   var ic = document.getElementById('kx-envivo-ico')
   if(ic && !ic.firstChild){
     var src = document.querySelector('#nav-envivo .nav-icon svg')
@@ -10298,7 +10296,7 @@ aplicarNavegacionPendiente()
   </div>
   <div class="kx-sec kx-dd" id="dd-tamanos">
     <span class="kx-sec-lbl">Tama&ntilde;os</span>
-    <button class="kx-dd-cur" onclick="kxDdToggle('dd-tamanos')"><span class="kx-dd-txt" id="kx-tam-resumen">Ajustar</span><svg class="kx-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
+    <button class="kx-dd-cur" onclick="kxDdToggle('dd-tamanos')"><span class="kx-dd-txt" id="kx-tam-resumen">Tama&ntilde;o de texto</span><svg class="kx-dd-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></button>
     <div class="kx-dd-body">
       <div class="rep-pref-row"><span class="rep-pref-label">Tama&ntilde;o ambos</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarAmbos(-0.05)">&#8722;</button><span class="rep-step-val">&plusmn;</span><button class="rep-step-btn" onclick="repAjustarAmbos(0.05)">+</button></div></div>
       <div class="rep-pref-row"><span class="rep-pref-label">Tama&ntilde;o letra</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="repAjustarPref('lyrSz',-0.05)">&#8722;</button><span class="rep-step-val" id="rep-ls-val">1.00</span><button class="rep-step-btn" onclick="repAjustarPref('lyrSz',0.05)">+</button></div></div>
