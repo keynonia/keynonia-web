@@ -9282,7 +9282,7 @@ function ensTogglePref(){
 var SAV_LS = 'keynonia_seguir_acordes_vivo'
 var SAV_NOTA_INICIO = 24   // C0
 var SAV_LS_AJ = 'keynonia_seguir_acordes_vivo_ajuste2'   // clave nueva: el ajuste vuelve a 0 (ahora se parte del primer acorde)
-var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false, occ: null, cur: null, ptr: -1, hold: false, holdTimer: null, tNota: 0, doble: false }
+var sav = { cancionId: null, cargado: false, t0: 0, timer: null, corriendo: false, occ: null, cur: null, ptr: -1, hold: false, holdTimer: null, tNota: 0, doble: false, lead: 0 }
 function savOn(){ try { return localStorage.getItem(SAV_LS) === '1' } catch(e){ return false } }
 function savActivo(){ return savOn() && !ensOn() && sav.cargado && sav.cancionId === repCancionId && ens.cancionId === repCancionId }
 function savSyncPrefBtn(){
@@ -9311,7 +9311,8 @@ function savOcc(){
     arr.push({ s: m.s, o: o, t: m.t, te: nx ? nx.t : Infinity })
   })
   arr.forEach(function(x){
-    var ts = ens.acordes.filter(function(a){ return a.t >= x.t - 0.05 && a.t < x.te }).map(function(a){ return a.t })
+    var ts = ens.acordes.filter(function(a){ return a.t >= x.t - 0.06 && a.t < x.te - 0.06 }).map(function(a){ return a.t })   // un acorde apenas antes de la marca (≤0,06 s) pertenece a la sección que empieza
+    x.sin = !ts.length
     x.lo = ts.length ? Math.min.apply(null, ts) : x.t
     x.hi = ts.length ? Math.max.apply(null, ts) : x.t
   })
@@ -9328,11 +9329,12 @@ function savAnclar(i, desde, espera){
   var x = savOcc()[i]; if(!x || !savActivo()) return
   savPararTimer()
   sav.ptr = i; sav.cur = x
+  if(x.sin){ ens.t = -1; ensVivoAcordes(); return }   // sección sin acordes marcados: no se muestra ninguno
   if(espera){
     // nota de anticipo: se ve el primer acorde de la sección, pero el reloj queda quieto hasta la nota exacta
     sav.hold = true
     ens.t = x.lo; ensVivoAcordes()
-    sav.holdTimer = setTimeout(function(){ if(sav.cur === x && sav.hold) savAnclar(i) }, 7000)
+    sav.holdTimer = setTimeout(function(){ if(sav.cur === x && sav.hold) savAnclar(i) }, ((sav.lead || 4) * 1000) + 400)
     return
   }
   sav.t0 = performance.now() - ((desde == null ? x.lo : desde) - x.t) * 1000   // sin «desde»: arranca en el PRIMER ACORDE de la sección
@@ -9361,7 +9363,7 @@ function savReubicar(tt){
 /* Limpia todo (cambio de canción, cierre del reproductor, apagado) */
 function savLimpiar(){
   savPararTimer()
-  sav.occ = null; sav.cur = null; sav.ptr = -1
+  sav.occ = null; sav.cur = null; sav.ptr = -1; sav.doble = false; sav.lead = 0   // lo aprendido (notas dobles) vale solo para esta canción
   if(!sav.cargado) return
   sav.cargado = false; sav.cancionId = null
   if(!ensOn()){
@@ -9393,6 +9395,10 @@ async function savAlAbrirCancion(cancion, esPreview){
   ensPintarCuadros()
 }
 /* Nota MIDI recibida: C0 (o la primera sección marcada) arranca la línea de tiempo en silencio */
+function savAhoraEnSeccion(){
+  var c = sav.cur; if(!c) return null
+  return sav.corriendo ? (performance.now() - sav.t0) / 1000 + c.t : c.lo
+}
 function savAlRecibirNota(note, target){
   if(!savActivo()) return
   var occ = savOcc(); if(!occ.length) return
@@ -9402,11 +9408,23 @@ function savAlRecibirNota(note, target){
   // misma sección otra vez, enseguida: es la nota exacta que confirma el anticipo (no una sección nueva)
   if(cur && cur.s === sid){
     var vent = Math.min(10, isFinite(cur.te) ? (cur.te - cur.t) * 0.5 : 10) * 1000
-    if(ahora - sav.tNota < vent){ sav.doble = true; sav.tNota = ahora; savAnclar(sav.ptr); return }
+    if(ahora - sav.tNota < vent){
+      var lead = (ahora - sav.tNota) / 1000
+      if(lead > 0.5 && lead < 10){ sav.doble = true; sav.lead = lead }
+      sav.tNota = ahora; savAnclar(sav.ptr); return
+    }
   }
   sav.tNota = ahora
   var i = savElegirOcc(sid)
-  if(i < 0) savReposo(); else savAnclar(i, null, sav.doble)
+  if(i < 0){ savReposo(); return }
+  // Nota de anticipo = la sección SIGUIENTE avisada cuando la actual está por terminar. Cualquier otro salto
+  // (volver atrás, saltar) es una nota exacta: arranca de inmediato.
+  var espera = false
+  if(sav.doble && cur && i === sav.ptr + 1){
+    var pos = savAhoraEnSeccion()
+    espera = pos !== null && isFinite(cur.te) && (cur.te - pos) <= 10
+  }
+  savAnclar(i, null, espera)
 }
 function savTogglePref(){
   var on = !savOn()
