@@ -6945,9 +6945,7 @@ function repDawConectarCanal(repertorioId){
   canal.on('broadcast', { event: 'midi' }, function(msg){
     var nota = msg.payload && msg.payload.note
     if(typeof nota !== 'number') return
-    var ahora = Date.now()
-    if(nota === repDawUltimoNote.note && (ahora - repDawUltimoNote.hora) < 350) return
-    repDawUltimoNote = { note: nota, hora: ahora }
+    if(repDawNotaRepetida(nota)) return
     repGoToMidiNote(nota)
   })
   canal.subscribe(function(estado){
@@ -7016,6 +7014,7 @@ async function repConectarModoDAW(repertorioId){
         var velocidad = mensaje.data[2] || 0
         if((status & 0xf0) === 0x90 && velocidad > 0){
           // Ejecutar localmente de inmediato (menor latencia para el host)
+          if(repDawNotaRepetida(nota)) return
           repGoToMidiNote(nota)
           // Transmitir a los demás dispositivos via Realtime
           if(repDawChannel && repDawChannel.state === 'joined'){
@@ -7043,6 +7042,15 @@ async function repDesconectarDAW(){
   }
 }
 
+/* Una misma nota llegando dos veces casi a la vez (por ejemplo, dos apps abiertas en el mismo computador que escuchan
+   el mismo puerto MIDI y se la reenvían) se ejecuta una sola vez. Siguiente/anterior: ventana de 2 s; secciones: 0,35 s. */
+function repDawNotaRepetida(nota){
+  var ahora = Date.now()
+  var vent = (nota === 120 || nota === 122) ? 2000 : 350
+  if(nota === repDawUltimoNote.note && (ahora - repDawUltimoNote.hora) < vent) return true
+  repDawUltimoNote = { note: nota, hora: ahora }
+  return false
+}
 var NOTA_DAW_SIGUIENTE = 120 // C8
 var NOTA_DAW_ANTERIOR = 122 // D8
 
