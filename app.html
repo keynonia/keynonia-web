@@ -902,7 +902,11 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .rep-cq.hecho{background:var(--sec-color,#5B9DFF);color:#fff;text-shadow:0 0 3px rgba(0,0,0,.65)}
 .rep-cq.sig{background:rgba(240,138,42,.28);box-shadow:inset 0 0 0 2px #F08A2A,0 0 0 2px rgba(240,138,42,.45);color:#fff}
 .rep-chord-chip.rep-cq{display:inline-block;margin:0;padding:.28em .6em}
-.rep-chord-chips:has(.rep-cq){gap:calc(var(--chord-sz,.88rem) * .7) calc(var(--chord-sz,.88rem) * .7)}
+.rep-chord-chips:has(.rep-cq){gap:calc(var(--chord-sz,.88rem) * 1.15) calc(var(--chord-sz,.88rem) * .7)}
+/* líneas con cuadritos: más aire cuando hay otra línea de acordes o letra pegada arriba */
+.rep-chord-line:has(.rep-cq) + .rep-chord-line{margin-top:calc(var(--chord-sz,.88rem) * .75)}
+.rep-chord-line:has(.rep-cq) + .rep-chord-line:has(.rep-cq){margin-top:calc(var(--chord-sz,.88rem) * 1.0)}
+.rep-lyric-line + .rep-chord-line:has(.rep-cq){margin-top:calc(var(--chord-sz,.88rem) * .3)}
 .ens-ac-dot{display:inline-block;width:8px;height:8px;border-radius:2px;background:var(--c);margin-right:6px;vertical-align:middle}
 .ens-tms{min-width:74px;cursor:pointer}
 /* Grados */
