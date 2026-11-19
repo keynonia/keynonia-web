@@ -1545,6 +1545,7 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
       <span class="terminos-check-label">He leído y acepto los Términos de Uso de Keynonia</span>
     </label>
     <button id="btn-aceptar-terminos" onclick="aceptarTerminos()" disabled>Continuar</button>
+    <div style="text-align:center;margin-top:12px"><span style="color:var(--text2);cursor:pointer;font-size:.8rem;text-decoration:underline" onclick="rechazarTerminos()">No acepto (cerrar sesión)</span></div>
   </div>
 </div>
 
@@ -1777,6 +1778,7 @@ if (!session) {
   document.getElementById('web-login-overlay').style.display = 'flex'
 } else {
   currentUser = session.user
+  verificarTerminos()   // antes de cualquier otra pantalla (incluye usuarios sin organización)
   await cargarPerfil()
   cargarInicio()
   setupInicioSearch()
@@ -1993,10 +1995,6 @@ async function cargarPerfil() {
   actualizarVisibilidadPorRol()
   setTimeout(avisoPagoInit, 1500)
 
-  // Si el tour ya fue completado, verificar términos aquí (safety net para usuarios que regresan)
-  if (localStorage.getItem(tourKey())) {
-    await verificarTerminos()
-  }
 }
 
 function programarReintentoPerfil() {
@@ -5078,15 +5076,52 @@ window.abrirEnlacesDemo = function(idx) {
   document.getElementById('modal-enlaces').classList.add('active')
 }
 
-// ─── TÉRMINOS DE USO ─────────────────────────────────────────────────────────
+// ─── TÉRMINOS DE USO ────────────────────────────────────────────────────────
+// Registro legal: tabla terminos_aceptaciones (solo inserción, hora e IP del servidor).
+// Reglas: (1) un error de red NUNCA equivale a "no aceptó"; (2) el aviso solo se cierra cuando
+// el servidor confirmó el guardado; (3) una vez confirmado se recuerda en el equipo y no se vuelve a pedir.
+var TERMINOS_VERSION = 'v1'
+var TERMINOS_PLATAFORMA = 'web'
+var TERMINOS_APP_VERSION = 'web'
+var _terminosEnCurso = false, _terminosAceptando = false, _terminosTimer = null, _terminosIntentos = 0
+
+function terminosKey() { return 'keynonia_terminos_ok_' + (currentUser ? currentUser.id : '') + '_' + TERMINOS_VERSION }
+function terminosYaOk() { try { return localStorage.getItem(terminosKey()) === '1' } catch (e) { return false } }
+function terminosMarcarOk() { try { localStorage.setItem(terminosKey(), '1') } catch (e) {} }
+
+async function terminosTextoHash() {
+  try {
+    var el = document.querySelector('#modal-terminos .terminos-body')
+    var txt = (el ? el.innerText : '').replace(/\s+/g, ' ').trim()
+    var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt))
+    return Array.prototype.map.call(new Uint8Array(buf), function(b){ return b.toString(16).padStart(2, '0') }).join('')
+  } catch (e) { return null }
+}
+
+function programarReintentoTerminos() {
+  if (_terminosTimer || _terminosIntentos >= 8) return
+  _terminosIntentos++
+  _terminosTimer = setTimeout(function(){ _terminosTimer = null; verificarTerminos() }, 20000)
+}
+
 async function verificarTerminos() {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('terminos_aceptados_at')
-    .eq('id', currentUser.id)
-    .maybeSingle()
-  if (profile && profile.terminos_aceptados_at) return
-  document.getElementById('modal-terminos').classList.add('active')
+  if (!currentUser || terminosYaOk() || _terminosEnCurso) return
+  _terminosEnCurso = true
+  try {
+    var s = await supabase.auth.getSession()
+    if (!s || !s.data || !s.data.session) { programarReintentoTerminos(); return }   // sin sesión válida: no se pregunta
+    var r = await supabase.from('terminos_aceptaciones').select('id')
+      .eq('user_id', currentUser.id).eq('version', TERMINOS_VERSION).limit(1)
+    if (r.error) { programarReintentoTerminos(); return }                           // fallo de red/sesión: NO mostrar
+    if (r.data && r.data.length) { terminosMarcarOk(); return }                     // el servidor confirma que ya aceptó
+    var m = document.getElementById('modal-terminos')
+    if (m && m.parentNode !== document.body) document.body.appendChild(m)           // que ninguna pantalla lo tape
+    m.classList.add('active')
+  } catch (e) {
+    programarReintentoTerminos()
+  } finally {
+    _terminosEnCurso = false
+  }
 }
 
 window.toggleAceptarTerminos = function() {
@@ -5103,11 +5138,31 @@ window.toggleAceptarTerminos = function() {
 
 window.aceptarTerminos = async function() {
   var check = document.getElementById('terminos-check')
-  if (!check.checked) return
-  await supabase.from('profiles')
-    .update({ terminos_aceptados_at: new Date().toISOString() })
-    .eq('id', currentUser.id)
-  document.getElementById('modal-terminos').classList.remove('active')
+  var btn = document.getElementById('btn-aceptar-terminos')
+  if (!check.checked || _terminosAceptando) return
+  _terminosAceptando = true
+  btn.disabled = true
+  try {
+    var hash = await terminosTextoHash()
+    var r = await supabase.rpc('aceptar_terminos', {
+      p_version: TERMINOS_VERSION, p_hash: hash,
+      p_plataforma: TERMINOS_PLATAFORMA, p_app_version: TERMINOS_APP_VERSION
+    })
+    if (r.error) throw r.error
+    terminosMarcarOk()
+    document.getElementById('modal-terminos').classList.remove('active')
+  } catch (e) {
+    console.warn('[terminos] no se pudo registrar la aceptación:', e && e.message)
+    try { showToast('Sin conexión. Intenta de nuevo.', '#e74c3c') } catch (e2) {}
+    btn.disabled = false
+  } finally {
+    _terminosAceptando = false
+  }
+}
+
+window.rechazarTerminos = async function() {
+  try { await supabase.auth.signOut() } catch (e) {}
+  window.location.reload()
 }
 
 // ─── SELECTOR DE TONO ───
