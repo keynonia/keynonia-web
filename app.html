@@ -1590,6 +1590,12 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const supabase = createClient('https://awjkpafyrcblglnvmkyp.supabase.co','sb_publishable_POJ4tKW3DWWo3BZvT0MiGw_0ag53ZEv')
 
 let currentUser = null
+// Términos de uso: se declaran AQUÍ (antes del arranque) porque verificarTerminos() se llama durante el inicio,
+// mucho antes de que el módulo llegue a la sección de términos. Si se declaran más abajo quedan undefined.
+let TERMINOS_VERSION = 'v1'
+let TERMINOS_PLATAFORMA = 'web'
+let TERMINOS_APP_VERSION = 'web'
+let _terminosEnCurso = false, _terminosAceptando = false, _terminosTimer = null, _terminosIntentos = 0
 let temaOscuro = true
 let orgActual = null
 let orgs = []
@@ -5080,10 +5086,7 @@ window.abrirEnlacesDemo = function(idx) {
 // Registro legal: tabla terminos_aceptaciones (solo inserción, hora e IP del servidor).
 // Reglas: (1) un error de red NUNCA equivale a "no aceptó"; (2) el aviso solo se cierra cuando
 // el servidor confirmó el guardado; (3) una vez confirmado se recuerda en el equipo y no se vuelve a pedir.
-var TERMINOS_VERSION = 'v1'
-var TERMINOS_PLATAFORMA = 'web'
-var TERMINOS_APP_VERSION = 'web'
-var _terminosEnCurso = false, _terminosAceptando = false, _terminosTimer = null, _terminosIntentos = 0
+// (las constantes y banderas de términos se declaran al inicio del módulo, junto a currentUser)
 
 function terminosKey() { return 'keynonia_terminos_ok_' + (currentUser ? currentUser.id : '') + '_' + TERMINOS_VERSION }
 function terminosYaOk() { try { return localStorage.getItem(terminosKey()) === '1' } catch (e) { return false } }
