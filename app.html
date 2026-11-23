@@ -347,7 +347,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .kx-fmt-b{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-weight:700;font-size:.95rem;cursor:pointer;font-family:'Figtree','Poppins',sans-serif}
 .kx-fmt-b.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .kx-fmt-o{color:var(--text2);font-size:.8rem}
-.kx-diag-pop{position:fixed;z-index:99500;display:none;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:var(--text);max-width:92vw;overflow-x:auto}
+.kx-diag-pop{--acd-dot:var(--text);position:fixed;z-index:99500;display:none;flex-wrap:wrap;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:var(--text);max-width:92vw;overflow-x:auto}
 .kx-dp-it{text-align:center}
 .kx-dp-n{font-size:.68rem;color:var(--text2);margin-bottom:4px}
 #kn-splash{position:fixed;inset:0;z-index:100000;background:#1a0533;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:'Poppins',sans-serif}
@@ -6232,7 +6232,14 @@ window.kxChClick = function(el, ev){
   if(ev) ev.stopPropagation()
   var sec = el.closest('.rep-lyr-section'); if(!sec) return
   var nuevo = { s: sec.dataset.section, i: parseInt(el.dataset.ix, 10) }
-  if(!kxEd.on && kxEd.sel && kxEd.sel.s === nuevo.s && kxEd.sel.i === nuevo.i){ kxEd.sel = null; kxDiagOcultar(); repUpdateDisplay(); return }
+  var igual = !!(kxEd.sel && kxEd.sel.s === nuevo.s && kxEd.sel.i === nuevo.i)
+  if(igual && acdEstado.activo){
+    // mismo acorde otra vez: muestra todas las posiciones; en modo normal, una tercera vez lo cierra
+    if(!kxEd.todas){ kxEd.todas = true; kxDiagMostrar(); return }
+    if(!kxEd.on){ kxEd.sel = null; kxEd.todas = false; kxDiagOcultar(); repUpdateDisplay(); return }
+    kxEd.todas = false; kxDiagMostrar(); return
+  }
+  kxEd.todas = false
   kxEd.sel = nuevo
   kxEd.renombrando = false
   repUpdateDisplay()
@@ -6242,7 +6249,7 @@ window.kxChClick = function(el, ev){
 document.addEventListener('click', function(e){
   if(kxEd.on || !kxEd.sel) return
   if(e.target.closest && (e.target.closest('.kx-ch') || e.target.closest('#kx-diag-pop'))) return
-  kxEd.sel = null; kxDiagOcultar()
+  kxEd.sel = null; kxEd.todas = false; kxDiagOcultar()
   try { repUpdateDisplay() } catch(x){}
 })
 function kxSelEl(){ return document.querySelector('#rep-lyrics-content .kx-ch.sel') }
@@ -6362,7 +6369,13 @@ async function kxDiagMostrar(){
       if(!acdBanco[arch]){ try { await acdCargarArchivo(arch) } catch(e){} }
       if(my !== kxDiagTok) return
       var res = acdBuscarGuitarra(forma.root, forma.suf, forma.bass)
-      html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra</div>' + (res ? acdSvgGuitarra(res.pos[0]) : '<div class="acd-nd-txt">Diagrama no disponible</div>') + '</div>'
+      if(!res){ html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra</div><div class="acd-nd-txt">Diagrama no disponible</div></div>' }
+      else {
+        var lst = kxEd.todas ? res.pos.slice(0, 8) : [res.pos[0]]
+        lst.forEach(function(pp, ix){
+          html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra' + (lst.length > 1 ? ' ' + (ix + 1) + '/' + lst.length : '') + '</div>' + acdSvgGuitarra(pp) + '</div>'
+        })
+      }
     }
     if(acdEstado.p){
       var svg = acdSvgPiano(ch.root, ch.suf, ch.bass)
