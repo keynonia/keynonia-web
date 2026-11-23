@@ -4631,22 +4631,15 @@ async function asignarCantante(rcId, miembroId, userId) {
     // que ya estuviera guardado — antes, cualquier error se trataba igual que
     // "no tiene tono preferido" y terminaba limpiando tono_override a null.
     if (userId && rc.mis_canciones) {
-      const { data: pref, error: prefError } = await supabase.from('tonos_preferidos')
-        .select('tono, escala')
-        .eq('user_id', userId)
-        .eq('cancion_id', rc.mis_canciones.id)
-        .maybeSingle()
-
-      if (prefError) {
-        console.warn('[tonos_preferidos] no se pudo consultar el tono guardado:', prefError.message)
-      } else if (pref) {
-        await supabase.from('repertorio_canciones').update({ tono_override: pref.tono, escala_override: pref.escala }).eq('id', rcId)
-        rc.tono_override = pref.tono
-        rc.escala_override = pref.escala
-      } else {
-        await supabase.from('repertorio_canciones').update({ tono_override: null, escala_override: null }).eq('id', rcId)
-        rc.tono_override = null
-        rc.escala_override = null
+      // El servidor (trigger rc_aplicar_tono_cantante) ya aplicó el tono del cantante
+      // (propio o de otra copia de la canción). Solo leemos el resultado; NUNCA lo borramos.
+      const { data: fila, error: filaError } = await supabase.from('repertorio_canciones')
+        .select('tono_override, escala_override').eq('id', rcId).maybeSingle()
+      if (filaError) {
+        console.warn('[asignarCantante] no se pudo leer el tono aplicado:', filaError.message)
+      } else if (fila) {
+        rc.tono_override = fila.tono_override
+        rc.escala_override = fila.escala_override
       }
     }
   }
