@@ -6162,8 +6162,9 @@ window.kxFmtGuardar = async function(){
   var r = await supabase.rpc('guardar_formato_acordes', { p_org: admin && o ? o.id : null, p_formato: kxFmtDraft })
   if(r.error){ showToast('No se pudo guardar: ' + r.error.message, '#e74c3c'); return }
   if(admin && o) o.formato = kxFmtDraft.slice(); else kxFmtUser = kxFmtDraft.slice()
-  showToast('✓ Formato de acorde guardado')
   kxFmtRender(); kxRefrescarFormato()
+  cerrarPanel('panel-formato-acordes')
+  showToast('✓ Formato de acorde guardado', '#27ae60')
 }
 window.kxFmtRestablecer = async function(){
   var admin = kxEsAdmin(), o = orgs.find(function(x){ return x.activa })
