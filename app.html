@@ -6553,7 +6553,7 @@ function kxGomaEn(id, x, y, W){
     if(!hit){ out.push(s); return }
     cambio = true
     if(seg.length) segs.push(seg)
-    segs.forEach(function(sg){ out.push({ c: s.c, w: s.w, p: sg }) })
+    segs.forEach(function(sg){ var ns = { c: s.c, w: s.w, p: sg }; if(s.h) ns.h = 1; out.push(ns) })
   })
   if(cambio){ if(out.length) kxAnot[id] = out; else delete kxAnot[id] }
   return cambio
