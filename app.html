@@ -348,7 +348,9 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .kx-fmt-b.on{background:var(--accent);border-color:var(--accent);color:#fff}
 .kx-fmt-o{color:var(--text2);font-size:.8rem}
 .kx-diag-pop{--acd-dot:var(--text);position:fixed;z-index:99500;display:none;flex-wrap:wrap;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:var(--text);max-width:92vw;overflow-x:auto}
-.kx-dp-it{text-align:center}
+.kx-dp-it{text-align:center;position:relative}
+.kx-dp-cic{cursor:pointer;padding-right:2px}
+.kx-dp-cnt{position:absolute;top:-2px;right:0;font-size:.62rem;font-weight:700;color:var(--text2);background:var(--bg3);border-radius:8px;padding:1px 6px}
 .kx-dp-n{font-size:.68rem;color:var(--text2);margin-bottom:4px}
 #kn-splash{position:fixed;inset:0;z-index:100000;background:#1a0533;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:'Poppins',sans-serif}
 #kn-splash img{width:84px;height:84px;border-radius:18px;object-fit:contain;animation:knpulse 1.4s ease-in-out infinite}
@@ -6234,12 +6236,11 @@ window.kxChClick = function(el, ev){
   var nuevo = { s: sec.dataset.section, i: parseInt(el.dataset.ix, 10) }
   var igual = !!(kxEd.sel && kxEd.sel.s === nuevo.s && kxEd.sel.i === nuevo.i)
   if(igual && acdEstado.activo){
-    // mismo acorde otra vez: muestra todas las posiciones; en modo normal, una tercera vez lo cierra
-    if(!kxEd.todas){ kxEd.todas = true; kxDiagMostrar(); return }
-    if(!kxEd.on){ kxEd.sel = null; kxEd.todas = false; kxDiagOcultar(); repUpdateDisplay(); return }
-    kxEd.todas = false; kxDiagMostrar(); return
+    // mismo acorde otra vez: cierra el diagrama (en Editar se queda abierto)
+    if(!kxEd.on){ kxEd.sel = null; kxEd.posMap = {}; kxDiagOcultar(); repUpdateDisplay() }
+    return
   }
-  kxEd.todas = false
+  kxEd.posMap = {}
   kxEd.sel = nuevo
   kxEd.renombrando = false
   repUpdateDisplay()
@@ -6249,7 +6250,7 @@ window.kxChClick = function(el, ev){
 document.addEventListener('click', function(e){
   if(kxEd.on || !kxEd.sel) return
   if(e.target.closest && (e.target.closest('.kx-ch') || e.target.closest('#kx-diag-pop'))) return
-  kxEd.sel = null; kxEd.todas = false; kxDiagOcultar()
+  kxEd.sel = null; kxEd.posMap = {}; kxDiagOcultar()
   try { repUpdateDisplay() } catch(x){}
 })
 function kxSelEl(){ return document.querySelector('#rep-lyrics-content .kx-ch.sel') }
@@ -6371,10 +6372,9 @@ async function kxDiagMostrar(){
       var res = acdBuscarGuitarra(forma.root, forma.suf, forma.bass)
       if(!res){ html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra</div><div class="acd-nd-txt">Diagrama no disponible</div></div>' }
       else {
-        var lst = kxEd.todas ? res.pos.slice(0, 8) : [res.pos[0]]
-        lst.forEach(function(pp, ix){
-          html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra' + (lst.length > 1 ? ' ' + (ix + 1) + '/' + lst.length : '') + '</div>' + acdSvgGuitarra(pp) + '</div>'
-        })
+        var tot = res.pos.length, mp = kxEd.posMap || (kxEd.posMap = {})
+        var ix = ((mp[toks[t]] || 0) % tot + tot) % tot
+        html += '<div class="kx-dp-it' + (tot > 1 ? ' kx-dp-cic' : '') + '"' + (tot > 1 ? ' data-t="' + esc(toks[t]) + '" data-n="' + tot + '" title="Toca para ver otra forma"' : '') + '><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra</div>' + (tot > 1 ? '<span class="kx-dp-cnt">' + (ix + 1) + '/' + tot + '</span>' : '') + acdSvgGuitarra(res.pos[ix]) + '</div>'
       }
     }
     if(acdEstado.p){
@@ -6393,6 +6393,17 @@ async function kxDiagMostrar(){
   pop.style.left = left + 'px'; pop.style.top = top + 'px'
 }
 document.addEventListener('scroll', function(e){ if(e.target && e.target.id === 'rep-scroll-area') kxDiagOcultar() }, true)
+// Tocar el cuadrado del diagrama pasa a la siguiente forma del acorde (1/4 → 2/4 …)
+document.addEventListener('click', function(e){
+  var it = e.target.closest && e.target.closest('#kx-diag-pop .kx-dp-cic'); if(!it) return
+  e.stopPropagation()
+  var t = it.dataset.t, n = parseInt(it.dataset.n, 10) || 1
+  kxEd.posMap = kxEd.posMap || {}
+  kxEd.posMap[t] = ((kxEd.posMap[t] || 0) + 1) % n
+  var sc = document.getElementById('rep-scroll-area'), top = sc ? sc.scrollTop : 0
+  kxDiagMostrar()
+  if(sc) sc.scrollTop = top
+}, true)
 
 // ── Anotaciones ──
 function kxAnotVer(){ try { return localStorage.getItem('keynonia_anot_ver') !== '0' } catch(e){ return true } }
