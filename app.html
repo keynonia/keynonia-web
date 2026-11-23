@@ -297,7 +297,7 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .kx-ed-it:first-child{border-left:none;padding-left:0}
 .kx-ed-it:disabled{opacity:.35;cursor:default}
 .kx-ed-it.on{color:var(--accent)}
-.kx-mini-sw{width:28px;height:16px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);position:relative;display:inline-block}
+.kx-mini-sw{width:28px;height:16px;border-radius:9px;background:var(--bg3);border:1.5px solid rgba(255,255,255,.7);box-sizing:border-box;position:relative;display:inline-block}
 .kx-mini-sw i{position:absolute;top:1px;left:1px;width:12px;height:12px;border-radius:50%;background:var(--text2);transition:all .15s}
 .kx-mini-sw.on{background:#27ae60;border-color:#27ae60}
 .kx-mini-sw.on i{left:13px;background:#fff}
@@ -6116,6 +6116,11 @@ function kxVistaSec(sec){
 
 function kxEsSel(ix){ return !!(kxEd.sel && kxEd.sel.s === kxSecCur && kxEd.sel.i === ix) }
 function kxEdAcordesOn(){ return kxEd.on && kxEd.modo === 'acordes' && !repGradosOn() }
+// Acordes tocables (circulito + diagrama): en Editar → Acordes, o siempre que el Diagrama esté activado (fuera del Modo ensayo)
+function kxChOn(){
+  if(kxEd.on && kxEd.modo === 'anot') return false
+  return kxEdAcordesOn() || !!(acdEstado.activo && (acdEstado.g || acdEstado.p) && !repGradosOn() && repCqSec === null)
+}
 
 // ── Formato de acorde (Cuenta → App) ──
 var kxFmtDraft = null
@@ -6226,10 +6231,20 @@ window.kxEdModo = function(m){
 window.kxChClick = function(el, ev){
   if(ev) ev.stopPropagation()
   var sec = el.closest('.rep-lyr-section'); if(!sec) return
-  kxEd.sel = { s: sec.dataset.section, i: parseInt(el.dataset.ix, 10) }
+  var nuevo = { s: sec.dataset.section, i: parseInt(el.dataset.ix, 10) }
+  if(!kxEd.on && kxEd.sel && kxEd.sel.s === nuevo.s && kxEd.sel.i === nuevo.i){ kxEd.sel = null; kxDiagOcultar(); repUpdateDisplay(); return }
+  kxEd.sel = nuevo
   kxEd.renombrando = false
-  repUpdateDisplay(); kxEdRender()
+  repUpdateDisplay()
+  if(kxEd.on) kxEdRender(); else kxDiagMostrar()
 }
+// Tocar fuera de un acorde (sin estar editando) cierra el diagrama
+document.addEventListener('click', function(e){
+  if(kxEd.on || !kxEd.sel) return
+  if(e.target.closest && (e.target.closest('.kx-ch') || e.target.closest('#kx-diag-pop'))) return
+  kxEd.sel = null; kxDiagOcultar()
+  try { repUpdateDisplay() } catch(x){}
+})
 function kxSelEl(){ return document.querySelector('#rep-lyrics-content .kx-ch.sel') }
 function kxSelTxt(){ var e = kxSelEl(); return e ? e.textContent.trim() : '' }
 function kxEdRender(){
@@ -6329,7 +6344,7 @@ async function kxDiagMostrar(){
   var pop = document.getElementById('kx-diag-pop')
   if(!pop){ pop = document.createElement('div'); pop.id = 'kx-diag-pop'; pop.className = 'kx-diag-pop'; document.body.appendChild(pop) }
   var el = kxSelEl()
-  if(!(kxEdAcordesOn() && acdEstado.activo && kxEd.sel && el && (acdEstado.g || acdEstado.p))){ pop.style.display = 'none'; return }
+  if(!(kxChOn() && acdEstado.activo && kxEd.sel && el && (acdEstado.g || acdEstado.p))){ pop.style.display = 'none'; return }
   var my = ++kxDiagTok
   var txt = el.textContent.trim()
   var capo = repCapoPos || 0
@@ -6756,7 +6771,7 @@ function repFmtContent(content){
     res='<div class="rep-chord-chips">'
     chords.forEach(function(c){
       var ix=c.trim()?kxChN++:-1
-      if(kxEdAcordesOn() && ix>=0){ res+='<span class="rep-chord-chip kx-ch'+(kxEsSel(ix)?' sel':'')+'" data-ix="'+ix+'" onclick="kxChClick(this,event)">'+esc(c)+'</span>'; return }
+      if(kxChOn() && ix>=0){ res+='<span class="rep-chord-chip kx-ch'+(kxEsSel(ix)?' sel':'')+'" data-ix="'+ix+'" onclick="kxChClick(this,event)">'+esc(c)+'</span>'; return }
       var cq=repCqAttr(c)
       res+='<span class="rep-chord-chip'+(cq?' rep-cq':'')+'"'+cq+'>'+esc(c)+'</span>'
     })
@@ -6795,7 +6810,7 @@ function repFmtContent(content){
       clh+=esc(cl.slice(at,p.pos)); at=p.pos+p.t.length
       var inf=(p.ix>=0)?kxSecInfo[p.ix]:null
       var offSt=(inf && inf.off)?'position:relative;left:'+(inf.off*0.22).toFixed(2)+'em;':''
-      if(kxEdAcordesOn() && p.ix>=0){ clh+='<span class="kx-ch'+(kxEsSel(p.ix)?' sel':'')+'" data-ix="'+p.ix+'" style="'+offSt+'" onclick="kxChClick(this,event)">'+esc(p.t)+'</span>'; return }
+      if(kxChOn() && p.ix>=0){ clh+='<span class="kx-ch'+(kxEsSel(p.ix)?' sel':'')+'" data-ix="'+p.ix+'" style="'+offSt+'" onclick="kxChClick(this,event)">'+esc(p.t)+'</span>'; return }
       if(!p.cq){ clh+=offSt?('<span style="'+offSt+'">'+esc(p.t)+'</span>'):esc(p.t); return }
       var k=cqs.indexOf(p), prev=cqs[k-1], next=cqs[k+1]
       var gl=prev?(p.pos-(prev.pos+prev.t.length)):99, gr=next?(next.pos-(p.pos+p.t.length)):99
@@ -7125,7 +7140,9 @@ window.acdToggleActivo = function(){
   acdEstado.activo = !acdEstado.activo
   acdGuardarEstado()
   acdUltimaFirma = ''
+  if(!acdEstado.activo){ if(!kxEd.on) kxEd.sel = null; kxDiagOcultar() }
   acdActualizar()
+  if(repCancion){ try { repUpdateDisplay() } catch(e){} }
 }
 
 window.acdSetTab = function(tab){
@@ -7148,6 +7165,10 @@ function acdActualizar(){
   var cont = document.getElementById('rep-diagramas')
   if (!cont) return
   acdSyncUI()
+  // Ya no hay recuadro fijo de diagramas: se ven al tocar un acorde (círculo) y salen sobre él
+  cont.style.display = 'none'
+  if (kxEd.sel && acdEstado.activo && repCancion) { try { kxDiagMostrar() } catch(e){} }
+  return
   if (!acdEstado.activo || !(acdEstado.g || acdEstado.p) || !repCancion) { cont.style.display = 'none'; return }
   cont.style.display = 'block'
   var lista = acdExtraer()
