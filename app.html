@@ -857,6 +857,9 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .ens-btn.gh{background:var(--bg3);border:1.5px solid var(--border);color:var(--text);font-weight:600}
 .ens-btn.big{padding:17px;font-size:1rem}
 .ens-btn+.ens-btn{margin-top:8px}
+.ens-trio{display:flex;gap:6px;margin-top:4px}
+.ens-trio .ens-btn{flex:1;width:auto;min-width:0;padding:11px 6px;font-size:.76rem;line-height:1.15}
+.ens-trio .ens-btn+.ens-btn{margin-top:0}
 
 .ens-imp{text-align:center;padding:4px 0}
 .ens-lider{background:rgba(43,110,255,.09);border:1.5px solid rgba(43,110,255,.3);color:#8fb4ff;border-radius:11px;padding:10px;font-size:.74rem;font-weight:700;margin-bottom:12px}
@@ -8625,6 +8628,13 @@ function ensSonarPrueba(){
     }, 4600)
   } catch(e){}
 }
+/* «Elegir otro audio»: corta la prueba y vuelve a Descargar / Subir archivo (el audio anterior solo se reemplaza al elegir otro) */
+function ensElegirOtro(){
+  if(ensPrevTimer){ clearTimeout(ensPrevTimer); ensPrevTimer = null }
+  try { ensAud.pause(); ensAud.volume = 1; ensAud.currentTime = 0 } catch(e){}
+  ens.errImport = ''; ens.paso = 1
+  ensRender()
+}
 function ensIrAlEnsayo(){
   if(ensPrevTimer){ clearTimeout(ensPrevTimer); ensPrevTimer = null }
   try { ensAud.pause(); ensAud.volume = 1; ensAud.currentTime = 0 } catch(e){}
@@ -8903,8 +8913,10 @@ function ensVistaImportar(){
   if(ens.paso === 2){
     inner = '<div class="ens-ok">✓</div><div class="ens-big">Audio listo</div>' +
       '<div class="ens-small">' + esc(ens.nombreImportado) + ' · ' + ensMmss(ens.dur) + '<br>No tendrás que volver a hacer esto en este dispositivo.</div>' +
-      '<button class="ens-btn" onclick="ensIrAlEnsayo()">Ir al ensayo →</button>' +
-      '<button class="ens-btn gh" onclick="ensSonarPrueba()">Escuchar de nuevo</button>'
+      '<div class="ens-trio">' +
+      '<button class="ens-btn gh" onclick="ensSonarPrueba()">Escuchar de nuevo</button>' +
+      '<button class="ens-btn gh" onclick="ensElegirOtro()">Elegir otro audio</button>' +
+      '<button class="ens-btn" onclick="ensIrAlEnsayo()">Ir al ensayo →</button></div>'
   } else {
     // Las dos acciones están siempre a la vista: se puede descargar de nuevo cuantas veces haga falta,
     // y subir el archivo en cualquier momento (sin pasos que se queden "pegados").
@@ -9665,7 +9677,7 @@ window.addEventListener('beforeunload', function(e){
     ensToggle: ensToggle, ensToggleLoop: ensToggleLoop, ensAlInicio: ensAlInicio, ensCambiarVel: ensCambiarVel,
     ensClickOnda: ensClickOnda, ensIrA: ensIrA, ensToggleSig: ensToggleSig, ensSetModo: ensSetModo,
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
-    ensSonarPrueba: ensSonarPrueba, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
+    ensSonarPrueba: ensSonarPrueba, ensElegirOtro: ensElegirOtro, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
     ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, savTogglePref: savTogglePref, savAjustar: savAjustar, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
