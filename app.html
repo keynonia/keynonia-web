@@ -8635,6 +8635,7 @@ function ensElegirOtro(){
   ens.errImport = ''; ens.paso = 1
   ensRender()
 }
+function ensVolverListo(){ ens.errImport = ''; ens.paso = 2; ensRender() }
 function ensIrAlEnsayo(){
   if(ensPrevTimer){ clearTimeout(ensPrevTimer); ensPrevTimer = null }
   try { ensAud.pause(); ensAud.volume = 1; ensAud.currentTime = 0 } catch(e){}
@@ -8742,7 +8743,8 @@ function ensSwFuente(){
 
 function ensVistaPlay(){
   // Falta el audio en ESTE dispositivo (archivo): guía de descargar e importar
-  if(ens.fuente === 'archivo' && ensTieneFuenteActual() && !ens.archivoListo) return ensSelectorFuente() + ensVistaImportar()
+  // (paso 2 = acaba de elegir el audio: se muestra «Audio listo» con los tres botones antes de entrar al ensayo)
+  if(ens.fuente === 'archivo' && ensTieneFuenteActual() && (!ens.archivoListo || ens.paso === 2 || ens.paso === 1)) return ensSelectorFuente() + ensVistaImportar()
   if(!ensTieneFuente()){
     return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>' + (ens.esAdmin ? 'Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.' : (ens.catalogo ? 'Esta canción del catálogo todavía no tiene video de ensayo.' : 'Tu líder aún no lo ha dejado.')) + '</div>'
   }
@@ -8926,7 +8928,8 @@ function ensVistaImportar(){
       '<div class="ens-small">1. «Descargar archivo» abre el enlace en tu navegador.<br>2. Cuando lo tengas descargado, toca «Subir archivo» y elígelo.</div>' +
       '<div class="ens-file">' + nombre + '</div>' +
       '<button class="ens-btn" onclick="ensDescargar()">Descargar archivo</button>' +
-      '<button class="ens-btn" onclick="ensElegirArchivo()">Subir archivo</button>'
+      '<button class="ens-btn" onclick="ensElegirArchivo()">Subir archivo</button>' +
+      (ens.archivoListo ? '<button class="ens-btn gh" onclick="ensVolverListo()">Cancelar (mantener el audio actual)</button>' : '')
   }
   return '<div class="ens-imp">' + inner + '</div>'
 }
@@ -9677,7 +9680,7 @@ window.addEventListener('beforeunload', function(e){
     ensToggle: ensToggle, ensToggleLoop: ensToggleLoop, ensAlInicio: ensAlInicio, ensCambiarVel: ensCambiarVel,
     ensClickOnda: ensClickOnda, ensIrA: ensIrA, ensToggleSig: ensToggleSig, ensSetModo: ensSetModo,
     ensDescargar: ensDescargar, ensYaLoTengo: ensYaLoTengo, ensElegirArchivo: ensElegirArchivo, ensAlElegir: ensAlElegir,
-    ensSonarPrueba: ensSonarPrueba, ensElegirOtro: ensElegirOtro, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
+    ensSonarPrueba: ensSonarPrueba, ensElegirOtro: ensElegirOtro, ensVolverListo: ensVolverListo, ensIrAlEnsayo: ensIrAlEnsayo, ensQuitarAudioLocal: ensQuitarAudioLocal,
     ensTogglePref: ensTogglePref, ensCambiarFuente: ensCambiarFuente, ensQuitarFuente: ensQuitarFuente,
     ensCqClick: ensCqClick, ensCuadrosOn: ensCuadrosOn, ensElegirAlcance: ensElegirAlcance, ensCancelarAlcance: ensCancelarAlcance, ensConfirmarSalida: ensConfirmarSalida, ensCancelarSalida: ensCancelarSalida, ensAbrirNuevaSec: ensAbrirNuevaSec, ensCerrarNuevaSec: ensCerrarNuevaSec, ensNuevaSecCampo: ensNuevaSecCampo, ensAnadirSec: ensAnadirSec, ensToggleSeguir: ensToggleSeguir, savTogglePref: savTogglePref, savAjustar: savAjustar, ensIrAAcorde: ensIrAAcorde, ensPonerAcorde: ensPonerAcorde, ensAccDeshacer: ensAccDeshacer,
     ensAccEmpezar: ensAccEmpezar, ensAccNudge: ensAccNudge, ensAccQuitar: ensAccQuitar, ensAccSel: ensAccSel,
