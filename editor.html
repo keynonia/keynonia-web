@@ -1651,7 +1651,11 @@ async function guardarCancion() {
     var artistaId = null
     var artistaNombreFinal = null
 
-    if (artistaSeleccionado) {
+    // «Solo para este repertorio»: NO se crean artistas ni se sube portada; solo se guardan las secciones.
+    var _soloRep = !modoRevisar && modoEdicion && modoEdicionAlcance === 'rep'
+    if (_soloRep) {
+      // nada que resolver: todo lo demás de la canción queda intacto
+    } else if (artistaSeleccionado) {
       artistaId = artistaSeleccionado.id
       artistaNombreFinal = artistaSeleccionado.nombre
     } else if (artistaEsNuevo && artistaTexto) {
@@ -1671,7 +1675,7 @@ async function guardarCancion() {
     }
 
     // 2. Subir/quitar portada si corresponde
-    var portadaUrlFinal = await subirPortadaSiHace(modoRevisar ? 'catalogo' : miOrganizacion.id)
+    var portadaUrlFinal = _soloRep ? null : await subirPortadaSiHace(modoRevisar ? 'catalogo' : miOrganizacion.id)
 
     // 3. Armar el JSON de secciones
     var secciones = sections.map(function(s) {
