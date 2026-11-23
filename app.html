@@ -279,6 +279,46 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 /* Tipografía tipo Spotify: títulos en negrita, artistas en regular */
 .song-title,.rep-song-title,.hgrid-title{font-family:'Figtree','Poppins',sans-serif;font-weight:700}
 .song-artist,.rep-song-artist,.hgrid-artist{font-family:'Figtree','Poppins',sans-serif;font-weight:400}
+
+/* ===== Formato de acorde · Editar · Anotaciones ===== */
+.rep-lyr-section{position:relative}
+.kx-anot{position:absolute;left:0;top:0;border-radius:inherit;z-index:3}
+.kx-ch{cursor:pointer;border-radius:999px;padding:.08em .32em;margin:0 -.32em;box-shadow:inset 0 0 0 1px rgba(255,255,255,.28)}
+.kx-ch.sel{box-shadow:inset 0 0 0 2px var(--accent);background:rgba(43,110,255,.2)}
+.rep-chord-chip.kx-ch{display:inline-block;margin:0;padding:.28em .6em}
+.kx-sqbtn{min-width:36px;padding:5px 8px;display:inline-flex;align-items:center;justify-content:center}
+.kx-sqbtn svg{width:20px;height:20px}
+.kx-ed-tabs{display:flex;gap:6px;margin-bottom:12px}
+.kx-ed-tabs button{flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text2);font-weight:600;font-size:.8rem;cursor:pointer;font-family:inherit}
+.kx-ed-tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.kx-ed-hint{font-size:.74rem;color:var(--text2);line-height:1.4;margin:4px 0 10px}
+.kx-ed-its{display:flex;flex-wrap:wrap;row-gap:4px}
+.kx-ed-it{background:none;border:none;color:var(--text);font-family:inherit;font-size:.78rem;font-weight:600;padding:8px 10px;cursor:pointer;border-left:1px solid rgba(255,255,255,.22);display:inline-flex;align-items:center;gap:6px}
+.kx-ed-it:first-child{border-left:none;padding-left:0}
+.kx-ed-it:disabled{opacity:.35;cursor:default}
+.kx-ed-it.on{color:var(--accent)}
+.kx-mini-sw{width:28px;height:16px;border-radius:9px;background:var(--bg3);border:1px solid var(--border);position:relative;display:inline-block}
+.kx-mini-sw i{position:absolute;top:1px;left:1px;width:12px;height:12px;border-radius:50%;background:var(--text2);transition:all .15s}
+.kx-mini-sw.on{background:#27ae60;border-color:#27ae60}
+.kx-mini-sw.on i{left:13px;background:#fff}
+.kx-ren{margin-top:10px}
+.kx-ren-inp{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:10px 12px;font-family:'Figtree','Poppins',sans-serif;font-size:.95rem;font-weight:700;outline:none;margin-bottom:8px}
+.kx-ren-b{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.kx-an-cols{display:flex;gap:10px;align-items:center;margin-bottom:12px}
+.kx-an-col{width:30px;height:30px;border-radius:50%;border:2px solid transparent;cursor:pointer;padding:0;position:relative}
+.kx-an-col.on{border-color:#fff;box-shadow:0 0 0 2px var(--accent)}
+.kx-an-esp{background:conic-gradient(#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00);overflow:hidden;display:inline-block}
+.kx-an-esp input{opacity:0;position:absolute;inset:0;width:100%;height:100%;cursor:pointer;border:0;padding:0}
+.kx-an-gr{display:flex;gap:6px;margin-bottom:12px}
+.kx-an-g{flex:1;height:34px;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
+.kx-an-g.on{border-color:var(--accent);color:var(--accent)}
+.kx-fmt-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.kx-fmt-b{flex:1;padding:12px;border-radius:10px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-weight:700;font-size:.95rem;cursor:pointer;font-family:'Figtree','Poppins',sans-serif}
+.kx-fmt-b.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.kx-fmt-o{color:var(--text2);font-size:.8rem}
+.kx-diag-pop{position:fixed;z-index:99500;display:none;gap:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;box-shadow:0 10px 30px rgba(0,0,0,.5);color:var(--text);max-width:92vw;overflow-x:auto}
+.kx-dp-it{text-align:center}
+.kx-dp-n{font-size:.68rem;color:var(--text2);margin-bottom:4px}
 #kn-splash{position:fixed;inset:0;z-index:100000;background:#1a0533;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:'Poppins',sans-serif}
 #kn-splash img{width:84px;height:84px;border-radius:18px;object-fit:contain;animation:knpulse 1.4s ease-in-out infinite}
 #kn-splash span{color:#fff;font-size:1.4rem;font-weight:700}
@@ -1176,6 +1216,11 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 
     <div class="cuenta-section">
       <div class="cuenta-section-title">App</div>
+      <div class="ci" onclick="kxAbrirFormato()">
+        <div class="ci-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/><circle cx="18" cy="17" r="2"/></svg></div>
+        <span class="ci-label">Formato de acorde</span>
+        <span class="ci-arrow">›</span>
+      </div>
       <div class="ci" onclick="abrirPanel('panel-guia')">
         <div class="ci-icon"><svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg"><g transform="translate(0,512)scale(0.1,-0.1)" fill="currentColor"><path d="M681 4784c-169-45-301-180-346-351-23-86-23-3660 0-3746 45-173 178-307 350-352 89-23 2061-23 2150 0 219 57 365 250 365 482l0 72 53 40c90 68 234 132 387 172 30 8 210 14 552 18 491 6 507 7 534 27 15 11 37 33 48 48 21 27 21 30 21 1366 0 1336 0 1339-21 1366-11 15-33 37-48 48-27 20-41 21-484 24-304 2-489-1-552-8-129-16-260-51-372-100-51-23-99-44-105-47-10-4-13 52-13 264 0 209-3 282-15 328-45 172-179 305-352 350-84 22-2070 21-2152-1zm764-351c8-53 41-125 79-170 14-16 53-45 88-64 58-31 70-34 148-34 78 0 90 3 148 34 35 19 74 48 88 64 38 45 71 117 79 170l7 48 348-3c334-3 350-4 376-24 15-11 37-33 48-48 20-26 21-43 24-297 2-148 0-269-3-269-3 0-31 13-63 29-77 39-221 86-329 108-78 16-146 18-595 18-496 0-507 0-534-21-15-11-37-33-48-48-21-27-21-30-21-1366 0-1336 0-1339 21-1366 11-15 33-37 48-48 27-20 42-21 534-27 478-5 511-6 584-27 149-41 281-103 372-175l38-30-4-73c-4-78-18-108-72-148-27-21-33-21-1046-21-1013 0-1019 0-1046 21-15 11-37 33-48 48l-21 27-3 1792c-1 986 0 1806 3 1824 7 40 49 91 90 109 23 10 109 13 366 14l337 0 7-47zm1035-782c170-47 310-121 433-229 96-86 157-84 268 10 135 113 248 172 419 219 81 22 105 23 483 27l397 3 0-1119 0-1120-412-5c-401-4-416-5-518-30-167-40-315-103-443-188-32-22-63-39-68-39-5 0-35 17-67 39-122 83-274 148-442 188-102 25-117 26-517 30l-413 5 0 1120 0 1119 398-3c377-4 401-5 482-27z"/></g></svg></div>
         <span class="ci-label">Guía de Usuario</span>
@@ -1303,6 +1348,23 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
       <div id="org-miembros-lista"></div>
     </div>
     <button class="btn-nueva-org" onclick="intentarCrearOrg()">＋ Crear nueva organización</button>
+  </div>
+</div>
+
+<!-- PANEL FORMATO DE ACORDE -->
+<div class="panel" id="panel-formato-acordes">
+  <div class="panel-header">
+    <button class="panel-back" onclick="cerrarPanel('panel-formato-acordes')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </button>
+    <span class="panel-title">Formato de acorde</span>
+  </div>
+  <div class="panel-body">
+    <p id="kx-fmt-info" style="font-size:.84rem;color:var(--text2);line-height:1.5;margin-bottom:16px"></p>
+    <div id="kx-fmt-list"></div>
+    <button class="btn-confirm" style="width:100%;margin-top:10px" onclick="kxFmtGuardar()">Guardar</button>
+    <button class="btn-cancel" id="kx-fmt-reset" style="width:100%;margin-top:10px" onclick="kxFmtRestablecer()">Volver al formato por defecto</button>
   </div>
 </div>
 
@@ -1988,7 +2050,7 @@ async function cargarPerfil() {
   else ca.textContent = nombre.charAt(0).toUpperCase()
   const { data: profileData, error: profileError } = await supabase
     .from('profiles')
-    .select('suscripcion_activa, plan_nivel, orgs_extra')
+    .select('suscripcion_activa, plan_nivel, orgs_extra, formato_acordes')
     .eq('id', currentUser.id)
     .maybeSingle()
 
@@ -2003,6 +2065,7 @@ async function cargarPerfil() {
   esSuscrito = !!(profileData && profileData.suscripcion_activa)
   esPro = esSuscrito && (profileData?.plan_nivel === 'pro')
   orgsExtra = (profileData?.orgs_extra) || 0
+  kxFmtUser = Array.isArray(profileData && profileData.formato_acordes) ? profileData.formato_acordes : null
   // tieneAcceso se calcula después de cargar orgs (ver más abajo en cargarPerfil)
 
   await cargarOrganizacionesReales()
@@ -2094,7 +2157,7 @@ async function cargarOrganizacionesReales() {
   // ── Cargar membresías reales ──
   const { data: miembros, error } = await supabase
     .from('miembros')
-    .select('id, rol, organizacion_id, organizaciones(id, nombre)')
+    .select('id, rol, organizacion_id, organizaciones(id, nombre, formato_acordes)')
     .eq('user_id', currentUser.id)
 
   // FIX CARGA EN VIVO: si falló por red y ya teníamos organizaciones cargadas,
@@ -2119,6 +2182,7 @@ async function cargarOrganizacionesReales() {
     id: m.organizacion_id,
     nombre: m.organizaciones?.nombre || 'Sin nombre',
     rol: m.rol,
+    formato: Array.isArray(m.organizaciones && m.organizaciones.formato_acordes) ? m.organizaciones.formato_acordes : null,
     activa: i === 0
   }))
   if (_orgActivaPrevia && orgs.some(function(o){ return o.id === _orgActivaPrevia })) {
@@ -2188,7 +2252,7 @@ async function cargarDescargadasInicio(query) {
     .select('id, titulo, portada_url, artista_id, artistas(nombre)')
     .eq('aprobada', true)
     .order('descargas', { ascending: false })
-    .limit(10)
+    .limit(12)
   q1 = aplicarFiltroBusqueda(q1, query, artistaIds)
   const { data, error } = await q1
 
@@ -5746,7 +5810,7 @@ function aplicarNavegacionPendiente() {
 // ═══════════════════════════════════════════
 // REPRODUCTOR
 // ═══════════════════════════════════════════
-var REP_NORM={'Cb':'B','Db':'C#','D#':'Eb','Gb':'F#','G#':'Ab','A#':'Bb','Fb':'E','B#':'C'}
+var REP_NORM={'Cb':'B','Db':'C#','D#':'Eb','Gb':'F#','G#':'Ab','A#':'Bb','Fb':'E','B#':'C','E#':'F'}
 var REP_CHROM=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
 var REP_CHROM_MINOR=['Cm','C#m','Dm','Ebm','Em','Fm','F#m','Gm','Abm','Am','Bbm','Bm']
 var REP_TYPE_CLS={'intro':'green','verso':'blue','precoro':'orange','coro':'red','puente':'purple','interludio':'green','instrumental':'green','refrain':'yellow','vamp':'yellow','repetir':'yellow','outro':'green','final':'green','custom':'sky'}
@@ -5888,7 +5952,7 @@ function repActualizarBotonTono(){
   if(repGrados === 'num'){ b.innerHTML = REP_SALAD_HTML; b.title = 'Grados (números)' }
   else if(repGrados === 'rom'){ b.textContent = 'VI'; b.title = 'Grados (romanos)' }
   else if(repGrados === 'dor'){ b.textContent = repDoReTok(repCurKey) + (repScale === 'minor' ? 'm' : ''); b.title = 'Tonalidad (Do-Re-Mi)' }
-  else { b.textContent = repCurKey + (repScale === 'minor' ? 'm' : ''); b.title = 'Tonalidad' }
+  else { b.textContent = kxNomKey(repCurKey + (repScale === 'minor' ? 'm' : '')); b.title = 'Tonalidad' }
   b.classList.toggle('rep-gr-on', repGradosOn())
 }
 function repPintarGradosPanel(){
@@ -5902,6 +5966,509 @@ window.repSetGrados = function(m){
   repHasPend = true
   repPintarGradosPanel()
   kxDdCerrar('dd-vis-acordes')
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FORMATO DE ACORDE · EDITAR ACORDES · ANOTACIONES
+// - Formato de acorde: cómo se escribe cada nota (C# o Db, etc.). Por organización (lo fija el administrador)
+//   y por usuario (solo si el usuario apretó «Guardar»). Prioridad: usuario > organización > como está escrita la canción.
+//   Solo cambia el nombre que se ve: por dentro la nota es la misma, así que la transposición no se rompe.
+// - Editar acordes: nombre del acorde (privado, por usuario y canción) y mover izquierda/derecha (solo admin, para todos).
+// - Anotaciones: trazos con dedo/lápiz dentro del cuadro de cada sección (privados, por usuario y canción).
+// ═══════════════════════════════════════════════════════════════════════════
+var KX_FMT_DEF = ['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B']
+var KX_OPC = [['C','B#'],['C#','Db'],['D'],['D#','Eb'],['E','Fb'],['F','E#'],['F#','Gb'],['G'],['G#','Ab'],['A'],['A#','Bb'],['B','Cb']]
+var KX_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
+var KX_FLAT = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B']
+var kxFmtUser = null          // formato personal guardado (arreglo de 12) o null
+var kxAcPers = {}             // acordes renombrados por este usuario: { secId: { i: {t, o, a} } }
+var kxAcAdm = {}              // desplazamientos del administrador (para todos): { secId: { i: {n, o} } }
+var kxAnot = {}               // anotaciones de este usuario: { secId: [ {c, w, p:[[x,y],...]} ] }
+var kxSecInfo = []            // por acorde de la sección que se está dibujando: { off, raw }
+var kxChN = 0, kxSecCur = null
+var KX_GROSORES = [2.5, 5, 9, 15]
+var kxEd = { on: false, modo: 'acordes', sel: null, renombrando: false, color: '#e74c3c', grosor: 1, tool: 'pen' }
+
+function kxEsAdmin(){ var o = orgs.find(function(x){ return x.activa }); return !!(o && o.rol === 'administrador') }
+function kxFmtOrgAct(){ var o = orgs.find(function(x){ return x.activa }); return (o && Array.isArray(o.formato)) ? o.formato : null }
+function kxFmtEfectivo(){ return (Array.isArray(kxFmtUser) && kxFmtUser.length === 12) ? kxFmtUser : kxFmtOrgAct() }
+
+// ── nombres de notas según el formato ──
+function kxNomRoot(root, acc){
+  var pc = REP_CHROM.indexOf(repNorm(root))
+  if(pc < 0) return root
+  if(acc === 's') return KX_SHARP[pc]
+  if(acc === 'b') return KX_FLAT[pc]
+  var f = kxFmtEfectivo()
+  return f ? f[pc] : root
+}
+function kxNom(root){ return kxNomRoot(root, '') }
+function kxNomKey(k){
+  var m = /^([A-G][#b]?)(m?)$/.exec(k || '')
+  return m ? kxNomRoot(m[1], '') + m[2] : k
+}
+function kxTok(tk, acc){
+  return tk.split('/').map(function(p){
+    var m = p.match(/^([A-G][#b]?)(.*)$/)
+    return m ? kxNomRoot(m[1], acc) + m[2] : p
+  }).join('/')
+}
+function kxBracket(inner, acc){
+  return inner.split(' ').map(function(t){ return t ? kxTok(t, acc) : t }).join(' ')
+}
+
+// Texto de una sección tal como se ve: transposición + formato + acordes renombrados por el usuario.
+// También deja en kxSecInfo los desplazamientos del administrador de cada acorde.
+function kxVistaSec(sec){
+  var raw = sec.contenido || ''
+  var rawB = [], re = /\[([^\]]*)\]/g, mm
+  while((mm = re.exec(raw)) !== null) rawB.push(mm[1])
+  var admS = kxAcAdm[sec.id] || null, persS = kxAcPers[sec.id] || null
+  kxSecInfo = []
+  var n = 0
+  rawB.forEach(function(rb){
+    if(!rb.trim()) return
+    var a = admS && admS[n]
+    kxSecInfo[n] = { off: (a && a.o === rb.trim()) ? (parseInt(a.n, 10) || 0) : 0, raw: rb.trim() }
+    n++
+  })
+  if(repGradosOn()) return repGradosText(raw)
+  var t = repTrText(raw, repOrigKey, repCurKey)
+  var hayFmt = !!kxFmtEfectivo()
+  if(hayFmt || persS){
+    var out = '', i = 0, k = 0, idx = 0
+    while(i < t.length){
+      if(t[i] === '['){
+        var j = t.indexOf(']', i)
+        if(j < 0){ out += t.slice(i); break }
+        var inn = t.slice(i + 1, j)
+        k++
+        if(inn.trim()){
+          var o = persS && persS[idx]
+          if(o && kxSecInfo[idx] && o.o === kxSecInfo[idx].raw){
+            var tt = repTrText('[' + o.t + ']', repOrigKey, repCurKey).slice(1, -1)
+            inn = (repCurKey === repOrigKey) ? tt : kxBracket(tt, o.a || '')
+          } else if(hayFmt){
+            inn = kxBracket(inn, '')
+          }
+          idx++
+        }
+        out += '[' + inn + ']'
+        i = j + 1
+      } else { out += t[i]; i++ }
+    }
+    t = out
+  }
+  return repDoReOn() ? repDoReText(t) : t
+}
+
+function kxEsSel(ix){ return !!(kxEd.sel && kxEd.sel.s === kxSecCur && kxEd.sel.i === ix) }
+function kxEdAcordesOn(){ return kxEd.on && kxEd.modo === 'acordes' && !repGradosOn() }
+
+// ── Formato de acorde (Cuenta → App) ──
+var kxFmtDraft = null
+window.kxAbrirFormato = function(){
+  var base = kxEsAdmin() ? (kxFmtOrgAct() || KX_FMT_DEF) : (kxFmtEfectivo() || KX_FMT_DEF)
+  kxFmtDraft = base.slice()
+  kxFmtRender()
+  abrirPanel('panel-formato-acordes')
+}
+function kxFmtRender(){
+  var admin = kxEsAdmin()
+  var info = document.getElementById('kx-fmt-info')
+  if(info){
+    info.textContent = admin
+      ? 'Elige cómo se escribe cada nota. Lo que guardes aquí lo verán todos los de tu organización que no hayan personalizado su propio formato.'
+      : (Array.isArray(kxFmtUser) ? 'Estás usando tu propio formato.' : 'Estás usando el formato de tu organización. Si guardas uno aquí, solo cambia para ti.')
+  }
+  var cont = document.getElementById('kx-fmt-list'); if(!cont) return
+  var html = ''
+  KX_OPC.forEach(function(op, pc){
+    if(op.length < 2) return
+    html += '<div class="kx-fmt-row">' + op.map(function(nom){
+      return '<button class="kx-fmt-b' + (kxFmtDraft[pc] === nom ? ' on' : '') + '" onclick="kxFmtElegir(' + pc + ',\'' + nom + '\')">' + nom + '</button>'
+    }).join('<span class="kx-fmt-o">o</span>') + '</div>'
+  })
+  cont.innerHTML = html
+  var rb = document.getElementById('kx-fmt-reset')
+  if(rb) rb.textContent = admin ? 'Volver al formato por defecto' : 'Volver a usar el de mi organización'
+  var rbv = admin ? !!kxFmtOrgAct() : Array.isArray(kxFmtUser)
+  if(rb) rb.style.display = rbv ? '' : 'none'
+}
+window.kxFmtElegir = function(pc, nom){ kxFmtDraft[pc] = nom; kxFmtRender() }
+window.kxFmtGuardar = async function(){
+  var admin = kxEsAdmin(), o = orgs.find(function(x){ return x.activa })
+  var r = await supabase.rpc('guardar_formato_acordes', { p_org: admin && o ? o.id : null, p_formato: kxFmtDraft })
+  if(r.error){ showToast('No se pudo guardar: ' + r.error.message, '#e74c3c'); return }
+  if(admin && o) o.formato = kxFmtDraft.slice(); else kxFmtUser = kxFmtDraft.slice()
+  showToast('✓ Formato de acorde guardado')
+  kxFmtRender(); kxRefrescarFormato()
+}
+window.kxFmtRestablecer = async function(){
+  var admin = kxEsAdmin(), o = orgs.find(function(x){ return x.activa })
+  var r = await supabase.rpc('guardar_formato_acordes', { p_org: admin && o ? o.id : null, p_formato: null })
+  if(r.error){ showToast('No se pudo restablecer: ' + r.error.message, '#e74c3c'); return }
+  if(admin && o) o.formato = null; else kxFmtUser = null
+  kxFmtDraft = (kxFmtEfectivo() || KX_FMT_DEF).slice()
+  showToast('✓ Formato restablecido')
+  kxFmtRender(); kxRefrescarFormato()
+}
+function kxRefrescarFormato(){
+  try {
+    if(repCancion){
+      repActualizarBotonTono(); repBuildTonGrid(); repBuildCapo(repCurKey); repUpdateDisplay()
+    }
+  } catch(e){ console.warn(e) }
+}
+
+// ── Guardado privado (preferencias_cancion) ──
+async function repUpsertExtra(campos){
+  if(!currentUser || !repCancionId || repModoPreview) return false
+  if(!repPrefsCargadas){ showToast('No se pudo guardar (tus ajustes no cargaron). Vuelve a abrir la canción.', '#e67e22'); return false }
+  var base = { user_id: currentUser.id, cancion_id: repCancionId, tono: repCurKey, escala: repScale, updated_at: new Date().toISOString() }
+  return repUpsertPreferencias(Object.assign(base, campos))
+}
+var kxTmAc = null, kxTmAn = null, kxTmAdm = null
+function kxGuardarAcPers(){
+  var id = repCancionId, dato = JSON.parse(JSON.stringify(kxAcPers))
+  if(kxTmAc) clearTimeout(kxTmAc)
+  kxTmAc = setTimeout(function(){ if(repCancionId === id) repUpsertExtra({ acordes_personal: dato }) }, 500)
+}
+function kxGuardarAnot(){
+  var id = repCancionId
+  if(kxTmAn) clearTimeout(kxTmAn)
+  kxTmAn = setTimeout(function(){ if(repCancionId === id) repUpsertExtra({ anotaciones: JSON.parse(JSON.stringify(kxAnot)) }) }, 700)
+}
+function kxGuardarAdm(){
+  var id = repCancionId, dato = JSON.parse(JSON.stringify(kxAcAdm))
+  if(kxTmAdm) clearTimeout(kxTmAdm)
+  kxTmAdm = setTimeout(async function(){
+    var r = await supabase.from('mis_canciones').update({ ajustes_acordes: dato }).eq('id', id)
+    if(r.error) showToast('No se pudo guardar el ajuste: ' + r.error.message, '#e74c3c')
+  }, 600)
+}
+
+// ── Panel Editar ──
+window.kxEdAbrir = function(){
+  if(!repCancion || repModoPreview) return
+  if(kxEd.on){ kxEdCerrar(); return }
+  var a = document.getElementById('rep-pref-panel'); if(a) a.classList.remove('active')
+  var b = document.getElementById('rep-ton-sel'); if(b) b.classList.remove('active')
+  kxEd.on = true; kxEd.sel = null; kxEd.renombrando = false
+  document.getElementById('rep-edit-panel').classList.add('active')
+  repUpdateDisplay(); kxEdRender()
+}
+window.kxEdCerrar = function(){
+  var p = document.getElementById('rep-edit-panel'); if(p) p.classList.remove('active')
+  if(!kxEd.on) return
+  kxEd.on = false; kxEd.sel = null; kxEd.renombrando = false
+  kxDiagOcultar()
+  if(repCancion) repUpdateDisplay()
+}
+window.kxEdModo = function(m){
+  kxEd.modo = m; kxEd.sel = null; kxEd.renombrando = false
+  kxDiagOcultar()
+  repUpdateDisplay(); kxEdRender()
+}
+window.kxChClick = function(el, ev){
+  if(ev) ev.stopPropagation()
+  var sec = el.closest('.rep-lyr-section'); if(!sec) return
+  kxEd.sel = { s: sec.dataset.section, i: parseInt(el.dataset.ix, 10) }
+  kxEd.renombrando = false
+  repUpdateDisplay(); kxEdRender()
+}
+function kxSelEl(){ return document.querySelector('#rep-lyrics-content .kx-ch.sel') }
+function kxSelTxt(){ var e = kxSelEl(); return e ? e.textContent.trim() : '' }
+function kxEdRender(){
+  var body = document.getElementById('kx-ed-body'); if(!body) return
+  var ta = document.getElementById('kx-tab-ac'), tn = document.getElementById('kx-tab-an')
+  if(ta) ta.classList.toggle('on', kxEd.modo === 'acordes')
+  if(tn) tn.classList.toggle('on', kxEd.modo === 'anot')
+  if(kxEd.modo === 'acordes') body.innerHTML = kxEdHtmlAcordes()
+  else { body.innerHTML = kxEdHtmlAnot() }
+  if(kxEd.modo === 'acordes') kxDiagMostrar()
+  kxAnotRefrescar()
+}
+function kxEdHtmlAcordes(){
+  if(repGradosOn()) return '<div class="kx-ed-hint">Para editar acordes, cambia la visualización a «Acordes» (en el selector de tonalidad).</div>'
+  var sel = kxEd.sel, txt = sel ? kxSelTxt() : '', dis = sel ? '' : ' disabled'
+  var h = '<div class="kx-ed-hint">' + (sel ? 'Acorde: <b>' + esc(txt) + '</b>' : 'Toca un acorde de la canción.') + '</div>'
+  h += '<div class="kx-ed-its">'
+  h += '<button class="kx-ed-it' + (kxEd.renombrando ? ' on' : '') + '"' + dis + ' onclick="kxRenAbrir()">Editar</button>'
+  if(kxEsAdmin()){
+    h += '<button class="kx-ed-it"' + dis + ' onclick="kxMover(-1)">Más a la izquierda</button>'
+    h += '<button class="kx-ed-it"' + dis + ' onclick="kxMover(1)">Más a la derecha</button>'
+  }
+  h += '<button class="kx-ed-it" onclick="kxToggleDiag()">Diagrama <span class="kx-mini-sw' + (acdEstado.activo ? ' on' : '') + '"><i></i></span></button>'
+  h += '</div>'
+  if(kxEd.renombrando && sel){
+    var hay = !!(kxAcPers[sel.s] && kxAcPers[sel.s][sel.i])
+    h += '<div class="kx-ren"><input class="kx-ren-inp" id="kx-ren-inp" value="' + esc(txt) + '" maxlength="24" autocomplete="off" autocapitalize="off" spellcheck="false" onkeydown="if(event.key===\'Enter\')kxRenAplicar()">' +
+      '<div class="kx-ren-b"><button class="rep-ready-btn" onclick="kxRenAplicar()">Aplicar</button>' +
+      (hay ? '<button class="kx-ed-it" onclick="kxRenRestaurar()">Volver al original</button>' : '') +
+      '</div><div class="kx-ed-hint" style="margin-top:6px">Solo cambia cómo lo ves tú. Es el mismo acorde de la canción.</div></div>'
+  }
+  return h
+}
+window.kxRenAbrir = function(){
+  if(!kxEd.sel) return
+  kxEd.renombrando = !kxEd.renombrando
+  kxEdRender()
+  if(kxEd.renombrando) setTimeout(function(){ var i = document.getElementById('kx-ren-inp'); if(i){ i.focus(); i.select() } }, 30)
+}
+window.kxRenAplicar = function(){
+  var sel = kxEd.sel; if(!sel) return
+  var inp = document.getElementById('kx-ren-inp'); if(!inp) return
+  var val = inp.value.trim().replace(/\s+/g, ' ')
+  var ok = val && val.split(' ').every(function(t){ return /^\(?[A-G][#b]?[^\s\[\]\/]*(\/[A-G][#b]?)?\)?$/.test(t) })
+  if(!ok){ showToast('Escribe un acorde válido (ej: Db, F#m7, G/B)', '#e67e22'); return }
+  var inf = null
+  // info de la sección: se recalcula
+  var secObj = ((repCancion.datos && repCancion.datos.secciones) || []).find(function(s){ return s.id === sel.s })
+  if(!secObj) return
+  kxVistaSec(secObj); inf = kxSecInfo[sel.i]
+  if(!inf) return
+  var t = (repCurKey === repOrigKey) ? val : repTrText('[' + val + ']', repCurKey, repOrigKey).slice(1, -1)
+  var m = /^\(?([A-G])([#b]?)/.exec(val.split(' ')[0])
+  var acc = m ? (m[2] === '#' ? 's' : (m[2] === 'b' ? 'b' : '')) : ''
+  kxAcPers[sel.s] = kxAcPers[sel.s] || {}
+  kxAcPers[sel.s][sel.i] = { t: t, o: inf.raw, a: acc }
+  kxGuardarAcPers()
+  kxEd.renombrando = false
+  repUpdateDisplay(); kxEdRender()
+}
+window.kxRenRestaurar = function(){
+  var sel = kxEd.sel; if(!sel) return
+  if(kxAcPers[sel.s]){ delete kxAcPers[sel.s][sel.i]; if(!Object.keys(kxAcPers[sel.s]).length) delete kxAcPers[sel.s] }
+  kxGuardarAcPers()
+  kxEd.renombrando = false
+  repUpdateDisplay(); kxEdRender()
+}
+window.kxMover = function(dir){
+  var sel = kxEd.sel; if(!sel || !kxEsAdmin()) return
+  var secObj = ((repCancion.datos && repCancion.datos.secciones) || []).find(function(s){ return s.id === sel.s })
+  if(!secObj) return
+  kxVistaSec(secObj); var inf = kxSecInfo[sel.i]; if(!inf) return
+  kxAcAdm[sel.s] = kxAcAdm[sel.s] || {}
+  var actual = kxAcAdm[sel.s][sel.i]
+  var n = ((actual && actual.o === inf.raw) ? (parseInt(actual.n, 10) || 0) : 0) + dir
+  if(n === 0) delete kxAcAdm[sel.s][sel.i]
+  else kxAcAdm[sel.s][sel.i] = { n: n, o: inf.raw }
+  if(!Object.keys(kxAcAdm[sel.s]).length) delete kxAcAdm[sel.s]
+  if(repCancion) repCancion.ajustes_acordes = kxAcAdm
+  kxGuardarAdm()
+  repUpdateDisplay(); kxEdRender()
+}
+window.kxToggleDiag = function(){
+  acdToggleActivo()
+  kxEdRender()
+  if(!acdEstado.activo) kxDiagOcultar()
+}
+
+// ── Diagrama sobre el acorde tocado ──
+var kxDiagTok = 0
+function kxDiagOcultar(){ var p = document.getElementById('kx-diag-pop'); if(p) p.style.display = 'none' }
+async function kxDiagMostrar(){
+  var pop = document.getElementById('kx-diag-pop')
+  if(!pop){ pop = document.createElement('div'); pop.id = 'kx-diag-pop'; pop.className = 'kx-diag-pop'; document.body.appendChild(pop) }
+  var el = kxSelEl()
+  if(!(kxEdAcordesOn() && acdEstado.activo && kxEd.sel && el && (acdEstado.g || acdEstado.p))){ pop.style.display = 'none'; return }
+  var my = ++kxDiagTok
+  var txt = el.textContent.trim()
+  var capo = repCapoPos || 0
+  var html = ''
+  var toks = txt.split(' ').filter(Boolean)
+  for(var t = 0; t < toks.length; t++){
+    var ch = acdParse(toks[t])
+    if(!ch || !ch.suf){ html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + '</div><div class="acd-nd-txt">Diagrama no disponible</div></div>'; continue }
+    if(acdEstado.g){
+      var forma = ch
+      if(capo > 0){
+        forma = { root: acdTransponer(ch.root, -capo), suf: ch.suf, rawSuf: ch.rawSuf, bass: ch.bass ? acdTransponer(ch.bass, -capo) : null }
+      }
+      var arch = ACD_ARCHIVO[ACD_PC[forma.root]]
+      if(!acdBanco[arch]){ try { await acdCargarArchivo(arch) } catch(e){} }
+      if(my !== kxDiagTok) return
+      var res = acdBuscarGuitarra(forma.root, forma.suf, forma.bass)
+      html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · guitarra</div>' + (res ? acdSvgGuitarra(res.pos[0]) : '<div class="acd-nd-txt">Diagrama no disponible</div>') + '</div>'
+    }
+    if(acdEstado.p){
+      var svg = acdSvgPiano(ch.root, ch.suf, ch.bass)
+      html += '<div class="kx-dp-it"><div class="kx-dp-n">' + esc(toks[t]) + ' · piano</div>' + (svg || '<div class="acd-nd-txt">Diagrama no disponible</div>') + '</div>'
+    }
+  }
+  if(my !== kxDiagTok) return
+  pop.innerHTML = html
+  pop.style.display = 'flex'
+  var el2 = kxSelEl(); if(!el2) return
+  var r = el2.getBoundingClientRect(), pw = pop.offsetWidth, ph = pop.offsetHeight
+  var left = Math.max(8, Math.min(r.left + r.width / 2 - pw / 2, window.innerWidth - pw - 8))
+  var top = r.top - ph - 8
+  if(top < 8) top = r.bottom + 8
+  pop.style.left = left + 'px'; pop.style.top = top + 'px'
+}
+document.addEventListener('scroll', function(e){ if(e.target && e.target.id === 'rep-scroll-area') kxDiagOcultar() }, true)
+
+// ── Anotaciones ──
+function kxAnotVer(){ try { return localStorage.getItem('keynonia_anot_ver') !== '0' } catch(e){ return true } }
+window.kxTogglePrefAnot = function(){
+  try { localStorage.setItem('keynonia_anot_ver', kxAnotVer() ? '0' : '1') } catch(e){}
+  kxSyncAnotSwitch(); kxAnotRefrescar()
+}
+function kxSyncAnotSwitch(){ var b = document.getElementById('rep-pref-anot'); if(b) b.classList.toggle('active', kxAnotVer()) }
+function kxAnotDibujando(){ return kxEd.on && kxEd.modo === 'anot' }
+function kxAnotMontar(){
+  document.querySelectorAll('#rep-lyrics-content .rep-lyr-section').forEach(function(sec){
+    var cv = document.createElement('canvas')
+    cv.className = 'kx-anot'; cv.dataset.s = sec.dataset.section
+    sec.appendChild(cv)
+    kxAnotAjustar(cv)
+    kxAnotEventos(cv)
+    try { new ResizeObserver(function(){ kxAnotAjustar(cv) }).observe(sec) } catch(e){}
+  })
+  kxAnotRefrescar()
+}
+function kxAnotAjustar(cv){
+  var sec = cv.parentNode; if(!sec) return
+  var w = sec.clientWidth, h = sec.clientHeight, dpr = window.devicePixelRatio || 1
+  if(!w || !h) return
+  if(cv._w === w && cv._h === h && cv._d === dpr) return
+  cv._w = w; cv._h = h; cv._d = dpr
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr)
+  cv.style.width = w + 'px'; cv.style.height = h + 'px'
+  kxAnotPintar(cv)
+}
+function kxAnotRefrescar(){
+  var ver = kxAnotVer() || kxAnotDibujando()
+  var dib = kxAnotDibujando()
+  document.querySelectorAll('.kx-anot').forEach(function(cv){
+    cv.style.display = ver ? '' : 'none'
+    cv.style.pointerEvents = dib ? 'auto' : 'none'
+    cv.style.touchAction = dib ? 'none' : 'auto'
+    cv.style.cursor = dib ? 'crosshair' : ''
+    if(ver) kxAnotAjustar(cv)
+  })
+  kxSyncAnotSwitch()
+}
+function kxAnotTrazo(ctx, s, W, dpr){
+  var p = s.p; if(!p || !p.length) return
+  ctx.strokeStyle = s.c; ctx.fillStyle = s.c
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round'
+  ctx.lineWidth = Math.max(1, s.w * W) * dpr
+  if(p.length === 1){ ctx.beginPath(); ctx.arc(p[0][0] * W * dpr, p[0][1] * W * dpr, ctx.lineWidth / 2, 0, 6.2832); ctx.fill(); return }
+  ctx.beginPath()
+  ctx.moveTo(p[0][0] * W * dpr, p[0][1] * W * dpr)
+  for(var i = 1; i < p.length - 1; i++){
+    var mx = (p[i][0] + p[i + 1][0]) / 2, my = (p[i][1] + p[i + 1][1]) / 2
+    ctx.quadraticCurveTo(p[i][0] * W * dpr, p[i][1] * W * dpr, mx * W * dpr, my * W * dpr)
+  }
+  var l = p[p.length - 1]
+  ctx.lineTo(l[0] * W * dpr, l[1] * W * dpr)
+  ctx.stroke()
+}
+function kxAnotPintar(cv, extra){
+  var ctx = cv.getContext('2d'), dpr = cv._d || 1, W = cv._w || cv.clientWidth
+  ctx.clearRect(0, 0, cv.width, cv.height)
+  ;(kxAnot[cv.dataset.s] || []).forEach(function(s){ kxAnotTrazo(ctx, s, W, dpr) })
+  if(extra) kxAnotTrazo(ctx, extra, W, dpr)
+}
+var kxPila = []     // orden de trazos hechos (para deshacer): secId
+var kxDraw = null
+function kxAnotEventos(cv){
+  cv.addEventListener('pointerdown', function(e){
+    if(!kxAnotDibujando()) return
+    e.preventDefault()
+    try { cv.setPointerCapture(e.pointerId) } catch(x){}
+    var r = cv.getBoundingClientRect()
+    kxDraw = { cv: cv, id: e.pointerId, out: false, s: { c: kxEd.color, w: KX_GROSORES[kxEd.grosor] / r.width, p: [] }, borro: false }
+    kxAnotPunto(e, r)
+  })
+  cv.addEventListener('pointermove', function(e){
+    if(!kxDraw || kxDraw.cv !== cv || e.pointerId !== kxDraw.id) return
+    e.preventDefault()
+    kxAnotPunto(e, cv.getBoundingClientRect())
+  })
+  var fin = function(e){
+    if(!kxDraw || kxDraw.cv !== cv || e.pointerId !== kxDraw.id) return
+    var d = kxDraw; kxDraw = null
+    if(kxEd.tool === 'eraser'){ if(d.borro) kxGuardarAnot(); kxAnotPintar(cv); return }
+    if(d.s.p.length){
+      var id = cv.dataset.s
+      kxAnot[id] = kxAnot[id] || []
+      kxAnot[id].push(d.s); kxPila.push(id)
+      kxGuardarAnot()
+    }
+    kxAnotPintar(cv)
+  }
+  cv.addEventListener('pointerup', fin)
+  cv.addEventListener('pointercancel', fin)
+}
+function kxAnotPunto(e, r){
+  var d = kxDraw; if(!d || d.out) return
+  var x = e.clientX - r.left, y = e.clientY - r.top
+  // si el trazo sale del cuadro de la sección, se corta: hay que levantar el lápiz para seguir
+  if(x < 0 || y < 0 || x > r.width || y > r.height){ d.out = true; if(kxEd.tool !== 'eraser') kxAnotPintar(d.cv, d.s); return }
+  if(kxEd.tool === 'eraser'){
+    var id = d.cv.dataset.s, lista = kxAnot[id] || [], rad = (KX_GROSORES[kxEd.grosor] + 8)
+    var nuevo = lista.filter(function(s){
+      return !s.p.some(function(q){ var dx = q[0] * r.width - x, dy = q[1] * r.width - y; return dx * dx + dy * dy <= rad * rad })
+    })
+    if(nuevo.length !== lista.length){
+      if(nuevo.length) kxAnot[id] = nuevo; else delete kxAnot[id]
+      d.borro = true
+      kxAnotPintar(d.cv)
+    }
+    return
+  }
+  d.s.p.push([+(x / r.width).toFixed(4), +(y / r.width).toFixed(4)])
+  kxAnotPintar(d.cv, d.s)
+}
+window.kxAnotDeshacer = function(){
+  var id = kxPila.pop()
+  if(!id){ showToast('No hay nada que deshacer'); return }
+  if(kxAnot[id] && kxAnot[id].length){ kxAnot[id].pop(); if(!kxAnot[id].length) delete kxAnot[id] }
+  document.querySelectorAll('.kx-anot').forEach(function(cv){ if(cv.dataset.s === id) kxAnotPintar(cv) })
+  kxGuardarAnot()
+}
+window.kxAnotLimpiar = async function(){
+  if(!Object.keys(kxAnot).length){ showToast('No hay anotaciones'); return }
+  var ok = await confirmar('¿Borrar todas tus anotaciones de esta canción?', 'Borrar')
+  if(!ok) return
+  kxAnot = {}; kxPila = []
+  document.querySelectorAll('.kx-anot').forEach(function(cv){ kxAnotPintar(cv) })
+  kxGuardarAnot()
+}
+window.kxAnotColor = function(c){ kxEd.color = c; if(kxEd.tool === 'eraser') kxEd.tool = 'pen'; kxEdRender() }
+window.kxAnotGrosor = function(i){ kxEd.grosor = i; kxEdRender() }
+window.kxAnotTool = function(t){ kxEd.tool = t; kxEdRender() }
+function kxEdHtmlAnot(){
+  var cols = ['#e74c3c', '#f39c12', '#3498db', '#2ecc71']
+  var esPers = cols.indexOf(kxEd.color) < 0
+  var h = '<div class="kx-an-cols">' + cols.map(function(c){
+    return '<button class="kx-an-col' + (kxEd.color === c && kxEd.tool === 'pen' ? ' on' : '') + '" style="background:' + c + '" onclick="kxAnotColor(\'' + c + '\')" aria-label="Color"></button>'
+  }).join('') +
+    '<label class="kx-an-col kx-an-esp' + (esPers && kxEd.tool === 'pen' ? ' on' : '') + '" title="Más colores"><input type="color" value="' + (esPers ? kxEd.color : '#9b59b6') + '" oninput="kxAnotColor(this.value)" onchange="kxAnotColor(this.value)"></label></div>'
+  h += '<div class="kx-an-gr">' + KX_GROSORES.map(function(w, i){
+    return '<button class="kx-an-g' + (kxEd.grosor === i ? ' on' : '') + '" onclick="kxAnotGrosor(' + i + ')" aria-label="Grosor ' + (i + 1) + '"><svg viewBox="0 0 40 22" width="40" height="22"><path d="M3 15 C10 3 15 3 20 11 S30 19 37 7" fill="none" stroke="currentColor" stroke-width="' + w + '" stroke-linecap="round"/></svg></button>'
+  }).join('') + '</div>'
+  h += '<div class="kx-ed-its">' +
+    '<button class="kx-ed-it' + (kxEd.tool === 'pen' ? ' on' : '') + '" onclick="kxAnotTool(\'pen\')">Lápiz</button>' +
+    '<button class="kx-ed-it' + (kxEd.tool === 'eraser' ? ' on' : '') + '" onclick="kxAnotTool(\'eraser\')">Borrador</button>' +
+    '<button class="kx-ed-it" onclick="kxAnotDeshacer()">Deshacer</button>' +
+    '<button class="kx-ed-it" onclick="kxAnotLimpiar()">Borrar todo</button></div>'
+  h += '<div class="kx-ed-hint">Dibuja dentro del cuadro de cada sección. Si sales del cuadro, levanta el lápiz para seguir en otra sección. Solo tú ves tus anotaciones.</div>'
+  return h
+}
+
+// Carga de lo guardado al abrir una canción
+function kxAlAbrirCancion(cancion, pref){
+  kxAcAdm = (cancion && cancion.ajustes_acordes && typeof cancion.ajustes_acordes === 'object') ? cancion.ajustes_acordes : {}
+  kxAcPers = (pref && pref.acordes_personal && typeof pref.acordes_personal === 'object') ? pref.acordes_personal : {}
+  kxAnot = (pref && pref.anotaciones && typeof pref.anotaciones === 'object') ? pref.anotaciones : {}
+  kxPila = []; kxDraw = null
+  kxEd.sel = null; kxEd.renombrando = false
+  if(kxEd.on) kxEdCerrar()
+  var eb = document.getElementById('rep-edit-btn'); if(eb) eb.style.display = repModoPreview ? 'none' : ''
 }
 
 var repCqSec=null, repCqN=0
@@ -5925,6 +6492,8 @@ function repFmtContent(content){
     })
     res='<div class="rep-chord-chips">'
     chords.forEach(function(c){
+      var ix=c.trim()?kxChN++:-1
+      if(kxEdAcordesOn() && ix>=0){ res+='<span class="rep-chord-chip kx-ch'+(kxEsSel(ix)?' sel':'')+'" data-ix="'+ix+'" onclick="kxChClick(this,event)">'+esc(c)+'</span>'; return }
       var cq=repCqAttr(c)
       res+='<span class="rep-chord-chip'+(cq?' rep-cq':'')+'"'+cq+'>'+esc(c)+'</span>'
     })
@@ -5946,7 +6515,7 @@ function repFmtContent(content){
     for(var i=0;i<line.length;i++){
       var c=line[i]
       if(c==='['){ inC=true; cur='' }
-      else if(c===']'){ inC=false; parts.push({t:cur,pos:cl.length,cq:repCqAttr(cur)}); cl+=cur; ll+=' '.repeat(cur.length) }
+      else if(c===']'){ inC=false; parts.push({t:cur,pos:cl.length,ix:(cur.trim()?kxChN++:-1),cq:repCqAttr(cur)}); cl+=cur; ll+=' '.repeat(cur.length) }
       else if(inC) cur+=c
       else { cl+=' '; ll+=c }
     }
@@ -5961,10 +6530,13 @@ function repFmtContent(content){
     var cqs=parts.filter(function(p){ return p.cq })
     parts.forEach(function(p){
       clh+=esc(cl.slice(at,p.pos)); at=p.pos+p.t.length
-      if(!p.cq){ clh+=esc(p.t); return }
+      var inf=(p.ix>=0)?kxSecInfo[p.ix]:null
+      var offSt=(inf && inf.off)?'position:relative;left:'+(inf.off*0.22).toFixed(2)+'em;':''
+      if(kxEdAcordesOn() && p.ix>=0){ clh+='<span class="kx-ch'+(kxEsSel(p.ix)?' sel':'')+'" data-ix="'+p.ix+'" style="'+offSt+'" onclick="kxChClick(this,event)">'+esc(p.t)+'</span>'; return }
+      if(!p.cq){ clh+=offSt?('<span style="'+offSt+'">'+esc(p.t)+'</span>'):esc(p.t); return }
       var k=cqs.indexOf(p), prev=cqs[k-1], next=cqs[k+1]
       var gl=prev?(p.pos-(prev.pos+prev.t.length)):99, gr=next?(next.pos-(p.pos+p.t.length)):99
-      clh+='<span class="rep-cq"'+p.cq+' style="--pl:'+padDe(gl).toFixed(2)+'em;--pr:'+padDe(gr).toFixed(2)+'em;--sl:'+(prev?pushDe(gl):0).toFixed(2)+'em;--sr:'+(next?pushDe(gr):0).toFixed(2)+'em">'+esc(p.t)+'</span>'
+      clh+='<span class="rep-cq"'+p.cq+' style="'+offSt+'--pl:'+padDe(gl).toFixed(2)+'em;--pr:'+padDe(gr).toFixed(2)+'em;--sl:'+(prev?pushDe(gl):0).toFixed(2)+'em;--sr:'+(next?pushDe(gr):0).toFixed(2)+'em">'+esc(p.t)+'</span>'
     })
     clh+=esc(cl.slice(at))
     if(cl.trim()) res+='<div class="rep-chord-line">'+clh+'</div>'
@@ -5984,8 +6556,8 @@ function repUpdateDisplay(){
   var cqOn=false
   try { cqOn=(typeof ensCuadrosOn==='function') && ensCuadrosOn() } catch(e){}
   secciones.forEach(function(sec){
-    var trans=repTrView(sec.contenido||'')
-    repCqSec=cqOn?sec.id:null; repCqN=0
+    var trans=kxVistaSec(sec)
+    repCqSec=cqOn?sec.id:null; repCqN=0; kxChN=0; kxSecCur=sec.id
     var colorCls=sec.color || REP_TYPE_CLS[sec.tipo] || 'sky'
     var midiStr=(typeof sec.midiNote==='number') ? '<span class="rep-sec-midi">MIDI: '+repMidiName(sec.midiNote)+'</span>' : ''
     var dmStr=(repPrefs.showDM && sec.dm) ? '<div class="rep-sec-dm">('+esc(sec.dm)+')</div>' : ''
@@ -5996,6 +6568,7 @@ function repUpdateDisplay(){
   })
   repCqSec=null
   el.innerHTML=html
+  try{ kxAnotMontar() }catch(e){ console.warn(e) }
   var colsEf=Math.min(repPrefs.cols,kxMaxCols())
   el.className='rep-lyrics-content'+(colsEf===3?' three-col':colsEf===2?' two-col':'')+(repPrefs.showL && repPrefs.showC ? ' ambos-vis' : '')
   acdActualizar()
@@ -6360,7 +6933,7 @@ async function acdRender(lista, capo, firma){
 
   var html = ''
   items.forEach(function(it){
-    var nombre = '<div class="acd-nombre">' + esc(it.tk) + '</div>'
+    var nombre = '<div class="acd-nombre">' + esc(kxTok(it.tk, '')) + '</div>'
     if (!it.ch || !it.ch.suf) { html += '<div class="acd-item acd-nd">' + nombre + '<div class="acd-nd-txt">Diagrama no disponible</div></div>'; return }
     if (esGuitarra) {
       var res = acdBuscarGuitarra(it.forma.root, it.forma.suf, it.forma.bass)
@@ -6389,7 +6962,7 @@ async function acdRender(lista, capo, firma){
 function repTransposeNoteFor(baseKey){
   var idx = REP_CHROM.indexOf(baseKey)
   if(idx < 0) return ''
-  return REP_CHROM[((idx + repTransposePos) % 12 + 12) % 12]
+  return kxNom(REP_CHROM[((idx + repTransposePos) % 12 + 12) % 12])
 }
 
 function repUpdateTransposeNote(){
@@ -6442,7 +7015,7 @@ function repBuildCapo(baseKey){
     cb.appendChild(btn)
     var note=document.createElement('div')
     note.className='rep-cp-note'
-    note.textContent = idx<0 ? '' : REP_CHROM[(idx+i)%12]
+    note.textContent = idx<0 ? '' : kxNom(REP_CHROM[(idx+i)%12])
     cn.appendChild(note)
   }
   repUpdateCapoInd()
@@ -6456,7 +7029,7 @@ function repBuildTonGrid(){
   keys.forEach(function(k){
     var btn=document.createElement('button')
     btn.className='rep-tk-btn'+((repGradoPend!=='num' && repGradoPend!=='rom') && repBaseKey(k)===repPendKey?' active':'')
-    btn.textContent=k
+    btn.textContent=kxNomKey(k)
     btn.dataset.key=k
     btn.addEventListener('click',function(){
       grid.querySelectorAll('.rep-tk-btn').forEach(function(b){ b.classList.remove('active') })
@@ -6623,6 +7196,8 @@ window.repAbrirPreferencias = function(){
   try { acdSyncUI() } catch(e) {}
   try { kxSyncPrefs() } catch(e) {}
   document.getElementById('rep-ton-sel').classList.remove('active')
+  try{ kxEdCerrar() }catch(e){}
+  try{ kxSyncAnotSwitch() }catch(e){}
   document.getElementById('rep-pref-panel').classList.toggle('active')
 }
 
@@ -6868,6 +7443,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repUltimoAjuste = 'capo'
   repActiveSec = null
   repPrefs = {showL:true, showC:true, showDM:true, lineH:1.1, lyrSz:1.0, chdSz:0.88, cols:1}
+  try{ kxAlAbrirCancion(cancion, null) }catch(e){ console.warn(e) }
 
   var artistaNombre = (cancion.artistas && cancion.artistas.nombre) || cancion.artista_nombre || ''
   document.getElementById('rep-song-title').textContent = cancion.titulo
@@ -6909,6 +7485,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
     }
 
     if(pref){
+      try{ kxAlAbrirCancion(cancion, pref) }catch(e){ console.warn(e) }
       repCurKey = repBaseKey(pref.tono) || repOrigKey
       repCapoPos = pref.capo || 0
       repTransposePos = pref.transpose_piano || 0
@@ -6966,6 +7543,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
 window.cerrarReproductor = function(){
   if(window.ensConfirmarSalida && !ensConfirmarSalida(function(){ window.cerrarReproductor() })) return
   repFlushPreferencias()   // FIX: no perder el último cambio de capo/tono al cerrar
+  try{ kxEdCerrar() }catch(e){}
   document.getElementById('panel-reproductor').classList.remove('active')
   document.getElementById('rep-ton-sel').classList.remove('active')
   document.getElementById('rep-pref-panel').classList.remove('active')
@@ -10401,7 +10979,8 @@ aplicarNavegacionPendiente()
         <span class="rep-midi-chip" id="rep-midi-chip" title="MIDI desconectado"><span class="rep-midi-dot"></span><span>MIDI</span></span>
         <button class="rep-btn" id="rep-ton-btn" onclick="repAbrirSelectorTono()">C</button>
         <button class="rep-btn rep-capo-ind" id="rep-capo-ind" tabindex="-1" title="Capo">&empty;</button>
-        <button class="rep-btn" id="rep-pref-btn" onclick="repAbrirPreferencias()">⚙ Preferencias</button>
+        <button class="rep-btn kx-sqbtn" id="rep-pref-btn" onclick="repAbrirPreferencias()" title="Preferencias" aria-label="Preferencias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg></button>
+        <button class="rep-btn" id="rep-edit-btn" onclick="kxEdAbrir()" title="Editar">Editar</button>
         <button class="rep-btn" id="rep-reportar-error-btn" onclick="abrirAvisoReportarError()" style="display:none" title="Reportar Error en Canción">⚠</button>
       </div>
     </div>
@@ -10473,6 +11052,13 @@ aplicarNavegacionPendiente()
   </div>
 </div>
 
+<!-- EDITAR REPRODUCTOR (acordes y anotaciones) -->
+<div class="rep-floating" id="rep-edit-panel">
+  <div class="rep-floating-hdr"><span class="rep-floating-lbl">Editar</span><button class="rep-ready-btn" onclick="kxEdCerrar()">Listo</button></div>
+  <div class="kx-ed-tabs"><button id="kx-tab-ac" class="on" onclick="kxEdModo('acordes')">Acordes</button><button id="kx-tab-an" onclick="kxEdModo('anot')">Anotaciones</button></div>
+  <div id="kx-ed-body"></div>
+</div>
+
 <!-- PREFERENCIAS REPRODUCTOR -->
 <div class="rep-floating" id="rep-pref-panel">
   <div class="rep-floating-hdr"><span class="rep-floating-lbl">Preferencias</span></div>
@@ -10507,6 +11093,7 @@ aplicarNavegacionPendiente()
   </div>
   <div class="kx-sw-row" style="gap:6px"><span class="kx-sw-lbl" style="flex:0 0 auto;margin-right:2px">Diagrama</span><button class="kx-ins" id="rep-pref-diag-g" onclick="acdSetInst('g')" title="Guitarra"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 0 C5.36 2.26 9.22 6.62 13.22 10.71 C14.24 11.72 15.26 12.73 16.28 13.74 C18.41 15.85 20.52 17.98 22.61 20.12 C25.3 22.86 28.02 25.55 30.76 28.23 C32.86 30.31 34.95 32.41 37.03 34.51 C38.03 35.51 39.03 36.51 40.04 37.49 C48.82 46.13 48.82 46.13 49.63 51.34 C48.71 58.55 41.44 64.02 36.5 68.84 C35.28 70.06 34.06 71.27 32.85 72.49 C30.3 75.04 27.74 77.57 25.17 80.09 C21.88 83.31 18.62 86.57 15.37 89.84 C12.86 92.35 10.34 94.85 7.82 97.35 C6.61 98.55 5.41 99.74 4.21 100.95 C2.53 102.63 0.83 104.29 -0.87 105.95 C-1.61 106.69 -1.61 106.69 -2.36 107.45 C-5.99 110.92 -8.78 111.61 -13.72 111.96 C-17.93 112.46 -19.83 113.58 -22.81 116.58 C-23.59 117.35 -24.37 118.13 -25.18 118.93 C-26.02 119.78 -26.86 120.64 -27.73 121.52 C-28.63 122.42 -29.53 123.32 -30.45 124.24 C-32.91 126.7 -35.36 129.17 -37.8 131.64 C-40.36 134.23 -42.93 136.8 -45.5 139.37 C-50.36 144.24 -55.21 149.13 -60.05 154.01 C-65.57 159.57 -71.1 165.13 -76.63 170.68 C-88.01 182.09 -99.37 193.52 -110.72 204.96 C-110.24 206.4 -109.76 207.83 -109.29 209.26 C-108.89 210.46 -108.89 210.46 -108.48 211.68 C-107.87 213.52 -107.24 215.36 -106.62 217.2 C-99.57 238.8 -99.58 262.31 -109.72 282.96 C-117.08 296.72 -127 307.28 -140.72 314.96 C-141.37 315.35 -142.02 315.74 -142.69 316.14 C-147.95 319.04 -153.6 320.44 -159.36 322.03 C-166.62 323.71 -166.62 323.71 -172.4 327.99 C-174.21 332.08 -174.12 335.72 -174.16 340.15 C-174.59 354.52 -177.36 368 -183.72 380.96 C-184.4 382.36 -184.4 382.36 -185.09 383.79 C-196.38 405.73 -216.15 421.55 -239.43 429.18 C-268.63 437.76 -297.65 433.3 -324.34 419.71 C-331.37 415.81 -337.53 411.06 -343.72 405.96 C-344.54 405.29 -345.37 404.62 -346.22 403.93 C-368.82 384.79 -381.95 355.57 -384.47 326.46 C-385.94 302.81 -379.79 277.82 -364.55 259.34 C-362.32 256.83 -360.04 254.39 -357.72 251.96 C-357.12 251.29 -356.51 250.61 -355.89 249.91 C-341.87 234.73 -319.91 224.92 -299.37 223.84 C-295.89 223.72 -292.41 223.61 -288.92 223.53 C-284.13 223.36 -280.51 223.23 -276.72 219.96 C-275.63 218.18 -275.63 218.18 -275.16 216.09 C-274.92 215.29 -274.69 214.5 -274.45 213.68 C-274.09 212.34 -274.09 212.34 -273.72 210.96 C-269.44 195.74 -263.45 182.86 -251.72 171.96 C-250.85 171.08 -250.85 171.08 -249.97 170.17 C-238.12 158.61 -220.17 151.63 -203.72 150.96 C-202.78 150.91 -201.84 150.86 -200.88 150.81 C-187.52 150.41 -174.98 153.08 -162.57 157.88 C-161.63 158.24 -160.69 158.6 -159.72 158.96 C-159.08 159.22 -158.45 159.48 -157.79 159.74 C-155.62 160.2 -155.62 160.2 -153.77 158.66 C-152.75 157.65 -152.75 157.65 -151.71 156.61 C-150.92 155.85 -150.13 155.08 -149.32 154.29 C-148.46 153.43 -147.61 152.57 -146.73 151.68 C-145.82 150.79 -144.91 149.9 -143.98 148.98 C-141.48 146.53 -139.01 144.06 -136.53 141.58 C-134.47 139.52 -132.39 137.46 -130.32 135.4 C-125.43 130.55 -120.55 125.68 -115.68 120.8 C-110.66 115.77 -105.62 110.77 -100.56 105.78 C-96.21 101.49 -91.89 97.19 -87.58 92.87 C-85 90.29 -82.42 87.72 -79.82 85.17 C-76.92 82.32 -74.05 79.43 -71.19 76.54 C-70.33 75.7 -69.46 74.86 -68.58 74 C-64.34 69.86 -64.34 69.86 -62.3 64.51 C-62.33 62.13 -62.33 62.13 -62.59 59.87 C-62.72 57.96 -62.72 57.96 -61.58 55.74 C-60.75 54.94 -60.75 54.94 -59.91 54.12 C-58.95 53.14 -58.95 53.14 -57.96 52.14 C-56.85 51.06 -56.85 51.06 -55.72 49.96 C-54 48.16 -52.28 46.36 -50.57 44.56 C-45.89 39.72 -41.17 34.93 -36.44 30.14 C-33.6 27.26 -30.76 24.37 -27.95 21.46 C-25.2 18.62 -22.44 15.81 -19.66 13.01 C-18.61 11.95 -17.56 10.87 -16.53 9.79 C-6.31 -0.85 -6.31 -0.85 0 0 Z M-241.13 233.25 C-249.62 242.41 -253.52 253.03 -253.1 265.47 C-251.77 277.7 -246.03 287.02 -236.53 294.69 C-226.73 301.58 -215.75 303.49 -203.97 301.5 C-192.58 298.5 -183.18 290.53 -177.23 280.45 C-172.48 270.18 -171.79 258.79 -175.28 247.96 C-179.5 238.23 -186.8 230.3 -196.39 225.68 C-212.06 219.51 -228.51 221.58 -241.13 233.25 Z M-301.09 293.59 C-302.91 296.25 -303.64 297.74 -303.72 300.96 C-301.74 304.8 -299.27 307.68 -296.25 310.74 C-295.35 311.66 -294.45 312.57 -293.52 313.52 C-292.54 314.51 -291.56 315.49 -290.57 316.48 C-289.56 317.5 -288.55 318.52 -287.54 319.55 C-285.42 321.68 -283.29 323.81 -281.17 325.94 C-278.45 328.66 -275.75 331.4 -273.05 334.15 C-270.96 336.26 -268.87 338.36 -266.77 340.46 C-265.77 341.47 -264.77 342.48 -263.78 343.49 C-262.39 344.91 -260.98 346.31 -259.57 347.71 C-258.78 348.51 -257.98 349.31 -257.17 350.13 C-254.28 352.29 -252.28 352.72 -248.72 352.96 C-246.08 352.16 -245.05 351.41 -243.41 349.21 C-242.45 346.09 -242.9 344.13 -243.72 340.96 C-245.6 338.33 -245.6 338.33 -248.13 335.89 C-248.58 335.43 -249.04 334.96 -249.51 334.48 C-251.02 332.94 -252.54 331.43 -254.07 329.91 C-255.13 328.85 -256.19 327.78 -257.24 326.72 C-259.46 324.49 -261.68 322.27 -263.92 320.06 C-266.77 317.23 -269.6 314.37 -272.42 311.51 C-274.6 309.31 -276.79 307.12 -278.99 304.93 C-280.04 303.88 -281.08 302.83 -282.12 301.78 C-283.58 300.3 -285.05 298.84 -286.53 297.39 C-287.37 296.56 -288.2 295.72 -289.06 294.87 C-292.97 292.07 -296.94 290.75 -301.09 293.59 Z " fill="currentColor" transform="translate(423.7178955078125,39.035430908203125)"/><path d="M0 0 C5.81 5.12 10.09 9.8 11.03 17.73 C11.24 26.26 10.63 32.76 4.62 39.31 C-2.15 45.02 -7.74 46.7 -16.5 46.59 C-23.67 45.9 -29.14 42.48 -33.93 37.21 C-38.84 30.74 -39.45 23.22 -38.38 15.31 C-36.18 8.38 -32.44 3.31 -26.38 -0.69 C-18 -4.98 -8.27 -4.14 0 0 Z " fill="currentColor" transform="translate(224.375,279.6875)"/></svg></button><button class="kx-ins" id="rep-pref-diag-p" onclick="acdSetInst('p')" title="Piano"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 0 C1.56 -0 3.12 -0.01 4.68 -0.02 C8.95 -0.03 13.22 -0.03 17.49 -0.02 C22.11 -0.01 26.72 -0.03 31.33 -0.04 C40.36 -0.05 49.39 -0.06 58.43 -0.05 C65.77 -0.05 73.11 -0.05 80.45 -0.05 C81.49 -0.05 82.54 -0.05 83.62 -0.05 C85.74 -0.06 87.86 -0.06 89.99 -0.06 C109.89 -0.07 129.8 -0.07 149.71 -0.06 C167.92 -0.05 186.13 -0.06 204.34 -0.08 C223.04 -0.11 241.74 -0.12 260.44 -0.11 C270.94 -0.11 281.44 -0.11 291.94 -0.13 C300.87 -0.14 309.81 -0.14 318.75 -0.12 C323.31 -0.12 327.86 -0.11 332.42 -0.13 C336.6 -0.14 340.77 -0.14 344.95 -0.12 C346.46 -0.12 347.97 -0.12 349.47 -0.13 C361.56 -0.21 371.79 1.7 380.75 10.39 C387.87 19.09 390.21 27.34 390.14 38.38 C390.15 40.01 390.15 40.01 390.16 41.67 C390.17 45.3 390.17 48.93 390.16 52.56 C390.16 55.16 390.17 57.77 390.18 60.37 C390.2 66.71 390.2 73.04 390.19 79.38 C390.19 84.53 390.19 89.69 390.2 94.84 C390.2 95.57 390.2 96.31 390.2 97.06 C390.2 98.55 390.2 100.05 390.2 101.54 C390.22 115.52 390.21 129.5 390.2 143.48 C390.19 156.26 390.2 169.03 390.23 181.81 C390.25 194.94 390.26 208.08 390.25 221.21 C390.25 228.58 390.25 235.94 390.27 243.31 C390.29 250.24 390.28 257.17 390.26 264.1 C390.26 266.64 390.26 269.18 390.27 271.72 C390.29 275.19 390.27 278.67 390.26 282.14 C390.27 283.14 390.28 284.14 390.29 285.17 C390.18 295.19 386.79 304.13 379.75 311.39 C369.62 319.68 360.17 320.83 347.51 320.78 C345.95 320.78 344.39 320.79 342.83 320.79 C338.56 320.81 334.29 320.8 330.02 320.79 C325.4 320.79 320.79 320.8 316.18 320.81 C307.15 320.83 298.12 320.83 289.08 320.83 C281.74 320.82 274.4 320.82 267.06 320.83 C265.49 320.83 265.49 320.83 263.89 320.83 C261.77 320.83 259.65 320.83 257.52 320.83 C237.62 320.85 217.71 320.84 197.8 320.83 C179.59 320.82 161.38 320.83 143.17 320.86 C124.47 320.88 105.77 320.89 87.06 320.89 C76.57 320.88 66.07 320.88 55.57 320.9 C46.64 320.92 37.7 320.92 28.76 320.9 C24.2 320.89 19.65 320.89 15.09 320.9 C10.91 320.92 6.74 320.91 2.56 320.89 C1.05 320.89 -0.46 320.89 -1.96 320.9 C-14.05 320.98 -24.29 319.08 -33.25 310.39 C-40.36 301.69 -42.7 293.44 -42.63 282.39 C-42.64 281.31 -42.64 280.22 -42.65 279.1 C-42.66 275.48 -42.66 271.85 -42.65 268.22 C-42.65 265.61 -42.66 263.01 -42.67 260.4 C-42.69 254.07 -42.69 247.73 -42.68 241.39 C-42.68 236.24 -42.68 231.09 -42.69 225.94 C-42.69 225.2 -42.69 224.47 -42.69 223.71 C-42.69 222.22 -42.69 220.73 -42.69 219.24 C-42.71 205.26 -42.7 191.28 -42.69 177.3 C-42.68 164.52 -42.69 151.74 -42.72 138.97 C-42.74 125.83 -42.75 112.7 -42.74 99.57 C-42.74 92.2 -42.74 84.83 -42.76 77.46 C-42.78 70.53 -42.77 63.6 -42.75 56.68 C-42.75 54.13 -42.75 51.59 -42.76 49.05 C-42.78 45.58 -42.76 42.11 -42.75 38.63 C-42.76 37.63 -42.77 36.63 -42.78 35.6 C-42.67 25.58 -39.28 16.65 -32.25 9.39 C-22.11 1.1 -12.66 -0.06 0 0 Z M-9.25 33.39 C-10.17 36.15 -10.37 37.77 -10.37 40.62 C-10.37 41.49 -10.38 42.36 -10.38 43.25 C-10.38 44.21 -10.37 45.16 -10.37 46.14 C-10.37 47.16 -10.38 48.17 -10.38 49.21 C-10.38 52.62 -10.38 56.04 -10.37 59.45 C-10.38 61.89 -10.38 64.32 -10.38 66.76 C-10.38 72.71 -10.38 78.66 -10.38 84.6 C-10.38 89.43 -10.38 94.27 -10.38 99.1 C-10.38 99.78 -10.38 100.47 -10.38 101.18 C-10.38 102.57 -10.38 103.97 -10.38 105.37 C-10.38 118.46 -10.38 131.55 -10.37 144.65 C-10.37 155.89 -10.37 167.13 -10.38 178.37 C-10.38 191.42 -10.38 204.46 -10.38 217.51 C-10.38 218.9 -10.38 220.29 -10.38 221.68 C-10.38 222.36 -10.38 223.05 -10.38 223.75 C-10.38 228.58 -10.38 233.41 -10.38 238.23 C-10.38 244.73 -10.38 251.22 -10.38 257.72 C-10.38 260.1 -10.38 262.49 -10.38 264.88 C-10.38 268.13 -10.38 271.38 -10.37 274.63 C-10.37 275.59 -10.38 276.54 -10.38 277.52 C-10.38 278.39 -10.37 279.26 -10.37 280.15 C-10.37 280.9 -10.37 281.66 -10.37 282.43 C-10.31 284.6 -10.31 284.6 -9.25 287.39 C-6.24 288.39 -4.27 288.51 -1.13 288.5 C0.43 288.5 0.43 288.5 2.02 288.5 C3.14 288.5 4.27 288.49 5.42 288.49 C6.57 288.48 7.72 288.48 8.91 288.48 C12.59 288.48 16.26 288.46 19.94 288.45 C22.43 288.45 24.93 288.44 27.42 288.44 C33.53 288.43 39.64 288.41 45.75 288.39 C46.06 275.88 46.29 263.37 46.43 250.86 C46.5 245.05 46.59 239.24 46.74 233.43 C46.88 227.83 46.95 222.22 46.99 216.61 C47.01 214.47 47.06 212.33 47.13 210.2 C47.98 199.46 47.98 199.46 44.48 189.75 C41.81 187.46 39.2 186.2 35.96 184.8 C29.86 182.11 26.93 176.91 24.2 171.06 C22.06 165.22 22.32 159.32 22.32 153.18 C22.31 151.22 22.31 151.22 22.29 149.21 C22.26 145.65 22.25 142.08 22.25 138.52 C22.24 134.78 22.21 131.05 22.19 127.32 C22.15 120.25 22.12 113.19 22.09 106.13 C22.07 98.09 22.02 90.04 21.98 82 C21.88 65.46 21.81 48.93 21.75 32.39 C17.82 32.36 13.89 32.34 9.96 32.33 C7.96 32.33 5.97 32.31 3.97 32.3 C2.72 32.3 1.46 32.29 0.17 32.29 C-0.98 32.28 -2.14 32.28 -3.33 32.27 C-6.31 32.25 -6.31 32.25 -9.25 33.39 Z M101.75 32.39 C101.75 36.36 101.74 40.34 101.73 44.44 C101.69 57.59 101.64 70.74 101.57 83.89 C101.53 91.86 101.5 99.84 101.48 107.81 C101.47 114.76 101.44 121.71 101.4 128.67 C101.38 132.34 101.36 136.02 101.36 139.7 C101.36 143.81 101.33 147.93 101.3 152.04 C101.31 153.25 101.31 154.46 101.32 155.7 C101.18 166.54 98.24 175.38 90.75 183.39 C86.72 186.89 82.58 188.97 77.75 191.39 C77.75 223.4 77.75 255.41 77.75 288.39 C104.15 288.39 130.55 288.39 157.75 288.39 C158.13 271.34 158.13 271.34 158.39 254.3 C158.47 247.34 158.56 240.39 158.74 233.43 C158.88 227.83 158.95 222.22 158.99 216.61 C159.01 214.47 159.06 212.33 159.13 210.2 C159.98 199.46 159.98 199.46 156.48 189.75 C153.81 187.46 151.2 186.2 147.96 184.8 C141.86 182.11 138.93 176.91 136.2 171.06 C134.06 165.22 134.32 159.32 134.32 153.18 C134.31 151.22 134.31 151.22 134.29 149.21 C134.26 145.65 134.25 142.08 134.25 138.52 C134.24 134.78 134.21 131.05 134.19 127.32 C134.15 120.25 134.12 113.19 134.09 106.13 C134.07 98.09 134.02 90.04 133.98 82 C133.88 65.46 133.81 48.93 133.75 32.39 C123.19 32.39 112.63 32.39 101.75 32.39 Z M213.75 32.39 C213.75 36.36 213.74 40.34 213.73 44.44 C213.69 57.59 213.64 70.74 213.57 83.89 C213.53 91.86 213.5 99.84 213.48 107.81 C213.47 114.76 213.44 121.71 213.4 128.67 C213.38 132.34 213.36 136.02 213.36 139.7 C213.36 143.81 213.33 147.93 213.3 152.04 C213.31 153.25 213.31 154.46 213.32 155.7 C213.18 166.54 210.24 175.38 202.75 183.39 C198.72 186.89 194.58 188.97 189.75 191.39 C189.75 223.4 189.75 255.41 189.75 288.39 C216.15 288.39 242.55 288.39 269.75 288.39 C270.13 271.34 270.13 271.34 270.39 254.3 C270.47 247.34 270.56 240.39 270.74 233.43 C270.88 227.83 270.95 222.22 270.99 216.61 C271.01 214.47 271.06 212.33 271.13 210.2 C271.98 199.46 271.98 199.46 268.48 189.75 C265.81 187.46 263.2 186.2 259.96 184.8 C253.86 182.11 250.93 176.91 248.2 171.06 C246.06 165.22 246.32 159.32 246.32 153.18 C246.31 151.22 246.31 151.22 246.29 149.21 C246.26 145.65 246.25 142.08 246.25 138.52 C246.24 134.78 246.21 131.05 246.19 127.32 C246.15 120.25 246.12 113.19 246.09 106.13 C246.07 98.09 246.02 90.04 245.98 82 C245.88 65.46 245.81 48.93 245.75 32.39 C235.19 32.39 224.63 32.39 213.75 32.39 Z M325.75 32.39 C325.75 33.4 325.75 33.4 325.75 34.44 C325.71 50.92 325.65 67.41 325.57 83.89 C325.53 91.86 325.5 99.84 325.48 107.81 C325.47 114.76 325.44 121.71 325.4 128.67 C325.38 132.34 325.36 136.02 325.36 139.7 C325.36 143.81 325.33 147.93 325.3 152.04 C325.31 153.25 325.31 154.46 325.32 155.7 C325.18 166.54 322.24 175.38 314.75 183.39 C310.72 186.89 306.58 188.97 301.75 191.39 C301.75 223.4 301.75 255.41 301.75 288.39 C310.27 288.41 318.79 288.43 327.57 288.45 C331.6 288.46 331.6 288.46 335.71 288.48 C337.84 288.48 339.96 288.48 342.09 288.49 C343.19 288.49 344.3 288.5 345.44 288.5 C347.03 288.5 347.03 288.5 348.64 288.5 C350.02 288.5 350.02 288.5 351.42 288.51 C353.91 288.48 353.91 288.48 356.75 287.39 C357.68 284.62 357.88 283 357.88 280.15 C357.88 279.29 357.89 278.42 357.89 277.52 C357.89 276.57 357.88 275.62 357.88 274.63 C357.88 273.62 357.89 272.61 357.89 271.56 C357.89 268.15 357.89 264.74 357.88 261.33 C357.89 258.89 357.89 256.45 357.89 254.01 C357.89 248.07 357.89 242.12 357.89 236.17 C357.89 231.34 357.89 226.51 357.89 221.68 C357.89 220.65 357.89 220.65 357.89 219.6 C357.89 218.2 357.89 216.81 357.89 215.41 C357.89 202.32 357.89 189.22 357.88 176.13 C357.88 164.89 357.88 153.65 357.89 142.41 C357.89 129.36 357.89 116.31 357.89 103.27 C357.89 101.88 357.89 100.49 357.89 99.1 C357.89 98.41 357.89 97.73 357.89 97.02 C357.89 92.2 357.89 87.37 357.89 82.54 C357.89 76.05 357.89 69.55 357.89 63.06 C357.88 60.67 357.89 58.28 357.89 55.89 C357.89 52.64 357.89 49.39 357.88 46.14 C357.88 45.19 357.89 44.23 357.89 43.25 C357.88 42.38 357.88 41.52 357.88 40.62 C357.88 39.87 357.88 39.12 357.88 38.35 C357.82 36.17 357.82 36.17 356.75 33.39 C353.4 32.27 350.87 32.27 347.34 32.29 C346.08 32.29 344.83 32.3 343.54 32.3 C341.57 32.31 341.57 32.31 339.57 32.33 C338.23 32.33 336.9 32.33 335.56 32.34 C332.29 32.35 329.02 32.37 325.75 32.39 Z " fill="currentColor" transform="translate(82.24508666992188,95.61231994628906)"/></svg></button><button class="kx-sw" id="rep-pref-diag" style="margin-left:auto" onclick="acdToggleActivo()" aria-label="Diagrama"></button></div>
   <div class="kx-sw-row"><span class="kx-sw-lbl">Notas de DM</span><button class="kx-sw active" id="rep-pref-dm" onclick="repTogglePref('showDM')" aria-label="Notas de DM"></button></div>
+  <div class="kx-sw-row"><span class="kx-sw-lbl">Anotaciones</span><button class="kx-sw active" id="rep-pref-anot" onclick="kxTogglePrefAnot()" aria-label="Anotaciones"></button></div>
   <div class="kx-sw-row"><span class="kx-sw-lbl">Seguir acordes En Vivo<span id="kx-envivo-ico" style="display:flex"></span></span><button class="kx-sw" id="rep-pref-sav" onclick="savTogglePref()" aria-label="Seguir acordes En Vivo"></button></div>
   <div class="rep-pref-row" id="rep-sav-aj-row" style="display:none"><span class="rep-pref-label">Ajuste acordes en vivo</span><div class="rep-step-ctrl"><button class="rep-step-btn" onclick="savAjustar(-0.1)">&#8722;</button><span class="rep-step-val" id="rep-sav-aj-val">0.0 s</span><button class="rep-step-btn" onclick="savAjustar(0.1)">+</button></div></div>
   <div class="kx-sw-row"><span class="kx-sw-lbl">Modo Ensayo</span><button class="kx-sw" id="rep-pref-ens" onclick="ensTogglePref()" aria-label="Modo Ensayo"></button></div>
