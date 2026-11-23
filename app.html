@@ -1008,18 +1008,18 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .afin-btn{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:#16181c;border:1px solid #2b2f36;color:#9aa0a6;cursor:pointer;padding:0;flex-shrink:0}
 .afin-btn.on{background:#2563eb;border-color:#2563eb;color:#fff}
 .afin-btn.on.ok{background:#2ecc71;border-color:#2ecc71;color:#06280f}
-.afin-card{position:absolute;left:10px;right:10px;bottom:calc(100% + 10px);z-index:60;display:flex;align-items:center;gap:18px;background:#0a0b0d;border:2px solid #2563eb;border-radius:22px;padding:14px 20px;box-shadow:0 10px 30px rgba(0,0,0,.6);color:#e74c3c;transition:border-color .15s,color .15s}
+.afin-card{position:absolute;left:50%;transform:translateX(-50%);width:min(320px,calc(100% - 20px));box-sizing:border-box;bottom:calc(100% + 10px);z-index:60;display:flex;align-items:center;gap:12px;background:#0a0b0d;border:2px solid #2563eb;border-radius:20px;padding:10px 16px;box-shadow:0 10px 30px rgba(0,0,0,.6);color:#e74c3c;transition:border-color .15s,color .15s}
 .afin-card.ok{border-color:#2ecc71;color:#2ecc71}
 .afin-card.mudo{color:#6b7078}
-.afin-note{display:flex;align-items:flex-start;min-width:78px;font-weight:700;line-height:.9}
-.afin-note span{font-size:4.2rem}
-.afin-note sup{font-size:1.5rem;margin-top:6px}
+.afin-note{display:flex;align-items:flex-start;min-width:58px;font-weight:700;line-height:.9}
+.afin-note span{font-size:3.2rem}
+.afin-note sup{font-size:1.15rem;margin-top:4px}
 .afin-scale{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
 .afin-tri{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid currentColor;margin-bottom:6px}
-.afin-ticks{position:relative;width:100%;height:46px;display:flex;justify-content:space-between;align-items:center}
-.afin-ticks i{display:block;width:2px;height:20px;background:#d7d9dc;border-radius:1px;opacity:.9}
-.afin-ticks i.big{height:30px}
-.afin-ticks i.mid{height:40px}
+.afin-ticks{position:relative;width:100%;height:38px;display:flex;justify-content:space-between;align-items:center}
+.afin-ticks i{display:block;width:2px;height:16px;background:#d7d9dc;border-radius:1px;opacity:.9}
+.afin-ticks i.big{height:24px}
+.afin-ticks i.mid{height:32px}
 .afin-line{position:absolute;top:0;bottom:0;left:50%;width:4px;margin-left:-2px;border-radius:2px;background:currentColor;transition:left .09s linear}
 .afin-card.mudo .afin-line{opacity:.35}
 .afin-c{font-size:.82rem;font-weight:700;margin-top:6px;min-height:1.1em}
@@ -6669,29 +6669,43 @@ var AFIN_ICO = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stro
 var afin = { ctx: null, an: null, st: null, raf: 0, buf: null, hist: [], ultimo: 0 }
 var AFIN_NOTAS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B']
 function afinDetectar(buf, sr){
-  var n = buf.length, rms = 0, i, k
+  // McLeod (NSDF): normaliza por la energía de cada tramo, así no se inclina hacia notas más agudas
+  var n = buf.length, i, k, rms = 0
   for(i = 0; i < n; i++) rms += buf[i] * buf[i]
   rms = Math.sqrt(rms / n)
-  if(rms < 0.012) return -1
-  var minL = Math.floor(sr / 1200), maxL = Math.min(Math.floor(sr / 60), n >> 1)
-  var best = -1, bestC = 0, c = new Float32Array(maxL + 2)
+  if(rms < 0.01) return -1
+  var minL = Math.max(2, Math.floor(sr / 2000)), maxL = Math.min(Math.floor(sr / 55), (n >> 1) - 2)
+  var W = n - maxL - 2, nsdf = new Float32Array(maxL + 2)
+  var e0 = 0
+  for(i = 0; i < W; i++) e0 += buf[i] * buf[i]
+  var eK = 0
+  for(i = 0; i < W; i++) eK += buf[i + minL] * buf[i + minL]
   for(k = minL; k <= maxL + 1; k++){
-    var sum = 0
-    for(i = 0; i < n - k; i += 2) sum += buf[i] * buf[i + k]
-    c[k] = sum
+    var ac = 0
+    for(i = 0; i < W; i++) ac += buf[i] * buf[i + k]
+    var m = e0 + eK
+    nsdf[k] = m > 0 ? 2 * ac / m : 0
+    eK += buf[W + k] * buf[W + k] - buf[k] * buf[k]   // desliza la energía del tramo desplazado
   }
-  var c0 = 0; for(i = 0; i < n; i += 2) c0 += buf[i] * buf[i]
-  // primer pico fuerte (evita saltar a octavas)
-  var umbral = 0.0
-  for(k = minL; k <= maxL; k++) if(c[k] > umbral) umbral = c[k]
-  umbral *= 0.88
-  for(k = minL + 1; k < maxL; k++){
-    if(c[k] > umbral && c[k] >= c[k - 1] && c[k] >= c[k + 1]){ best = k; bestC = c[k]; break }
+  // picos positivos tras cada cruce por cero; el primero cercano al máximo es el tono
+  var picos = [], pos = false, kmax = -1, vmax = 0
+  for(k = minL + 1; k <= maxL; k++){
+    if(nsdf[k - 1] <= 0 && nsdf[k] > 0) { pos = true; kmax = -1; vmax = 0 }
+    if(pos){
+      if(nsdf[k] > vmax && nsdf[k] >= nsdf[k - 1] && nsdf[k] >= nsdf[k + 1]){ vmax = nsdf[k]; kmax = k }
+      if(nsdf[k] <= 0 && nsdf[k - 1] > 0){ if(kmax > 0) picos.push([kmax, vmax]); pos = false }
+    }
   }
-  if(best < 0 || bestC < c0 * 0.3) return -1
-  var a = c[best - 1], b = c[best], d = c[best + 1], den = a - 2 * b + d
-  var sh = den ? 0.5 * (a - d) / den : 0
-  return sr / (best + sh)
+  if(pos && kmax > 0) picos.push([kmax, vmax])
+  if(!picos.length) return -1
+  var top = 0; picos.forEach(function(q){ if(q[1] > top) top = q[1] })
+  if(top < 0.55) return -1
+  var elegido = null
+  for(var q = 0; q < picos.length; q++){ if(picos[q][1] >= 0.9 * top){ elegido = picos[q]; break } }
+  var b = elegido[0], a0 = nsdf[b - 1], b0 = nsdf[b], c0 = nsdf[b + 1], den = a0 - 2 * b0 + c0
+  var sh = den ? 0.5 * (a0 - c0) / den : 0
+  if(sh > 1 || sh < -1) sh = 0
+  return sr / (b + sh)
 }
 function afinVista(f){
   var card = document.getElementById('afin-card'); if(!card) return
@@ -6718,7 +6732,7 @@ function afinLoop(){
   afin.ultimo = t
   afin.an.getFloatTimeDomainData(afin.buf)
   var f = afinDetectar(afin.buf, afin.ctx.sampleRate)
-  afin.hist.push(f); if(afin.hist.length > 5) afin.hist.shift()
+  afin.hist.push(f); if(afin.hist.length > 7) afin.hist.shift()
   var v = afin.hist.filter(function(x){ return x > 0 }).sort(function(a, b){ return a - b })
   if(v.length < 3){ afinVista(-1); return }
   afinVista(v[v.length >> 1])
