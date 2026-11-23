@@ -6695,7 +6695,10 @@ window.afinToggle = async function(){
     src.connect(afin.an)
     afin.buf = new Float32Array(afin.an.fftSize); afin.hist = []
   } catch(e){
-    showToast('No se pudo usar el micrófono. Revisa el permiso del navegador.', '#e74c3c'); return
+    if(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) showToast('Necesitamos el micrófono para afinar. Permítelo en el candado de la barra de direcciones (o en los ajustes del sistema) y vuelve a tocar el afinador.', '#e67e22')
+    else if(e && e.name === 'NotFoundError') showToast('No se encontró ningún micrófono.', '#e74c3c')
+    else showToast('No se pudo usar el micrófono.', '#e74c3c')
+    return
   }
   window.afinOn = true
   var d = document.getElementById('ens-drawer'); if(!d){ afinStop(); return }
