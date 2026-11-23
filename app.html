@@ -5999,6 +5999,8 @@ function kxNomRoot(root, acc){
   if(pc < 0) return root
   if(acc === 's') return KX_SHARP[pc]
   if(acc === 'b') return KX_FLAT[pc]
+  if(acc === 'cb') return pc === 11 ? 'Cb' : (pc === 4 ? 'Fb' : KX_FLAT[pc])
+  if(acc === 'es') return pc === 5 ? 'E#' : (pc === 0 ? 'B#' : KX_SHARP[pc])
   var f = kxFmtEfectivo()
   return f ? f[pc] : root
 }
@@ -6231,6 +6233,9 @@ window.kxRenAplicar = function(){
   var t = (repCurKey === repOrigKey) ? val : repTrText('[' + val + ']', repCurKey, repOrigKey).slice(1, -1)
   var m = /^\(?([A-G])([#b]?)/.exec(val.split(' ')[0])
   var acc = m ? (m[2] === '#' ? 's' : (m[2] === 'b' ? 'b' : '')) : ''
+  var rt0 = (m ? m[1] + m[2] : '')
+  if(rt0 === 'Cb' || rt0 === 'Fb') acc = 'cb'
+  else if(rt0 === 'E#' || rt0 === 'B#') acc = 'es'
   kxAcPers[sel.s] = kxAcPers[sel.s] || {}
   kxAcPers[sel.s][sel.i] = { t: t, o: inf.raw, a: acc }
   kxGuardarAcPers()
