@@ -258,7 +258,8 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .dropdown-item.danger{color:var(--text)}
 .dropdown-item svg{width:16px;height:16px;color:inherit;flex-shrink:0}
 /* Menús ⋯: texto a la izquierda, ícono al extremo derecho, líneas divisorias, todos iguales (sin rojo) */
-.dropdown-item{flex-direction:row-reverse;justify-content:space-between;border-top:1px solid rgba(255,255,255,.14)}
+.dropdown-item{justify-content:space-between;border-top:1px solid rgba(255,255,255,.14)}
+.dropdown-item svg{order:2}
 .dropdown-menu > .dropdown-item:first-child{border-top:none}
 /* Enlaces adicionales: lista con líneas divisorias */
 .rep-ad-row{display:flex;align-items:center;gap:10px;padding:13px 2px;border-top:1px solid rgba(255,255,255,.14);position:relative;cursor:pointer}
@@ -4849,7 +4850,7 @@ var enlaceMenuAbiertoIdx = null
 
 window.abrirEnlaces = function(rcId, cancionId, esAdmin) {
   enlacesRcId = rcId; enlacesCancionId = cancionId; enlacesEsAdmin = esAdmin
-  enlaceEditandoIdx = null; enlaceMenuAbiertoIdx = null
+  enlaceEditandoIdx = null; enlaceMenuAbiertoIdx = null; enlaceFormAbierto = false
   var rc = repSongsCache.find(function(x){ return x.id === rcId })
   enlacesCurrent = (rc && rc.mis_canciones && rc.mis_canciones.enlaces) ? JSON.parse(JSON.stringify(rc.mis_canciones.enlaces)) : []
   renderEnlaces()
@@ -4859,20 +4860,22 @@ window.abrirEnlaces = function(rcId, cancionId, esAdmin) {
   document.getElementById('modal-enlaces').classList.add('active')
 }
 
+var enlaceFormAbierto = false
 function renderEnlaces() {
   var list = document.getElementById('enlaces-list')
   if (enlacesCurrent.length === 0) {
-    list.innerHTML = '<p style="font-size:.82rem;color:var(--text2);text-align:center;padding:8px 0">' + (enlacesEsAdmin ? 'Agrega el primer enlace abajo.' : 'Sin enlaces adicionales.') + '</p>'
+    list.innerHTML = '<p style="font-size:.82rem;color:var(--text2);text-align:center;padding:8px 0">' + (enlacesEsAdmin ? 'Toca + para agregar el primer enlace.' : 'Sin enlaces adicionales.') + '</p>'
   } else {
     list.innerHTML = enlacesCurrent.map(function(e, i) {
-      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;position:relative">' +
-        '<a href="' + e.url + '" target="_blank" style="flex:1;font-size:.83rem;color:var(--accent);text-decoration:none;word-break:break-all">' + (e.titulo || e.url) + '</a>' +
+      return '<div class="rep-ad-row" onclick="abrirEnlaceCancion(' + i + ')">' +
+        '<span class="rep-ad-t">' + esc(e.titulo || e.url) + '</span>' +
+        REP_AD_IC_LINK +
         (enlacesEsAdmin ? (
-          '<button onclick="toggleMenuEnlace(event,' + i + ')" style="background:rgba(120,120,120,.15);border:none;color:var(--text);border-radius:5px;cursor:pointer;padding:3px 9px;font-size:.9rem;line-height:1">⋯</button>' +
+          '<button class="rep-ad-more" onclick="toggleMenuEnlace(event,' + i + ')">⋯</button>' +
           (enlaceMenuAbiertoIdx === i ? (
-            '<div style="position:absolute;right:0;top:26px;background:var(--bg2,#222);border:1px solid rgba(255,255,255,.12);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:20;min-width:120px;overflow:hidden">' +
-              '<div onclick="editarEnlace(' + i + ')" style="padding:8px 14px;font-size:.82rem;cursor:pointer;color:var(--text)">Editar</div>' +
-              '<div onclick="confirmarEliminarEnlace(' + i + ')" style="padding:8px 14px;font-size:.82rem;cursor:pointer;color:#e74c3c;border-top:1px solid rgba(255,255,255,.08)">Eliminar</div>' +
+            '<div class="rep-ad-menu" onclick="event.stopPropagation()">' +
+              '<div onclick="editarEnlace(' + i + ')">Editar' + REP_AD_IC_EDIT + '</div>' +
+              '<div onclick="confirmarEliminarEnlace(' + i + ')">Eliminar' + REP_AD_IC_DEL + '</div>' +
             '</div>'
           ) : '')
         ) : '') +
@@ -4881,6 +4884,31 @@ function renderEnlaces() {
   }
   document.getElementById('enlaces-form-admin').style.display = enlacesEsAdmin ? '' : 'none'
   document.getElementById('enlaces-form-viewer').style.display = enlacesEsAdmin ? 'none' : ''
+  var abierto = enlacesEsAdmin && (enlaceFormAbierto || enlaceEditandoIdx !== null)
+  var campos = document.getElementById('enlace-campos'), cerrado = document.getElementById('enlace-cerrado')
+  if (campos) campos.style.display = abierto ? '' : 'none'
+  if (cerrado) cerrado.style.display = abierto ? 'none' : ''
+}
+
+window.abrirEnlaceCancion = function(idx) {
+  var e = enlacesCurrent[idx]
+  if (!e || !e.url) return
+  window.open(e.url, '_blank', 'noopener')
+}
+window.abrirFormEnlace = function() {
+  enlaceFormAbierto = true; enlaceEditandoIdx = null
+  document.getElementById('enlace-titulo').value = ''
+  document.getElementById('enlace-url').value = ''
+  document.getElementById('enlace-agregar-btn').textContent = 'Agregar'
+  renderEnlaces()
+  setTimeout(function(){ var t = document.getElementById('enlace-titulo'); if (t) t.focus() }, 30)
+}
+window.cancelarFormEnlace = function() {
+  enlaceFormAbierto = false; enlaceEditandoIdx = null
+  document.getElementById('enlace-titulo').value = ''
+  document.getElementById('enlace-url').value = ''
+  document.getElementById('enlace-agregar-btn').textContent = 'Agregar'
+  renderEnlaces()
 }
 
 window.toggleMenuEnlace = function(ev, idx) {
@@ -4922,6 +4950,7 @@ window.agregarEnlace = async function() {
   } else {
     enlacesCurrent.push({ titulo: titulo || url, url: url })
   }
+  enlaceFormAbierto = false
   await guardarEnlaces()
   document.getElementById('enlace-titulo').value = ''
   document.getElementById('enlace-url').value = ''
@@ -4940,7 +4969,7 @@ async function guardarEnlaces() {
 }
 
 window.cerrarEnlaces = function() {
-  enlaceEditandoIdx = null; enlaceMenuAbiertoIdx = null
+  enlaceEditandoIdx = null; enlaceMenuAbiertoIdx = null; enlaceFormAbierto = false
   document.getElementById('modal-enlaces').classList.remove('active')
 }
 
@@ -9901,11 +9930,19 @@ aplicarNavegacionPendiente()
     <div class="modal-title">Enlaces adicionales</div>
     <div id="enlaces-list" style="margin-bottom:14px;min-height:40px"></div>
     <div id="enlaces-form-admin" style="display:none">
-      <input class="modal-input" id="enlace-titulo" placeholder="Titulo (ej: YouTube, Spotify...)"/>
-      <input class="modal-input" id="enlace-url" placeholder="URL (https://...)"/>
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick="cerrarEnlaces()">Cancelar</button>
-        <button class="btn-confirm" id="enlace-agregar-btn" onclick="agregarEnlace()">Agregar</button>
+      <div id="enlace-cerrado">
+        <button class="rep-ad-plus" onclick="abrirFormEnlace()" aria-label="Agregar enlace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <div class="modal-actions" style="margin-top:14px">
+          <button class="btn-confirm" style="flex:1" onclick="cerrarEnlaces()">Cerrar</button>
+        </div>
+      </div>
+      <div id="enlace-campos" style="display:none">
+        <input class="modal-input" id="enlace-titulo" placeholder="Titulo (ej: YouTube, Spotify...)"/>
+        <input class="modal-input" id="enlace-url" placeholder="URL (https://...)"/>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="cancelarFormEnlace()">Cancelar</button>
+          <button class="btn-confirm" id="enlace-agregar-btn" onclick="agregarEnlace()">Agregar</button>
+        </div>
       </div>
     </div>
     <div id="enlaces-form-viewer" style="display:none">
