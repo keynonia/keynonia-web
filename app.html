@@ -1014,6 +1014,8 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
 .afin-note{display:flex;align-items:flex-start;min-width:58px;font-weight:700;line-height:.9}
 .afin-note span{font-size:3.2rem}
 .afin-note sup{font-size:1.15rem;margin-top:4px}
+.afin-ref{position:absolute;right:12px;top:6px;display:flex;align-items:center;gap:4px;font-size:.6rem;color:#8a8f98;font-weight:700}
+.afin-ref button{background:none;border:none;color:#c8cbd1;font-size:.8rem;line-height:1;cursor:pointer;padding:0 3px}
 .afin-scale{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
 .afin-tri{width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:11px solid currentColor;margin-bottom:6px}
 .afin-ticks{position:relative;width:100%;height:38px;display:flex;justify-content:space-between;align-items:center}
@@ -6707,6 +6709,50 @@ function afinDetectar(buf, sr){
   if(sh > 1 || sh < -1) sh = 0
   return sr / (b + sh)
 }
+function afinFFT(re, im){
+  var n = re.length, i, j, bit, t
+  for(i = 1, j = 0; i < n; i++){
+    bit = n >> 1
+    for(; j & bit; bit >>= 1) j ^= bit
+    j ^= bit
+    if(i < j){ t = re[i]; re[i] = re[j]; re[j] = t; t = im[i]; im[i] = im[j]; im[j] = t }
+  }
+  for(var len = 2; len <= n; len <<= 1){
+    var ang = -2 * Math.PI / len, wr = Math.cos(ang), wi = Math.sin(ang), h = len >> 1
+    for(i = 0; i < n; i += len){
+      var cr = 1, ci = 0
+      for(j = 0; j < h; j++){
+        var a = i + j, b = a + h
+        var vr = re[b] * cr - im[b] * ci, vi = re[b] * ci + im[b] * cr
+        re[b] = re[a] - vr; im[b] = im[a] - vi; re[a] += vr; im[a] += vi
+        var nc = cr * wr - ci * wi; ci = cr * wi + ci * wr; cr = nc
+      }
+    }
+  }
+}
+// Afina la frecuencia midiendo directamente el parcial fundamental en el espectro (ventana Hann + relleno de ceros).
+// En pianos los armónicos superiores salen algo "estirados" y desvían el método por periodo; el espectro no.
+var AFIN_N = 32768
+function afinRefinar(buf, sr, f0){
+  var m = Math.min(buf.length, 8192), off = buf.length - m, N = AFIN_N, i
+  var re = new Float64Array(N), im = new Float64Array(N)
+  for(i = 0; i < m; i++) re[i] = buf[off + i] * (0.5 - 0.5 * Math.cos(2 * Math.PI * i / (m - 1)))
+  afinFFT(re, im)
+  var bw = sr / N, lo = Math.max(2, Math.floor(f0 * 0.94 / bw)), hi = Math.ceil(f0 * 1.06 / bw), k, best = lo, mg = new Float64Array(hi + 2)
+  for(k = lo - 1; k <= hi + 1; k++) mg[k] = Math.hypot(re[k], im[k])
+  for(k = lo; k <= hi; k++) if(mg[k] > mg[best]) best = k
+  if(best <= lo || best >= hi || mg[best] <= 0) return f0
+  var a = Math.log(mg[best - 1] + 1e-12), b = Math.log(mg[best] + 1e-12), c = Math.log(mg[best + 1] + 1e-12)
+  var den = a - 2 * b + c, d = den ? 0.5 * (a - c) / den : 0
+  var f = (best + d) * bw
+  return Math.abs(1200 * Math.log2(f / f0)) < 50 ? f : f0
+}
+function afinA4(){ var v = 440; try { v = parseFloat(localStorage.getItem('keynonia_afin_a4')) || 440 } catch(e){} return Math.min(466, Math.max(415, v)) }
+window.afinA4Mas = function(d){
+  var v = Math.min(466, Math.max(415, afinA4() + d))
+  try { localStorage.setItem('keynonia_afin_a4', String(v)) } catch(e){}
+  var e = document.getElementById('afin-a4'); if(e) e.textContent = 'A=' + v
+}
 function afinVista(f){
   var card = document.getElementById('afin-card'); if(!card) return
   var nEl = document.getElementById('afin-n'), sEl = document.getElementById('afin-s'), ln = document.getElementById('afin-line'), ce = document.getElementById('afin-c')
@@ -6715,7 +6761,7 @@ function afinVista(f){
     nEl.textContent = '–'; sEl.textContent = ''; ce.textContent = ''; ln.style.left = '50%'
     return
   }
-  var midi = 69 + 12 * Math.log2(f / 440), r = Math.round(midi), cents = Math.round((midi - r) * 100)
+  var midi = 69 + 12 * Math.log2(f / afinA4()), r = Math.round(midi), cents = Math.round((midi - r) * 100)
   var nombre = AFIN_NOTAS[((r % 12) + 12) % 12]
   card.classList.remove('mudo')
   nEl.textContent = nombre.charAt(0); sEl.textContent = nombre.length > 1 ? '#' : ''
@@ -6731,7 +6777,8 @@ function afinLoop(){
   var t = performance.now(); if(t - afin.ultimo < 55) return
   afin.ultimo = t
   afin.an.getFloatTimeDomainData(afin.buf)
-  var f = afinDetectar(afin.buf, afin.ctx.sampleRate)
+  var sr = afin.ctx.sampleRate, f = afinDetectar(afin.buf.subarray(afin.buf.length - 4096), sr)
+  if(f > 0) f = afinRefinar(afin.buf, sr, f)
   afin.hist.push(f); if(afin.hist.length > 7) afin.hist.shift()
   var v = afin.hist.filter(function(x){ return x > 0 }).sort(function(a, b){ return a - b })
   if(v.length < 3){ afinVista(-1); return }
@@ -6744,7 +6791,7 @@ window.afinToggle = async function(){
     var AC = window.AudioContext || window.webkitAudioContext
     afin.ctx = new AC(); afin.st = st
     var src = afin.ctx.createMediaStreamSource(st)
-    afin.an = afin.ctx.createAnalyser(); afin.an.fftSize = 4096
+    afin.an = afin.ctx.createAnalyser(); afin.an.fftSize = 8192
     src.connect(afin.an)
     afin.buf = new Float32Array(afin.an.fftSize); afin.hist = []
   } catch(e){
@@ -6760,6 +6807,7 @@ window.afinToggle = async function(){
   var card = document.createElement('div')
   card.id = 'afin-card'; card.className = 'afin-card mudo'
   card.innerHTML = '<div class="afin-note"><span id="afin-n">–</span><sup id="afin-s"></sup></div>' +
+    '<div class="afin-ref"><button onclick="afinA4Mas(-1)" aria-label="Bajar referencia">−</button><span id="afin-a4">A=' + afinA4() + '</span><button onclick="afinA4Mas(1)" aria-label="Subir referencia">+</button></div>' +
     '<div class="afin-scale"><div class="afin-tri"></div><div class="afin-ticks">' + ticks + '<b class="afin-line" id="afin-line"></b></div><div class="afin-c" id="afin-c"></div></div>'
   d.appendChild(card)
   var b = document.querySelector('.afin-btn'); if(b) b.classList.add('on')
