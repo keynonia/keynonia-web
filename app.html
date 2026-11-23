@@ -255,8 +255,30 @@ body{font-family:'Poppins',sans-serif;background:var(--bg);color:var(--text);dis
 .dropdown-menu.active{display:block}
 .dropdown-item{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;font-size:.85rem;font-weight:500;color:var(--text);transition:background .15s}
 .dropdown-item:hover{background:var(--bg3)}
-.dropdown-item.danger{color:#e74c3c}
+.dropdown-item.danger{color:var(--text)}
 .dropdown-item svg{width:16px;height:16px;color:inherit;flex-shrink:0}
+/* Menús ⋯: texto a la izquierda, ícono al extremo derecho, líneas divisorias, todos iguales (sin rojo) */
+.dropdown-item{flex-direction:row-reverse;justify-content:space-between;border-top:1px solid rgba(255,255,255,.14)}
+.dropdown-menu > .dropdown-item:first-child{border-top:none}
+/* Enlaces adicionales: lista con líneas divisorias */
+.rep-ad-row{display:flex;align-items:center;gap:10px;padding:13px 2px;border-top:1px solid rgba(255,255,255,.14);position:relative;cursor:pointer}
+.rep-ad-row:first-child{border-top:none}
+.rep-ad-row .rep-ad-t{flex:1;min-width:0;font-size:.88rem;font-weight:500;color:var(--text);word-break:break-word}
+.rep-ad-row .rep-ad-ic{width:18px;height:18px;color:var(--text);flex-shrink:0}
+.rep-ad-more{background:none;border:none;color:var(--text);cursor:pointer;padding:2px 6px;font-size:1.05rem;line-height:1;border-radius:6px}
+.rep-ad-more:hover{background:rgba(255,255,255,.08)}
+.rep-ad-menu{position:absolute;right:0;top:100%;background:var(--bg2,#222);border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);z-index:20;min-width:150px;overflow:hidden}
+.rep-ad-menu div{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;font-size:.84rem;cursor:pointer;color:var(--text)}
+.rep-ad-menu div+div{border-top:1px solid rgba(255,255,255,.14)}
+.rep-ad-menu div:hover{background:var(--bg3)}
+.rep-ad-menu svg{width:15px;height:15px;flex-shrink:0}
+.rep-ad-plus{display:flex;align-items:center;justify-content:center;width:100%;padding:12px;background:none;border:1px dashed rgba(255,255,255,.3);border-radius:10px;color:var(--text);cursor:pointer;margin-top:4px}
+.rep-ad-plus:hover{background:rgba(255,255,255,.06)}
+.rep-ad-plus svg{width:20px;height:20px}
+#kn-splash{position:fixed;inset:0;z-index:100000;background:#1a0533;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;font-family:'Poppins',sans-serif}
+#kn-splash img{width:84px;height:84px;border-radius:18px;object-fit:contain;animation:knpulse 1.4s ease-in-out infinite}
+#kn-splash span{color:#fff;font-size:1.4rem;font-weight:700}
+@keyframes knpulse{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
 
 /* VISTA INTERIOR REPERTORIO */
 .rep-view{display:none;position:fixed;inset:0 0 var(--nav-h) 0;background:var(--bg);z-index:600;flex-direction:column}
@@ -994,6 +1016,10 @@ button,.nav-btn,.song-item,.album-card,.artist-card,.lib-tab,.hgrid-item,.panel-
   }catch(e){}
 })()
 </script>
+
+<!-- PANTALLA DE CARGA (hasta saber si hay sesión) -->
+<div id="kn-splash"><img src="https://keynonia.com/logo.png" onerror="this.style.display='none'" alt="Keynonia"><span>Keynonia</span></div>
+<script>setTimeout(function(){ var e=document.getElementById('kn-splash'); if(e) e.style.display='none' }, 15000)</script>
 
 <!-- WEB LOGIN OVERLAY -->
 <div id="web-login-overlay" style="display:none;position:fixed;inset:0;z-index:99999;background:#1a0533;align-items:center;justify-content:center;flex-direction:column;font-family:'Poppins',sans-serif;">
@@ -1785,10 +1811,12 @@ const { data: { session } } = await supabase.auth.getSession()
 if (!session) {
   // WEB: mostrar pantalla de login inline
   document.getElementById('web-login-overlay').style.display = 'flex'
+  var _sp0 = document.getElementById('kn-splash'); if (_sp0) _sp0.remove()
 } else {
   currentUser = session.user
   verificarTerminos()   // antes de cualquier otra pantalla (incluye usuarios sin organización)
   await cargarPerfil()
+  var _sp1 = document.getElementById('kn-splash'); if (_sp1) _sp1.remove()
   cargarInicio()
   setupInicioSearch()
   repInicializarPushWeb()
@@ -3780,6 +3808,7 @@ window.toggleDropdown = function(e, id, esAdminParam) {
   // Mostrar/ocultar ítems según rol
   var soloAdmin = menu.querySelectorAll('.dropdown-item-admin')
   soloAdmin.forEach(function(el) { el.style.display = esAdminParam ? '' : 'none' })
+  Array.prototype.filter.call(menu.children, function(c){ return c.style.display !== 'none' }).forEach(function(c, i){ c.style.borderTop = i === 0 ? 'none' : '' })
 
   menu.style.top = (rect.bottom + 4) + 'px'
   menu.style.right = (window.innerWidth - rect.right) + 'px'
@@ -4027,7 +4056,7 @@ window.abrirAdicionalesRep = function() {
   cerrarDropdown()
   if (!id) return
   repAdicionalesId = id
-  repAdicionalEditandoIdx = null; repAdicionalMenuAbiertoIdx = null
+  repAdicionalEditandoIdx = null; repAdicionalMenuAbiertoIdx = null; repAdicionalFormAbierto = false
 
   var orgActivo = orgs.find(function(o){ return o.activa })
   repAdicionalesEsAdmin = !!(orgActivo && orgActivo.rol === 'administrador')
@@ -4044,22 +4073,28 @@ window.abrirAdicionalesRep = function() {
   abrirModal('modal-rep-adicionales')
 }
 
+var REP_AD_IC_LINK = '<svg class="rep-ad-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>'
+var REP_AD_IC_EDIT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+var REP_AD_IC_DEL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>'
+var repAdicionalFormAbierto = false
+
 function renderAdicionalesRep() {
   var list = document.getElementById('rep-adicionales-list')
   if (repAdicionalesCurrent.length === 0) {
     list.innerHTML = '<p style="font-size:.82rem;color:var(--text2);text-align:center;padding:8px 0">' +
-      (repAdicionalesEsAdmin ? 'Agrega el primer enlace abajo.' : 'Sin enlaces adicionales.') + '</p>'
+      (repAdicionalesEsAdmin ? 'Toca + para agregar el primer enlace.' : 'Sin enlaces adicionales.') + '</p>'
   } else {
     list.innerHTML = repAdicionalesCurrent.map(function(e, i) {
-      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;position:relative">' +
-        '<a href="' + e.url + '" target="_blank" style="flex:1;font-size:.83rem;color:var(--accent);text-decoration:none;word-break:break-all">' + esc(e.titulo || e.url) + '</a>' +
+      return '<div class="rep-ad-row" onclick="abrirEnlaceRep(' + i + ')">' +
+        '<span class="rep-ad-t">' + esc(e.titulo || e.url) + '</span>' +
+        REP_AD_IC_LINK +
         (repAdicionalesEsAdmin
           ? (
-            '<button onclick="toggleMenuEnlaceRep(event,' + i + ')" style="background:rgba(120,120,120,.15);border:none;color:var(--text);border-radius:5px;cursor:pointer;padding:3px 9px;font-size:.9rem;line-height:1">⋯</button>' +
+            '<button class="rep-ad-more" onclick="toggleMenuEnlaceRep(event,' + i + ')">⋯</button>' +
             (repAdicionalMenuAbiertoIdx === i ? (
-              '<div style="position:absolute;right:0;top:26px;background:var(--bg2,#222);border:1px solid rgba(255,255,255,.12);border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.35);z-index:20;min-width:120px;overflow:hidden">' +
-                '<div onclick="editarEnlaceRep(' + i + ')" style="padding:8px 14px;font-size:.82rem;cursor:pointer;color:var(--text)">Editar</div>' +
-                '<div onclick="confirmarEliminarEnlaceRep(' + i + ')" style="padding:8px 14px;font-size:.82rem;cursor:pointer;color:#e74c3c;border-top:1px solid rgba(255,255,255,.08)">Eliminar</div>' +
+              '<div class="rep-ad-menu" onclick="event.stopPropagation()">' +
+                '<div onclick="editarEnlaceRep(' + i + ')">Editar' + REP_AD_IC_EDIT + '</div>' +
+                '<div onclick="confirmarEliminarEnlaceRep(' + i + ')">Eliminar' + REP_AD_IC_DEL + '</div>' +
               '</div>'
             ) : '')
           )
@@ -4069,6 +4104,35 @@ function renderAdicionalesRep() {
   }
   document.getElementById('rep-adicionales-form-admin').style.display  = repAdicionalesEsAdmin ? '' : 'none'
   document.getElementById('rep-adicionales-form-viewer').style.display = repAdicionalesEsAdmin ? 'none' : ''
+  var abierto = repAdicionalesEsAdmin && (repAdicionalFormAbierto || repAdicionalEditandoIdx !== null)
+  var campos = document.getElementById('rep-adicional-campos'), cerrado = document.getElementById('rep-adicional-cerrado')
+  if (campos) campos.style.display = abierto ? '' : 'none'
+  if (cerrado) cerrado.style.display = abierto ? 'none' : ''
+}
+
+window.abrirEnlaceRep = function(idx) {
+  var e = repAdicionalesCurrent[idx]
+  if (!e || !e.url) return
+  window.open(e.url, '_blank', 'noopener')
+}
+
+window.abrirFormAdicionalRep = function() {
+  repAdicionalFormAbierto = true
+  repAdicionalEditandoIdx = null
+  document.getElementById('rep-adicional-titulo').value = ''
+  document.getElementById('rep-adicional-url').value = ''
+  document.getElementById('rep-adicional-agregar-btn').textContent = 'Agregar'
+  renderAdicionalesRep()
+  setTimeout(function(){ var t = document.getElementById('rep-adicional-titulo'); if (t) t.focus() }, 30)
+}
+
+window.cancelarFormAdicionalRep = function() {
+  repAdicionalFormAbierto = false
+  repAdicionalEditandoIdx = null
+  document.getElementById('rep-adicional-titulo').value = ''
+  document.getElementById('rep-adicional-url').value = ''
+  document.getElementById('rep-adicional-agregar-btn').textContent = 'Agregar'
+  renderAdicionalesRep()
 }
 
 window.toggleMenuEnlaceRep = function(ev, idx) {
@@ -4110,6 +4174,7 @@ window.agregarEnlaceRep = async function() {
   } else {
     repAdicionalesCurrent.push({ titulo: titulo || url, url: url })
   }
+  repAdicionalFormAbierto = false
   await guardarAdicionalesRep()
   document.getElementById('rep-adicional-titulo').value = ''
   document.getElementById('rep-adicional-url').value = ''
@@ -8270,15 +8335,23 @@ function ensFuenteInicial(cfg, forzar){
   return 'archivo'
 }
 async function ensCambiarFuente(f){
-  if(f === ens.fuente) return
+  if(f === ens.fuente && ensTieneFuenteActual()) return
+  var c0 = ens.cfg || {}
+  var hay = f === 'youtube' ? !!c0.yt_url : !!c0.enlace_url
+  if(!hay){
+    // No existe esa fuente: el administrador va a subirla (pestaña ya elegida); el resto ve un aviso y el interruptor sigue visible
+    if(ens.esAdmin && (!ens.catalogo || f === 'youtube')){ ensIrVista('enlace'); ens.dTab = f; ensRender(); return }
+    ensPausa(); ens.loop = false; ens.t = 0; ens.paso = 0; ens.errImport = ''
+    ens.fuente = f; ens.marcas = []; ens.acordes = []; ens.slots = null; ens.accTimes = null; ens.accIdx = -1
+    ensSrc = null; ens.archivoListo = false; ens.ytListo = false; ens.wave = null
+    ensRender(); return
+  }
   ensPausa(); ens.loop = false; ens.t = 0; ens.paso = 0; ens.errImport = ''
   ensSetPrefFuente(f)
   await ensAplicarCfg(f)
   ensMostrar(true); ensRender()
 }
 function ensSelectorFuente(){
-  var c = ens.cfg
-  if(!c || !c.enlace_url || !c.yt_url) return ''
   return '<div class="ens-src"><span>Escuchar con:</span><div class="ens-sw">' +
     '<button class="' + (ens.fuente === 'archivo' ? 'on' : '') + '" onclick="ensCambiarFuente(\'archivo\')">Audio</button>' +
     '<button class="' + (ens.fuente === 'youtube' ? 'on' : '') + '" onclick="ensCambiarFuente(\'youtube\')">YouTube</button></div></div>'
@@ -8735,8 +8808,6 @@ function ensSwitchHTML(cls, on, click, icono, texto, titulo){
     icono + '<span class="ens-swl">' + texto + '</span><span class="ens-tg"><i></i></span></button>'
 }
 function ensSwFuente(){
-  var c = ens.cfg
-  if(!c || !c.enlace_url || !c.yt_url) return ''
   return '<div class="ens-sw" title="Escuchar con"><button class="' + (ens.fuente === 'archivo' ? 'on' : '') + '" onclick="ensCambiarFuente(\'archivo\')">Audio</button>' +
     '<button class="' + (ens.fuente === 'youtube' ? 'on' : '') + '" onclick="ensCambiarFuente(\'youtube\')">YouTube</button></div>'
 }
@@ -8745,8 +8816,15 @@ function ensVistaPlay(){
   // Falta el audio en ESTE dispositivo (archivo): guía de descargar e importar
   // (paso 2 = acaba de elegir el audio: se muestra «Audio listo» con los tres botones antes de entrar al ensayo)
   if(ens.fuente === 'archivo' && ensTieneFuenteActual() && (!ens.archivoListo || ens.paso === 2 || ens.paso === 1)) return ensSelectorFuente() + ensVistaImportar()
-  if(!ensTieneFuente()){
-    return '<div class="ens-msg">Todavía no hay audio para esta canción.<br>' + (ens.esAdmin ? 'Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.' : (ens.catalogo ? 'Esta canción del catálogo todavía no tiene video de ensayo.' : 'Tu líder aún no lo ha dejado.')) + '</div>'
+  if(!ensTieneFuenteActual()){
+    var esYt = ens.fuente === 'youtube'
+    var msgF = ensTieneFuente()
+      ? (esYt ? 'Esta canción no contiene YouTube.' : 'Esta canción no contiene audio.')
+      : 'Todavía no hay audio para esta canción.'
+    var ayuda = ens.esAdmin
+      ? 'Usa los tres puntitos <b>⋯</b> para subir un audio o poner un enlace de YouTube.'
+      : (ens.catalogo ? 'Esta canción del catálogo todavía no tiene video de ensayo.' : 'Tu líder aún no lo ha dejado.')
+    return ensSelectorFuente() + '<div class="ens-msg">' + msgF + '<br>' + (ensTieneFuente() && !ens.esAdmin ? '' : ayuda) + '</div>'
   }
   var info = ''
   if(ens.fuente === 'youtube' && ens.ytErr) info = '<div class="ens-err">' + esc(ens.ytErr) + '</div>'
@@ -9844,11 +9922,19 @@ aplicarNavegacionPendiente()
     <div class="modal-title">Adicionales del Repertorio</div>
     <div id="rep-adicionales-list" style="margin-bottom:14px;min-height:40px"></div>
     <div id="rep-adicionales-form-admin" style="display:none">
-      <input class="modal-input" id="rep-adicional-titulo" placeholder="Titulo (ej: Proyecto Ableton, Playlist...)"/>
-      <input class="modal-input" id="rep-adicional-url" placeholder="URL (https://...)"/>
-      <div class="modal-actions">
-        <button class="btn-cancel" onclick="cerrarModal('modal-rep-adicionales')">Cancelar</button>
-        <button class="btn-confirm" id="rep-adicional-agregar-btn" onclick="agregarEnlaceRep()">Agregar</button>
+      <div id="rep-adicional-cerrado">
+        <button class="rep-ad-plus" onclick="abrirFormAdicionalRep()" aria-label="Agregar enlace"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        <div class="modal-actions" style="margin-top:14px">
+          <button class="btn-confirm" style="flex:1" onclick="cerrarModal('modal-rep-adicionales')">Cerrar</button>
+        </div>
+      </div>
+      <div id="rep-adicional-campos" style="display:none">
+        <input class="modal-input" id="rep-adicional-titulo" placeholder="Titulo (ej: Proyecto Ableton, Playlist...)"/>
+        <input class="modal-input" id="rep-adicional-url" placeholder="URL (https://...)"/>
+        <div class="modal-actions">
+          <button class="btn-cancel" onclick="cancelarFormAdicionalRep()">Cancelar</button>
+          <button class="btn-confirm" id="rep-adicional-agregar-btn" onclick="agregarEnlaceRep()">Agregar</button>
+        </div>
       </div>
     </div>
     <div id="rep-adicionales-form-viewer" style="display:none">
