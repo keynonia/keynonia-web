@@ -11582,5 +11582,108 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
   };
 })();
 </script>
+<!-- NOVEDADES (se muestra una vez por actualización hasta que el usuario toque «No mostrar de nuevo») -->
+<style id="nov-css">
+#nov-ov{position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:14px;-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px)}
+#nov-ov.on{display:flex}
+#nov-card{position:relative;width:100%;max-width:440px;max-height:94vh;overflow:hidden;display:flex;flex-direction:column;background:var(--bg2,#1b1d22);border:1px solid var(--border,#2b2f36);border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.6);color:var(--text,#fff);font-family:'Figtree','Poppins',sans-serif}
+#nov-x{position:absolute;top:10px;right:10px;width:32px;height:32px;border-radius:50%;border:none;background:var(--bg3,#2a2d34);color:var(--text,#fff);font-size:1.1rem;line-height:1;cursor:pointer;z-index:2}
+#nov-hd{padding:16px 54px 4px 18px}
+#nov-lbl{font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-weight:700;color:#2f7bff}
+#nov-tit{font-size:1.15rem;font-weight:700;margin-top:2px}
+#nov-body{flex:1;min-height:0;overflow-y:auto;padding:8px 18px 4px}
+#nov-imgs{display:flex;flex-direction:column;align-items:center;gap:8px}
+#nov-imgs figure{margin:0;text-align:center;max-width:100%}
+#nov-imgs img{display:block;max-width:100%;max-height:38vh;border-radius:12px;border:1px solid var(--border,#2b2f36);margin:0 auto;object-fit:contain}
+#nov-imgs.dos img{max-height:22vh}
+#nov-imgs figcaption{font-size:.7rem;color:var(--text2,#9aa0a6);margin-top:3px;font-weight:600}
+#nov-txt{font-size:.86rem;line-height:1.5;color:var(--text2,#b4b9c0);margin:12px 0 6px}
+#nov-dots{display:flex;justify-content:center;gap:7px;padding:8px 0 4px}
+#nov-dots i{width:7px;height:7px;border-radius:50%;background:var(--border,#3a3e46);display:block;transition:all .15s}
+#nov-dots i.on{background:#2f7bff;width:20px;border-radius:5px}
+#nov-ft{padding:8px 18px 16px;display:flex;flex-direction:column;gap:8px}
+#nov-nav{display:flex;gap:8px}
+#nov-nav button{flex:1;padding:12px;border-radius:12px;border:1px solid var(--border,#2b2f36);background:var(--bg3,#2a2d34);color:var(--text,#fff);font-family:inherit;font-weight:700;font-size:.88rem;cursor:pointer}
+#nov-nav button.pri{background:#2563eb;border-color:#2563eb;color:#fff}
+#nov-nav button[disabled]{visibility:hidden}
+#nov-nomas{padding:11px;border-radius:12px;border:1px solid var(--border,#2b2f36);background:transparent;color:var(--text,#fff);font-family:inherit;font-weight:600;font-size:.8rem;cursor:pointer}
+#nov-nomas[disabled]{opacity:.38;cursor:not-allowed}
+#nov-hint{font-size:.66rem;color:var(--text2,#8a8f98);text-align:center;min-height:.9em}
+</style>
+<div id="nov-ov" role="dialog" aria-modal="true" aria-label="Novedades">
+  <div id="nov-card">
+    <button id="nov-x" onclick="novCerrar()" aria-label="Cerrar">×</button>
+    <div id="nov-hd"><div id="nov-lbl">Novedades</div><div id="nov-tit"></div></div>
+    <div id="nov-body"><div id="nov-imgs"></div><div id="nov-txt"></div></div>
+    <div id="nov-dots"></div>
+    <div id="nov-ft">
+      <div id="nov-nav"><button id="nov-prev" onclick="novIr(-1)">Anterior</button><button id="nov-next" class="pri" onclick="novIr(1)">Siguiente</button></div>
+      <button id="nov-nomas" onclick="novNoMas()" disabled>No mostrar de nuevo</button>
+      <div id="nov-hint"></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var VER = '2026-11-novedades-1', KEY = 'keynonia_novedades_ok'
+  var S = [
+    { t: 'Editar acordes', x: 'Toca «Editar» y luego un acorde para cambiarle el nombre solo para ti (sostenido, bemol o más simple). Si eres administrador, también puedes moverlo a la izquierda o a la derecha para todos.', i: [['novedades/n1.jpg', '']] },
+    { t: 'Anotaciones', x: 'Dibuja con lápiz, subraya con plumón, escribe texto y borra un pedazo con la goma, directo sobre la letra. Son privadas: solo tú las ves, y te siguen en todos tus repertorios.', i: [['novedades/n2.jpg', '']] },
+    { t: 'Diagrama del acorde', x: 'Activa «Diagrama» y toca un acorde: aparece su diagrama de guitarra y de piano. Toca el cuadrito de la guitarra para ver otras formas (1/4, 2/4…).', i: [['novedades/n3.jpg', '']] },
+    { t: 'Formato de acordes', x: 'En Cuenta → App → «Formato de acorde» elige cómo se escribe cada nota (C# o Db, etc.). El administrador define el de su organización y cada uno puede personalizar el suyo.', i: [['novedades/n4.jpg', '']] },
+    { t: 'Afinador', x: 'En el Modo ensayo toca el diapasón, junto a «Seguir acordes». Rojo: desafinado. Verde: afinado. Puedes ajustar la referencia (A=440) con − y +.', i: [['novedades/n5a.jpg', 'Desafinado'], ['novedades/n5b.jpg', 'Afinado']] },
+    { t: 'Audio o YouTube', x: 'El selector «Audio | YouTube» del Modo ensayo ahora está siempre visible para cambiar de fuente cuando quieras.', i: [['novedades/n6.jpg', '']] }
+  ]
+  var cur = 0, vistos = {}
+  function ok(){ try { return localStorage.getItem(KEY) === VER } catch(e){ return false } }
+  function $(id){ return document.getElementById(id) }
+  function pinta(){
+    var s = S[cur]; vistos[cur] = true
+    $('nov-tit').textContent = s.t
+    $('nov-txt').textContent = s.x
+    var box = $('nov-imgs'); box.className = s.i.length > 1 ? 'dos' : ''
+    box.innerHTML = s.i.map(function(p){ return '<figure><img src="' + p[0] + '" alt="' + s.t + '">' + (p[1] ? '<figcaption>' + p[1] + '</figcaption>' : '') + '</figure>' }).join('')
+    $('nov-body').scrollTop = 0
+    $('nov-dots').innerHTML = S.map(function(_, k){ return '<i class="' + (k === cur ? 'on' : '') + '"></i>' }).join('')
+    $('nov-prev').disabled = cur === 0
+    var ult = cur === S.length - 1
+    $('nov-next').textContent = ult ? 'Cerrar' : 'Siguiente'
+    var todo = S.every(function(_, k){ return vistos[k] })
+    $('nov-nomas').disabled = !todo
+    $('nov-hint').textContent = todo ? '' : 'Mira todas las novedades para poder activar esta opción.'
+  }
+  window.novIr = function(d){
+    if(d > 0 && cur === S.length - 1){ novCerrar(); return }
+    cur = Math.max(0, Math.min(S.length - 1, cur + d)); pinta()
+  }
+  window.novCerrar = function(){ $('nov-ov').classList.remove('on') }
+  window.novNoMas = function(){
+    if($('nov-nomas').disabled) return
+    try { localStorage.setItem(KEY, VER) } catch(e){}
+    novCerrar()
+  }
+  window.abrirNovedades = function(){ cur = 0; vistos = {}; pinta(); $('nov-ov').classList.add('on') }
+  // swipe
+  ;(function(){ var x0 = null, c = $('nov-card')
+    c.addEventListener('touchstart', function(e){ x0 = e.touches[0].clientX }, { passive: true })
+    c.addEventListener('touchend', function(e){ if(x0 == null) return; var dx = e.changedTouches[0].clientX - x0; x0 = null; if(Math.abs(dx) > 60){ if(dx < 0 && cur < S.length - 1) novIr(1); else if(dx > 0 && cur > 0) novIr(-1) } }, { passive: true })
+  })()
+  // se muestra sola cuando la app ya está lista (sin splash, sin login, sin términos pendientes)
+  var intentos = 0
+  var t = setInterval(function(){
+    intentos++
+    if(intentos > 120 || ok()){ clearInterval(t); return }
+    var sp = $('kn-splash'), lg = $('web-login-overlay'), tm = $('modal-terminos')
+    if(sp) return
+    if(lg && lg.style.display && lg.style.display !== 'none') return
+    if(tm && (tm.classList.contains('active') || (tm.style.display && tm.style.display !== 'none'))) return
+    if(document.querySelector('#tour-spotlight') && document.querySelector('#tour-spotlight').style.display === 'block') return
+    if(!document.querySelector('.bottom-nav')) return
+    clearInterval(t)
+    setTimeout(function(){ if(!ok()) window.abrirNovedades() }, 800)
+  }, 1000)
+})()
+</script>
+
 </body>
 </html>
