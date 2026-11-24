@@ -835,7 +835,9 @@ var SECTION_TYPES=[
   {id:'custom',label:'Otro…',short:'+',color:'sky'}
 ];
 var NOTE_NAMES=['C','C#','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
+var midiFormato='nota' // 'nota' = C0 · 'numero' = Nota 24 (preferencia de Cuenta → App → Formato de MIDI)
 function midiToName(n){
+  if(midiFormato==='numero') return 'Nota '+n;
   var oct=Math.floor(n/12)-2;
   return NOTE_NAMES[n%12]+oct;
 }
@@ -903,6 +905,10 @@ async function init() {
   const { data: { session } } = await supabase.auth.getSession()
   if (!session) { window.location.href = 'app.html'; return }
   currentUser = session.user
+  try {
+    const { data: pfMidi } = await supabase.from('profiles').select('formato_midi').eq('id', currentUser.id).maybeSingle()
+    if (pfMidi && pfMidi.formato_midi === 'numero') midiFormato = 'numero'
+  } catch (e) { console.warn('formato MIDI no disponible', e) }
 
   const params = new URLSearchParams(window.location.search)
   const modoRevisarParam = params.get('revisar')
