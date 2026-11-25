@@ -1790,7 +1790,8 @@ var _kxUsoSeg = 0, _kxUsoUltimoTick = 0, _kxUsoEnviado = Date.now()
 function kxLog(tipo, cancionId, datos){
   try {
     if (!currentUser || typeof supabase === 'undefined') return
-    var org = (orgActual && orgActual.id) ? orgActual.id : (orgs && orgs[0] ? orgs[0].id : null)
+    var oa = (orgs && orgs.find) ? orgs.find(function(o){ return o.activa }) : null
+    var org = oa ? oa.id : (orgs && orgs[0] ? orgs[0].id : null)
     supabase.rpc('registrar_evento', {
       p_tipo: tipo, p_organizacion: org, p_cancion: cancionId || null,
       p_datos: datos || {}, p_plataforma: 'web', p_app_version: 'web'
@@ -2206,6 +2207,7 @@ async function cargarPerfil() {
     // Bienvenida: en vez de un muro, el usuario crea su organización en un paso
     if (!_kxOnboardingVisto) { _kxOnboardingVisto = true; kxLog('onboarding_visto', null, {}) }
     var nombreSug = ((currentUser.user_metadata && (currentUser.user_metadata.nombre || currentUser.user_metadata.full_name)) || '').split(' ')[0]
+    if (document.getElementById('onb-org-nombre')) return   // ya visible: no borrar lo que el usuario escribió
     var _onb = document.getElementById('kx-onboarding')
     if (!_onb) { _onb = document.createElement('div'); _onb.id = 'kx-onboarding'; _onb.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--bg,#1e1f23);color:var(--text,#fff);overflow:auto;font-family:Poppins,sans-serif'; document.body.appendChild(_onb) }
     var _spx = document.getElementById('kn-splash'); if (_spx) _spx.remove()
@@ -2233,7 +2235,10 @@ async function cargarPerfil() {
 function kxEsc(s) { return String(s == null ? '' : s).replace(/[<>&"']/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c] }) }
 function kxMostrarInvitaciones() {
   var ov = document.getElementById('kx-onboarding')
+  var _clave = _kxInvPend.map(function(i){ return i.id }).join(',')
+  if (ov && ov.dataset.inv === _clave) return
   if (!ov) { ov = document.createElement('div'); ov.id = 'kx-onboarding'; ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--bg,#1e1f23);color:var(--text,#fff);overflow:auto;font-family:Poppins,sans-serif'; document.body.appendChild(ov) }
+  ov.dataset.inv = _clave
   var sp = document.getElementById('kn-splash'); if (sp) sp.remove()
   if (!_kxInvLog) { _kxInvLog = true; kxLog('invitacion_vista', null, { n: _kxInvPend.length }) }
   var items = _kxInvPend.map(function(i){
