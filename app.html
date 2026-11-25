@@ -2254,6 +2254,7 @@ async function cargarPerfil() {
   var eraPrimeraVerificacion = !accesoVerificado
   accesoVerificado = true
   if (!_kxSesionRegistrada) { _kxSesionRegistrada = true; kxLog('sesion_inicio', null, { orgs: orgs.length }) }
+  setTimeout(function(){ kxRevisarEstadoUso() }, 1500)
   if (eraPrimeraVerificacion && enVivoEstaVisible()) cargarRepertorios()
 
   actualizarVisibilidadPorRol()
@@ -3152,6 +3153,7 @@ window.confirmarAgregarCancion = async function() {
 async function descargarCancion(cancionId) {
   var orgActivo = orgs.find(function(o){ return o.activa })
   if (!orgActivo) return
+  if (!(await kxPermitirAperturaCatalogo(cancionId))) return
 
   const { data: origen, error: errOrigen } = await supabase
     .from('canciones')
@@ -8147,12 +8149,59 @@ window.abrirReproductor = async function(cancionId, repertorioIdOrigen){
   await repAbrirCore(cancionId, 'mis_canciones', false, repertorioIdOrigen)
 }
 
+
+// ── USO SOSPECHOSO DEL CATÁLOGO (límite 15 canciones/min; lo aplica el servidor) ──
+window.kxAvisoUso = function(estado, segundos) {
+  var prev = document.getElementById('kx-uso-ov'); if (prev) prev.remove()
+  var titulo, cuerpo, extra = ''
+  if (estado === 'congelada') {
+    titulo = 'Cuenta congelada por uso sospechoso'
+    cuerpo = 'Detectamos un uso inusual del catálogo. <b>Envía un mensaje al administrador para que desbloquee tu cuenta.</b>'
+    extra = '<button class="btn-primary" style="width:100%;margin-bottom:8px" onclick="kxWhatsAppDesbloqueo()">Escribir al administrador</button>'
+  } else if (estado === 'bloqueo') {
+    var min = Math.max(1, Math.ceil((segundos || 3600) / 60))
+    titulo = 'Debes esperar 1 hora'
+    cuerpo = 'Volviste a superar el máximo de <b>15 canciones por minuto</b>. Podrás abrir canciones del catálogo de nuevo en unos <b>' + min + ' minutos</b>.<br><br>Si se repite el mismo patrón, tu cuenta será <b>congelada</b>.'
+  } else {
+    titulo = 'No puedes abrir esta canción ahora'
+    cuerpo = 'Superaste el máximo de <b>15 canciones por minuto</b>. Debes esperar 1 minuto.<br><br>Se envió un aviso por comportamiento sospechoso.'
+  }
+  var ov = document.createElement('div')
+  ov.id = 'kx-uso-ov'
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100002;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:16px'
+  ov.innerHTML = '<div style="background:var(--bg2,#1a1a2e);border:1px solid rgba(231,76,60,.5);border-radius:14px;max-width:400px;width:100%;padding:22px">' +
+    '<div style="font-size:1.1rem;font-weight:700;margin-bottom:10px;color:#e74c3c">' + titulo + '</div>' +
+    '<div style="font-size:.88rem;line-height:1.55;opacity:.92;margin-bottom:16px">' + cuerpo + '</div>' + extra +
+    '<button class="btn-secondary" style="width:100%" onclick="document.getElementById(\'kx-uso-ov\').remove()">Entendido</button></div>'
+  document.body.appendChild(ov)
+}
+window.kxWhatsAppDesbloqueo = function() {
+  var msg = 'Hola, mi cuenta de Keynonia fue congelada por uso sospechoso del catálogo. Solicito que la desbloqueen. Correo: ' + ((currentUser && currentUser.email) || '')
+  window.open('https://wa.me/' + (typeof KX_WHATSAPP !== 'undefined' ? KX_WHATSAPP : '56934302054') + '?text=' + encodeURIComponent(msg), '_blank')
+}
+// Devuelve true si se puede abrir la canción. El servidor cuenta, limita y avisa.
+window.kxPermitirAperturaCatalogo = async function(cancionId) {
+  try {
+    var r = await supabase.rpc('obtener_cancion_catalogo', { p_id: cancionId })
+    if (r.error || !r.data) return true   // si el servicio falla, no se castiga al usuario
+    if (r.data.estado && r.data.estado !== 'ok') { kxAvisoUso(r.data.estado, r.data.segundos); return false }
+    return true
+  } catch (e) { return true }
+}
+window.kxRevisarEstadoUso = async function() {
+  try {
+    var r = await supabase.rpc('estado_uso_catalogo')
+    if (r.data && r.data.estado === 'congelada') kxAvisoUso('congelada')
+  } catch (e) {}
+}
+
 window.abrirReproductorCatalogo = async function(cancionId){
   if (!tieneAcceso) {
     // WEB: modal-suscripcion no existe, mostrar toast
     showToast('Necesitas pertenecer a una organización para ver canciones')
     return
   }
+  if (!(await kxPermitirAperturaCatalogo(cancionId))) return
   await repAbrirCore(cancionId, 'canciones', true, null)
 }
 
