@@ -3448,6 +3448,17 @@ window.kxComenzarPro = async function() {
   actualizarPanelSuscripcion()
 }
 
+window.kxVolverBasico = async function() {
+  var o = (orgs || []).find(function(x){ return x.activa })
+  if (!o) return
+  if (!confirm('¿Cambiar al plan Básico? Se termina tu prueba Pro y no se cobrará nada. Podrás suscribirte al Pro cuando quieras (la prueba gratis no se repite).')) return
+  var r = await supabase.rpc('cancelar_prueba_pro', { p_org: o.id })
+  if (r.error) { showToast('No se pudo cambiar: ' + r.error.message, '#e74c3c'); return }
+  showToast('✓ Ahora estás en el plan Básico. No se cobrará nada.')
+  try { await cargarOrganizacionesReales() } catch (e) {}
+  _kxPlanInfoOrg = null
+  actualizarPanelSuscripcion()
+}
 function kxPagoNota() {
   return '<div style="font-size:.7rem;color:var(--text2);text-align:center;margin-top:6px;line-height:1.5">En el mes 4 registras tu tarjeta y pagas con Mercado Pago. Cancela cuando quieras.</div>' +
     '<div style="text-align:center;margin-top:8px"><button class="plan-btn plan-btn-secondary" onclick="kxWhatsAppPago()">Comunícate con soporte para gestionar tu pago</button>' +
@@ -3565,7 +3576,11 @@ function actualizarPanelSuscripcion() {
     if (!c) return
     var I = _kxPlanInfo || {}
     var exenta = !!I.exenta, proAct = !!I.pro_activo && !exenta
+    var _oAct = (orgs || []).find(function(x){ return x.activa })
+    var puedeVolver = !exenta && proAct && !!I.prueba_activa && !_kxSubPersonal && _oAct && _oAct.rol === 'administrador'
     var basicoBtn = exenta ? '<button class="plan-btn plan-btn-secondary" disabled>Incluido</button>'
+                  : puedeVolver ? '<button class="plan-btn plan-btn-secondary" onclick="kxVolverBasico()">Cambiar a Básico</button>' +
+                      '<div style="font-size:.68rem;color:var(--text2);text-align:center;margin-top:4px">Cancela tu prueba Pro. No se cobra nada.</div>'
                   : proAct ? '<button class="plan-btn plan-btn-secondary" disabled>Incluido</button>'
                   : '<button class="plan-btn plan-btn-active">Plan activo ✓</button>'
     var basico =
