@@ -3388,7 +3388,7 @@ function actualizarPanelSuscripcion() {
   }
   function featBasico() {
     return '<ul class="plan-features"><li>Editor de canciones con acordes</li><li>Catálogo global con canciones ilimitadas</li>' +
-      '<li>Repertorio en vivo sincronizado</li><li>Control MIDI (DAW + Individual)</li><li>Hasta 5 personas</li></ul>'
+      '<li>Repertorio en vivo sincronizado</li><li>Control MIDI (DAW + Individual)</li><li>Tú + 2 personas (3 en total)</li></ul>'
   }
   function featPro() {
     return '<ul class="plan-features"><li>Editor de canciones con acordes</li>' +
@@ -3401,6 +3401,7 @@ function actualizarPanelSuscripcion() {
       '<li class="plan-feat-plus">Tono personal por cantante</li>' +
       '<li class="plan-feat-plus">Links personalizados por canción</li></ul>'
   }
+  function soporteBtn() { return '<div style="text-align:center;margin:14px 0 4px"><button class="plan-btn plan-btn-secondary" style="max-width:360px" onclick="kxWhatsAppPago()">Comunícate con soporte para gestionar tu pago</button><div style="font-size:.65rem;color:var(--text2);margin-top:4px">¿Sin tarjeta? Coordinamos tu pago manual por WhatsApp</div></div>' }
   function notaLtd() { return '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">Oferta por tiempo limitado</div>' }
   function btnB(txt, planId) {
     if (esSuscrito && !esPro) return '<button class="plan-btn plan-btn-active">Plan activo ✓</button>'
@@ -3432,7 +3433,7 @@ function actualizarPanelSuscripcion() {
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Básico</div>' + badge('orange','Oferta') + '</div>' +
             tachado('$3.990 CLP / mes') +
             '<div class="plan-price">$2.990 <span class="plan-price-sub">CLP / mes</span></div>' +
-            '<hr class="plan-divider">' + featBasico() + porMusico('5','598','',false) +
+            '<hr class="plan-divider">' + featBasico() + porMusico('3','997','',false) +
             btnB('Suscribirse — $2.990 / mes', 'ede534c518e24701ac988f4e9cf9fe4a') + notaLtd() +
           '</div>' +
           '<div class="plan-card destacado">' +
@@ -3445,7 +3446,7 @@ function actualizarPanelSuscripcion() {
             btnP('Comenzar gratis — 3 meses', '36723486083944b8bd60a7eb31699e56') +
             '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">Luego $3.990/mes · Cancela cuando quieras</div>' +
           '</div>' +
-        '</div>'
+        '</div>' + soporteBtn()
     } else {
       c.innerHTML =
         '<div class="plan-cards-wrap">' +
@@ -3453,7 +3454,7 @@ function actualizarPanelSuscripcion() {
             '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Básico</div>' + badge('green','58% OFF') + '</div>' +
             tachado('$35.880 CLP / año') +
             '<div class="plan-price">$14.990 <span class="plan-price-sub">CLP / año</span></div>' +
-            '<hr class="plan-divider">' + featBasico() + porMusico('5','250','',true) +
+            '<hr class="plan-divider">' + featBasico() + porMusico('3','416','',true) +
             btnB('Suscribirse — $14.990 / año', 'de01e8db79564843a3591326dc0b12f7') + notaLtd() +
           '</div>' +
           '<div class="plan-card destacado">' +
@@ -3464,7 +3465,7 @@ function actualizarPanelSuscripcion() {
             '<hr class="plan-divider">' + featPro() + porMusico('15','128','',true) +
             btnP('Suscribirse — $22.990 / año', 'e783875699b54b08a1179084a576171e') + notaLtd() +
           '</div>' +
-        '</div>'
+        '</div>' + soporteBtn()
     }
   }
   window.switchPeriodoSubs('mes')
@@ -5666,6 +5667,42 @@ window.agregarSeleccionAlRepertorio = async function() {
 
 
 
+var KX_WHATSAPP = '56934302054'
+window.kxWhatsAppPago = function() {
+  var msg = 'Hola, necesito gestionar el pago manual de mi plan Pro en Keynonia. Correo: ' + ((currentUser && currentUser.email) || '')
+  window.open('https://wa.me/' + KX_WHATSAPP + '?text=' + encodeURIComponent(msg), '_blank')
+}
+window.kxCerrarPasaAPro = function() { var e = document.getElementById('kx-pro-ov'); if (e) e.remove() }
+window.kxMostrarPasaAPro = async function(orgId, email) {
+  kxCerrarPasaAPro()
+  var info = null
+  try { var r = await supabase.rpc('org_plan_info', { p_org: orgId }); info = r.data } catch(e) {}
+  var usada = !!(info && info.prueba_usada)
+  var ov = document.createElement('div')
+  ov.id = 'kx-pro-ov'
+  ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px'
+  var cuerpo = usada
+    ? '<p style="margin:0 0 14px;opacity:.85">Tu organización ya usó los 3 meses gratis. Para añadir más personas necesitas el plan Pro.</p>' +
+      '<button class="btn-primary" style="width:100%;margin-bottom:8px" onclick="kxCerrarPasaAPro();abrirModal(\'modal-suscripcion\')">Ver planes y pagar con Mercado Pago</button>'
+    : '<p style="margin:0 0 14px;opacity:.85">El plan Básico permite hasta 3 personas (tú y 2 más). Pasa al plan Pro y disfruta <b>3 meses gratis, sin registrar tarjeta</b>. Desde el mes 4 se pedirá el pago por Mercado Pago.</p>' +
+      '<button id="kx-pro-act" class="btn-primary" style="width:100%;margin-bottom:8px">Activar 3 meses gratis e invitar</button>'
+  ov.innerHTML = '<div style="background:var(--bg2,#1a1a2e);border:1px solid rgba(255,255,255,.12);border-radius:14px;max-width:400px;width:100%;padding:22px">' +
+    '<div style="font-size:1.15rem;font-weight:700;margin-bottom:10px">Pasa al plan Pro</div>' + cuerpo +
+    '<button class="btn-secondary" style="width:100%;margin-bottom:8px" onclick="kxWhatsAppPago()">Comunícate con soporte para gestionar tu pago</button>' +
+    '<button class="btn-secondary" style="width:100%" onclick="kxCerrarPasaAPro()">Cancelar</button></div>'
+  document.body.appendChild(ov)
+  var b = document.getElementById('kx-pro-act')
+  if (b) b.onclick = async function() {
+    b.disabled = true
+    var r2 = await supabase.rpc('activar_prueba_pro', { p_org: orgId })
+    if (r2.error) { b.disabled = false; showToast('No se pudo activar: ' + r2.error.message, '#e74c3c'); return }
+    kxCerrarPasaAPro()
+    showToast('✓ Plan Pro activado por 3 meses')
+    document.getElementById('participante-email').value = email
+    invitarParticipante()
+  }
+}
+
 window.invitarParticipante = async function() {
   const email = document.getElementById('participante-email').value.trim().toLowerCase()
   if (!email) { alert('Escribe un correo válido.'); return }
@@ -5673,17 +5710,7 @@ window.invitarParticipante = async function() {
   var orgActivo = orgs.find(function(o){ return o.activa })
   if (!orgActivo) { alert('No se encontró tu organización activa.'); return }
 
-  // Límite de personas por plan (incluye al administrador)
-  const limitePersonas = esPro ? 15 : 5
-  const [{ count: countMiembros }, { count: countPendientes }] = await Promise.all([
-    supabase.from('miembros').select('id', { count: 'exact', head: true }).eq('organizacion_id', orgActivo.id),
-    supabase.from('invitaciones').select('id', { count: 'exact', head: true }).eq('organizacion_id', orgActivo.id)
-  ])
-  const totalPersonas = (countMiembros || 0) + (countPendientes || 0)
-  if (totalPersonas >= limitePersonas) {
-    showToast('Tu plan permite hasta ' + limitePersonas + ' personas. ' + (!esPro ? 'Actualiza a Pro para añadir más.' : ''), '#e74c3c')
-    return
-  }
+  // Límites de plan: los aplica la base de datos (Básico = 3 personas; cuentas vitalicias exentas)
 
   // Verificar que no haya ya una invitación pendiente para ese correo
   const { count: yaInvitado } = await supabase
@@ -5702,7 +5729,10 @@ window.invitarParticipante = async function() {
     creado_por: currentUser.id
   })
 
-  if (error) { showToast('Error al crear la invitación: ' + error.message, '#e74c3c'); return }
+  if (error) {
+    if (/LIMITE_PLAN_BASICO/.test(error.message || '')) { kxMostrarPasaAPro(orgActivo.id, email); return }
+    showToast('Error al crear la invitación: ' + error.message, '#e74c3c'); return
+  }
 
   var nombreInvitador = (currentUser.user_metadata && (currentUser.user_metadata.nombre || currentUser.user_metadata.full_name)) || currentUser.email
 
@@ -12029,3 +12059,4 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
 
 
 <!-- build 2026-11-25e -->
+<!-- build 2026-11-25f planes -->
