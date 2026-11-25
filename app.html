@@ -3440,18 +3440,36 @@ window.kxComenzarPro = async function() {
   try { var r = await supabase.rpc('org_plan_info', { p_org: o.id }); info = r.data } catch (e) {}
   if (info && info.exenta) { showToast('Tu cuenta no necesita un plan de pago.'); return }
   if (info && info.prueba_usada) { iniciarSuscripcion('36723486083944b8bd60a7eb31699e56', 'Suscribirse — $2.000 / mes'); return }
+  if (!(await kxConfirmarPlan('¿Activar el plan Pro?', '¿Deseas suscribirte al plan Pro durante <b>3 meses gratis, sin registrar tarjeta</b>?<br><br>Recuerda que <b>al 4.º mes tendrás que registrar tu tarjeta</b> para seguir con el Pro. Si pasas al plan Básico, <b>perderás la opción de seguir con la prueba gratuita</b>.', 'Aceptar y activar'))) return
   var r2 = await supabase.rpc('activar_prueba_pro', { p_org: o.id })
-  if (r2.error) { showToast('No se pudo activar: ' + r2.error.message, '#e74c3c'); return }
+  if (r2.error) { if (/PRUEBA_YA_USADA/.test(r2.error.message)) { showToast('Tu cuenta ya usó los 3 meses gratis.', '#e74c3c'); _kxPlanInfoOrg = null; actualizarPanelSuscripcion(); return } showToast('No se pudo activar: ' + r2.error.message, '#e74c3c'); return }
   showToast('✓ Plan Pro activado por 3 meses, sin tarjeta')
   try { await cargarOrganizacionesReales() } catch (e) {}
   _kxPlanInfoOrg = null
   actualizarPanelSuscripcion()
 }
 
+window.kxConfirmarPlan = function(titulo, html, okTxt) {
+  return new Promise(function(resolve) {
+    var prev = document.getElementById('kx-conf-ov'); if (prev) prev.remove()
+    var ov = document.createElement('div')
+    ov.id = 'kx-conf-ov'
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:16px'
+    ov.innerHTML = '<div style="background:var(--bg2,#1a1a2e);border:1px solid rgba(255,255,255,.12);border-radius:14px;max-width:400px;width:100%;padding:22px">' +
+      '<div style="font-size:1.1rem;font-weight:700;margin-bottom:10px">' + titulo + '</div>' +
+      '<div style="font-size:.88rem;line-height:1.55;opacity:.9;margin-bottom:16px">' + html + '</div>' +
+      '<button id="kx-conf-ok" class="btn-primary" style="width:100%;margin-bottom:8px">' + okTxt + '</button>' +
+      '<button id="kx-conf-no" class="btn-secondary" style="width:100%">Cancelar</button></div>'
+    document.body.appendChild(ov)
+    function fin(v) { ov.remove(); resolve(v) }
+    document.getElementById('kx-conf-ok').onclick = function() { fin(true) }
+    document.getElementById('kx-conf-no').onclick = function() { fin(false) }
+  })
+}
 window.kxVolverBasico = async function() {
   var o = (orgs || []).find(function(x){ return x.activa })
   if (!o) return
-  if (!confirm('¿Cambiar al plan Básico? Se termina tu prueba Pro y no se cobrará nada. Podrás suscribirte al Pro cuando quieras (la prueba gratis no se repite).')) return
+  if (!(await kxConfirmarPlan('¿Pasar al plan Básico?', 'Si pasas al plan Básico <b>perderás los 3 meses gratis</b> que te quedan. Si más adelante vuelves al Pro, <b>tendrás que pagar el valor mensual ($2.000 CLP)</b>: la prueba gratuita no se repite.', 'Sí, pasar a Básico'))) return
   var r = await supabase.rpc('cancelar_prueba_pro', { p_org: o.id })
   if (r.error) { showToast('No se pudo cambiar: ' + r.error.message, '#e74c3c'); return }
   showToast('✓ Ahora estás en el plan Básico. No se cobrará nada.')
@@ -5851,7 +5869,7 @@ window.kxMostrarPasaAPro = async function(orgId, email) {
   var cuerpo = usada
     ? '<p style="margin:0 0 14px;opacity:.85">Tu organización ya usó los 3 meses gratis. Para añadir más personas necesitas el plan Pro.</p>' +
       '<button class="btn-primary" style="width:100%;margin-bottom:8px" onclick="kxCerrarPasaAPro();abrirModal(\'modal-suscripcion\')">Ver planes y pagar con Mercado Pago</button>'
-    : '<p style="margin:0 0 14px;opacity:.85">El plan Básico permite hasta 3 personas (tú y 2 más). Pasa al plan Pro y disfruta <b>3 meses gratis, sin registrar tarjeta</b>. Desde el mes 4 se pedirá el pago por Mercado Pago.</p>' +
+    : '<p style="margin:0 0 14px;opacity:.85">El plan Básico permite hasta 3 personas (tú y 2 más). Pasa al plan Pro y disfruta <b>3 meses gratis, sin registrar tarjeta</b>. Al 4.º mes tendrás que registrar tu tarjeta (pago por Mercado Pago). Si pasas al plan Básico, perderás la opción de seguir con la prueba gratuita.</p>' +
       '<button id="kx-pro-act" class="btn-primary" style="width:100%;margin-bottom:8px">Activar 3 meses gratis e invitar</button>'
   ov.innerHTML = '<div style="background:var(--bg2,#1a1a2e);border:1px solid rgba(255,255,255,.12);border-radius:14px;max-width:400px;width:100%;padding:22px">' +
     '<div style="font-size:1.15rem;font-weight:700;margin-bottom:10px">Pasa al plan Pro</div>' + cuerpo +
