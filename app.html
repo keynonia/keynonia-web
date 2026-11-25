@@ -1779,7 +1779,8 @@ let esSuscrito = false
 let esPro = false        // suscrito con plan Pro
 let orgsExtra = 0        // orgs adicionales compradas (Plan Organizaciones)
 let tieneAcceso = false  // suscrito O miembro de una org
-var accesoVerificado = false      // true cuando tieneAcceso ya se calculó con datos reales del servidor
+var _kxOnboardingVisto = false, _kxInvPend = [], _kxInvPosponida = false, _kxInvLog = false
+var accesoVerificado = false     // true cuando tieneAcceso ya se calculó con datos reales del servidor
 var repertoriosCacheOrgId = null  // organización a la que pertenece repertoriosCache
 var _orgsErrorRed = false         // la última carga de organizaciones falló por red
 var _reintentoPerfilTimer = null
@@ -2197,6 +2198,10 @@ async function cargarPerfil() {
   tieneAcceso = orgs.length > 0
   // WEB: si pertenece a una org, desbloquear todas las features sin importar suscripción propia
   if (tieneAcceso) { esSuscrito = true; esPro = true }
+  if (_kxInvPend.length > 0 && !_kxInvPosponida) {
+    kxMostrarInvitaciones()
+    if (orgs.length === 0) return
+  }
   if (orgs.length === 0) {
     // Bienvenida: en vez de un muro, el usuario crea su organización en un paso
     if (!_kxOnboardingVisto) { _kxOnboardingVisto = true; kxLog('onboarding_visto', null, {}) }
@@ -2225,7 +2230,47 @@ async function cargarPerfil() {
 
 }
 
-var _kxOnboardingVisto = false
+function kxEsc(s) { return String(s == null ? '' : s).replace(/[<>&"']/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c] }) }
+function kxMostrarInvitaciones() {
+  var ov = document.getElementById('kx-onboarding')
+  if (!ov) { ov = document.createElement('div'); ov.id = 'kx-onboarding'; ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--bg,#1e1f23);color:var(--text,#fff);overflow:auto;font-family:Poppins,sans-serif'; document.body.appendChild(ov) }
+  var sp = document.getElementById('kn-splash'); if (sp) sp.remove()
+  if (!_kxInvLog) { _kxInvLog = true; kxLog('invitacion_vista', null, { n: _kxInvPend.length }) }
+  var items = _kxInvPend.map(function(i){
+    return '<div style="width:100%;border:1px solid rgba(128,128,128,.35);border-radius:12px;padding:16px;box-sizing:border-box">' +
+      '<div style="font-weight:600;font-size:1.05rem;margin-bottom:4px">' + kxEsc(i.organizacion_nombre) + '</div>' +
+      (i.invitado_por_nombre ? '<div style="opacity:.65;font-size:.82rem;margin-bottom:12px">Te invitó ' + kxEsc(i.invitado_por_nombre) + '</div>' : '<div style="margin-bottom:12px"></div>') +
+      '<div style="display:flex;gap:8px"><button onclick="kxResponderInv(\'' + kxEsc(i.id) + '\',true,this)" style="flex:1;background:#1DB89A;color:#fff;border:none;padding:11px;border-radius:10px;font-weight:600;cursor:pointer">Aceptar invitación</button>' +
+      '<button onclick="kxResponderInv(\'' + kxEsc(i.id) + '\',false,this)" style="flex:1;background:transparent;color:inherit;border:1px solid rgba(128,128,128,.5);padding:11px;border-radius:10px;cursor:pointer">Rechazar</button></div></div>'
+  }).join('')
+  ov.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:32px;text-align:center;gap:14px;max-width:440px;margin:0 auto;box-sizing:border-box">' +
+    '<h2 style="margin:0;font-size:1.3rem">' + (_kxInvPend.length > 1 ? 'Tienes invitaciones pendientes' : 'Tienes una invitación pendiente') + '</h2>' +
+    '<p style="margin:0;opacity:.75;font-size:.9rem;line-height:1.5">Tu correo fue invitado a ' + (_kxInvPend.length > 1 ? 'estas organizaciones' : 'esta organización') + '. ¿Quieres unirte?</p>' +
+    items +
+    '<button onclick="kxPosponerInv()" style="background:transparent;color:inherit;opacity:.7;border:none;padding:6px 12px;font-size:.82rem;cursor:pointer;text-decoration:underline">Decidir después</button>' +
+    '</div>'
+}
+window.kxResponderInv = async function(id, aceptar, btn) {
+  if (btn) { btn.disabled = true; btn.textContent = '…' }
+  try {
+    var r = aceptar ? await supabase.rpc('aceptar_invitacion', { p_id: id }) : await supabase.rpc('rechazar_invitacion', { p_id: id })
+    if (r.error) throw r.error
+    kxLog(aceptar ? 'invitacion_aceptada' : 'invitacion_rechazada', null, {})
+    if (aceptar) { location.reload(); return }
+    _kxInvPend = _kxInvPend.filter(function(i){ return i.id !== id })
+    if (_kxInvPend.length > 0) { kxMostrarInvitaciones(); return }
+    var ov = document.getElementById('kx-onboarding'); if (ov) ov.remove()
+    cargarPerfil()
+  } catch (e) {
+    alert('No se pudo completar la acción: ' + ((e && e.message) || 'intenta de nuevo'))
+    if (btn) { btn.disabled = false; btn.textContent = aceptar ? 'Aceptar invitación' : 'Rechazar' }
+  }
+}
+window.kxPosponerInv = function() {
+  _kxInvPosponida = true
+  var ov = document.getElementById('kx-onboarding'); if (ov) ov.remove()
+  cargarPerfil()
+}
 window.kxSalirOnb = function() { supabase.auth.signOut().then(function(){ location.reload() }) }
 window.kxCrearOrgInicial = async function() {
   var inp = document.getElementById('onb-org-nombre')
@@ -2300,10 +2345,12 @@ async function cargarOrganizacionesReales() {
   // borraba igual, dejando al usuario sin organizacion y sin invitacion.
   // `aceptar_invitacion_pendiente()` es SECURITY DEFINER: inserta el
   // miembro correctamente y marca la invitacion como usada.
+  // Ahora la invitación NO se acepta sola: se consulta y se le pregunta al usuario.
   try {
-    await supabase.rpc('aceptar_invitacion_pendiente')
+    const { data: invs } = await supabase.rpc('invitaciones_pendientes')
+    _kxInvPend = Array.isArray(invs) ? invs : []
   } catch (e) {
-    console.warn('[invitacion] no se pudo aceptar la invitacion pendiente:', e)
+    console.warn('[invitacion] no se pudieron leer las invitaciones pendientes:', e)
   }
 
   // ── Cargar membresías reales ──
@@ -11984,4 +12031,5 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
 </body>
 </html>
 
-<!-- build 2026-11-25c -->
+
+<!-- build 2026-11-25d -->
