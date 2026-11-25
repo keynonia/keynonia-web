@@ -2201,13 +2201,16 @@ async function cargarPerfil() {
     // Bienvenida: en vez de un muro, el usuario crea su organización en un paso
     if (!_kxOnboardingVisto) { _kxOnboardingVisto = true; kxLog('onboarding_visto', null, {}) }
     var nombreSug = ((currentUser.user_metadata && (currentUser.user_metadata.nombre || currentUser.user_metadata.full_name)) || '').split(' ')[0]
-    document.getElementById('app').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;gap:14px;max-width:440px;margin:0 auto">' +
+    var _onb = document.getElementById('kx-onboarding')
+    if (!_onb) { _onb = document.createElement('div'); _onb.id = 'kx-onboarding'; _onb.style.cssText = 'position:fixed;inset:0;z-index:99999;background:var(--bg,#1e1f23);color:var(--text,#fff);overflow:auto;font-family:Poppins,sans-serif'; document.body.appendChild(_onb) }
+    var _spx = document.getElementById('kn-splash'); if (_spx) _spx.remove()
+    _onb.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100%;padding:32px;text-align:center;gap:14px;max-width:440px;margin:0 auto;box-sizing:border-box">' +
       '<h2 style="margin:0;font-size:1.35rem">¡Bienvenido' + (nombreSug ? ', ' + nombreSug.replace(/[<>&"]/g, '') : '') + '!</h2>' +
       '<p style="margin:0;opacity:.75;font-size:.92rem;line-height:1.5">Crea la organización de tu iglesia o grupo para empezar: tu repertorio, tu equipo y el catálogo de canciones, todo en un solo lugar. Es gratis.</p>' +
       '<input id="onb-org-nombre" type="text" maxlength="80" placeholder="Nombre de tu iglesia u organización" onkeydown="if(event.key===\'Enter\')kxCrearOrgInicial()" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font-size:.95rem;box-sizing:border-box"/>' +
       '<button id="onb-org-btn" onclick="kxCrearOrgInicial()" style="width:100%;background:#1DB89A;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer">Crear mi organización</button>' +
       '<p style="margin:6px 0 0;opacity:.6;font-size:.8rem;line-height:1.5">¿Te invitó alguien a su organización? Entra con el mismo correo al que llegó la invitación y aparecerá automáticamente. Si no aparece, pídele que te vuelva a invitar.</p>' +
-      '<button onclick="supabase.auth.signOut().then(()=>location.reload())" style="background:transparent;color:inherit;opacity:.7;border:none;padding:6px 12px;font-size:.82rem;cursor:pointer;text-decoration:underline">Cerrar sesión</button>' +
+      '<button onclick="kxSalirOnb()" style="background:transparent;color:inherit;opacity:.7;border:none;padding:6px 12px;font-size:.82rem;cursor:pointer;text-decoration:underline">Cerrar sesión</button>' +
       '</div>';
     return
   }
@@ -2223,6 +2226,7 @@ async function cargarPerfil() {
 }
 
 var _kxOnboardingVisto = false
+window.kxSalirOnb = function() { supabase.auth.signOut().then(function(){ location.reload() }) }
 window.kxCrearOrgInicial = async function() {
   var inp = document.getElementById('onb-org-nombre')
   var btn = document.getElementById('onb-org-btn')
@@ -11979,4 +11983,5 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
 
 </body>
 </html>
-<!-- build 2026-11-25b -->
+
+<!-- build 2026-11-25c -->
