@@ -1784,6 +1784,40 @@ var repertoriosCacheOrgId = null  // organización a la que pertenece repertorio
 var _orgsErrorRed = false         // la última carga de organizaciones falló por red
 var _reintentoPerfilTimer = null
 
+// ── REGISTRO DE USO (solo escritura; nunca interrumpe la app si falla) ─────
+var _kxUsoSeg = 0, _kxUsoUltimoTick = 0, _kxUsoEnviado = Date.now()
+function kxLog(tipo, cancionId, datos){
+  try {
+    if (!currentUser || typeof supabase === 'undefined') return
+    var org = (orgActual && orgActual.id) ? orgActual.id : (orgs && orgs[0] ? orgs[0].id : null)
+    supabase.rpc('registrar_evento', {
+      p_tipo: tipo, p_organizacion: org, p_cancion: cancionId || null,
+      p_datos: datos || {}, p_plataforma: 'web', p_app_version: 'web'
+    }).then(function(){}, function(){})
+  } catch (e) {}
+}
+function kxUsoTick(){
+  try {
+    if (document.visibilityState !== 'visible' || !currentUser) { _kxUsoUltimoTick = 0; return }
+    var ahora = Date.now()
+    if (_kxUsoUltimoTick) _kxUsoSeg += Math.min(15, Math.round((ahora - _kxUsoUltimoTick) / 1000))
+    _kxUsoUltimoTick = ahora
+    if (_kxUsoSeg >= 60 && ahora - _kxUsoEnviado > 120000) {
+      kxLog('tiempo_activo', null, { segundos: _kxUsoSeg })
+      _kxUsoSeg = 0; _kxUsoEnviado = ahora
+    }
+  } catch (e) {}
+}
+setInterval(kxUsoTick, 10000)
+document.addEventListener('visibilitychange', function(){
+  try {
+    if (document.visibilityState === 'hidden' && _kxUsoSeg >= 10) {
+      kxLog('tiempo_activo', null, { segundos: _kxUsoSeg }); _kxUsoSeg = 0; _kxUsoEnviado = Date.now()
+    }
+  } catch (e) {}
+})
+var _kxSesionRegistrada = false
+
 // ── PROTECCIÓN DE CONTENIDO ─────────────────────────────────────────────────
 ;(function() {
   var INPUTS = ['INPUT','TEXTAREA','SELECT']
@@ -2164,23 +2198,55 @@ async function cargarPerfil() {
   // WEB: si pertenece a una org, desbloquear todas las features sin importar suscripción propia
   if (tieneAcceso) { esSuscrito = true; esPro = true }
   if (orgs.length === 0) {
-    // Mostrar pantalla de acceso denegado
-    document.getElementById('app').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;padding:32px;text-align:center;gap:16px">' +
-      '<svg viewBox="0 0 24 24" fill="none" stroke="#e74c3c" stroke-width="1.5" style="width:56px;height:56px"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' +
-      '<h2 style="margin:0;font-size:1.2rem">Acceso denegado</h2>' +
-      '<p style="margin:0;opacity:.7;font-size:.9rem">Tu correo no está asociado a ninguna organización en Keynonia. Contacta al administrador de tu iglesia.</p>' +
-      '<button onclick="supabase.auth.signOut().then(()=>location.reload())" style="background:#e74c3c;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:.9rem;cursor:pointer">Cerrar sesión</button>' +
+    // Bienvenida: en vez de un muro, el usuario crea su organización en un paso
+    if (!_kxOnboardingVisto) { _kxOnboardingVisto = true; kxLog('onboarding_visto', null, {}) }
+    var nombreSug = ((currentUser.user_metadata && (currentUser.user_metadata.nombre || currentUser.user_metadata.full_name)) || '').split(' ')[0]
+    document.getElementById('app').innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px;text-align:center;gap:14px;max-width:440px;margin:0 auto">' +
+      '<h2 style="margin:0;font-size:1.35rem">¡Bienvenido' + (nombreSug ? ', ' + nombreSug.replace(/[<>&"]/g, '') : '') + '!</h2>' +
+      '<p style="margin:0;opacity:.75;font-size:.92rem;line-height:1.5">Crea la organización de tu iglesia o grupo para empezar: tu repertorio, tu equipo y el catálogo de canciones, todo en un solo lugar. Es gratis.</p>' +
+      '<input id="onb-org-nombre" type="text" maxlength="80" placeholder="Nombre de tu iglesia u organización" onkeydown="if(event.key===\'Enter\')kxCrearOrgInicial()" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font-size:.95rem;box-sizing:border-box"/>' +
+      '<button id="onb-org-btn" onclick="kxCrearOrgInicial()" style="width:100%;background:#1DB89A;color:#fff;border:none;padding:12px 24px;border-radius:10px;font-size:.95rem;font-weight:600;cursor:pointer">Crear mi organización</button>' +
+      '<p style="margin:6px 0 0;opacity:.6;font-size:.8rem;line-height:1.5">¿Te invitó alguien a su organización? Entra con el mismo correo al que llegó la invitación y aparecerá automáticamente. Si no aparece, pídele que te vuelva a invitar.</p>' +
+      '<button onclick="supabase.auth.signOut().then(()=>location.reload())" style="background:transparent;color:inherit;opacity:.7;border:none;padding:6px 12px;font-size:.82rem;cursor:pointer;text-decoration:underline">Cerrar sesión</button>' +
       '</div>';
     return
   }
 
   var eraPrimeraVerificacion = !accesoVerificado
   accesoVerificado = true
+  if (!_kxSesionRegistrada) { _kxSesionRegistrada = true; kxLog('sesion_inicio', null, { orgs: orgs.length }) }
   if (eraPrimeraVerificacion && enVivoEstaVisible()) cargarRepertorios()
 
   actualizarVisibilidadPorRol()
   setTimeout(avisoPagoInit, 1500)
 
+}
+
+var _kxOnboardingVisto = false
+window.kxCrearOrgInicial = async function() {
+  var inp = document.getElementById('onb-org-nombre')
+  var btn = document.getElementById('onb-org-btn')
+  var nombre = inp ? inp.value.trim() : ''
+  if (!nombre) { if (inp) inp.focus(); return }
+  if (btn) { btn.disabled = true; btn.textContent = 'Creando…' }
+  try {
+    const { data: org, error: errOrg } = await supabase
+      .from('organizaciones')
+      .insert({ nombre: nombre, creado_por: currentUser.id })
+      .select()
+      .single()
+    if (errOrg) throw errOrg
+    const { error: errMiembro } = await supabase
+      .from('miembros')
+      .insert({ organizacion_id: org.id, user_id: currentUser.id, rol: 'administrador' })
+    if (errMiembro) throw errMiembro
+    kxLog('organizacion_creada', null, { origen: 'onboarding' })
+    location.reload()
+  } catch (e) {
+    console.error('[onboarding] no se pudo crear la organización:', e)
+    if (btn) { btn.disabled = false; btn.textContent = 'Crear mi organización' }
+    alert('No se pudo crear la organización: ' + ((e && e.message) || 'intenta de nuevo'))
+  }
 }
 
 function programarReintentoPerfil() {
@@ -3534,9 +3600,10 @@ window.confirmarCancelacionSuscripcion = async function() {
       try { errJson = await res.json() } catch (e2) {}
       throw new Error((errJson && errJson.error) || 'Error al cancelar suscripción')
     }
-    esSuscrito = false
-    esPro = false
-    tieneAcceso = orgs.some(function(o){ return o.activa })
+    // En la web, pertenecer a una organización mantiene el acceso Pro aunque se cancele la suscripción personal
+    esSuscrito = orgs.length > 0
+    esPro = orgs.length > 0
+    tieneAcceso = orgs.length > 0
     cerrarModal('modal-cancelar-suscripcion')
     actualizarPanelSuscripcion()
     actualizarVisibilidadPorRol()
@@ -4393,6 +4460,7 @@ async function obtenerAccesoMidi() {
   if (_midiAccessCache) return _midiAccessCache
   try {
     _midiAccessCache = await navigator.requestMIDIAccess({ sysex: false })
+    kxLog('midi_conectado', null, { entradas: _midiAccessCache.inputs ? _midiAccessCache.inputs.size : 0 })
     _midiAccessCache.onstatechange = function() {
       // Si el dispositivo se desconecta, limpiar cache para reconectar correctamente
     }
@@ -4417,15 +4485,17 @@ async function actualizarUIModoControl(modo) {
   var esAdmin = !!(orgActivo && orgActivo.rol === 'administrador')
 
   var menuBtn = document.getElementById('rep-control-menu-btn')
-  if (modo === 'individual') {
-    menuBtn.style.display = 'inline-block'
-  } else if (modo === 'global') {
-    menuBtn.style.display = 'inline-block'
-  } else {
-    menuBtn.style.display = 'none'
-  }
+  // El botón ⋯ es visible en individual, global y (solo para el admin, por Delegar) en daw
+  menuBtn.style.display = (modo === 'individual' || modo === 'global' || (modo === 'daw' && esAdmin)) ? 'inline-block' : 'none'
 
-  document.getElementById('control-opcion-delegar').style.display = (modo === 'global' && esAdmin) ? 'flex' : 'none'
+  // "Configurar" solo para individual y global (DAW usa el puerto fijo "keynonia", no requiere configuración)
+  var optConfigurar = document.getElementById('control-opcion-configurar')
+  if (optConfigurar) optConfigurar.style.display = (modo === 'individual' || modo === 'global') ? 'flex' : 'none'
+
+  var optDelegar = document.getElementById('control-opcion-delegar')
+  if (optDelegar) optDelegar.style.display = ((modo === 'global' || modo === 'daw') && esAdmin) ? 'flex' : 'none'
+  var optDelegarTxt = document.getElementById('control-opcion-delegar-txt')
+  if (optDelegarTxt) optDelegarTxt.textContent = (modo === 'daw') ? 'Delegar control DAW' : 'Delegar Control'
 
   var modoAlAbrir = modo
 
@@ -7830,6 +7900,7 @@ async function repAbrirCore(cancionId, tabla, esPreview, repertorioIdOrigen){
   repModoPreview = esPreview
   repRepertorioOrigenId = repertorioIdOrigen || null
   repCancionId = cancionId
+  kxLog('cancion_abierta', cancionId, { origen: tabla, preview: !!esPreview })
   document.getElementById('panel-reproductor').classList.add('active')
   document.getElementById('rep-song-title').textContent = 'Cargando...'
   document.getElementById('rep-song-artist').textContent = ''
@@ -8285,6 +8356,7 @@ function repDawProgramarReconexion(repertorioId){
 }
 
 async function repConectarModoDAW(repertorioId){
+  kxLog('daw_conectado', null, { repertorio: repertorioId || null })
   repSetMidiStatus('', 'Conectando modo DAW...')
   repDawActivo = true
   repDawReconnectIntentos = 0
@@ -8292,7 +8364,20 @@ async function repConectarModoDAW(repertorioId){
   // 1. Todos los dispositivos se suscriben al canal Realtime para recibir notas MIDI
   repDawConectarCanal(repertorioId)
 
-  // 2. Si el dispositivo tiene loopMIDI "keynonia", lo escucha y transmite las notas
+  // 2. Restricción DAW: solo el Administrador y el delegado asignado pueden transmitir.
+  //    La suscripción de recepción de arriba queda intacta para todos los participantes.
+  var orgActivoDaw = orgs.find(function(o){ return o.activa })
+  if (orgActivoDaw) {
+    var esAdminDaw = orgActivoDaw.rol === 'administrador'
+    var esDelegadoDaw = false
+    try {
+      const { data: orgD } = await supabase.from('organizaciones').select('midi_global_delegado_id').eq('id', orgActivoDaw.id).maybeSingle()
+      esDelegadoDaw = !!(orgD && orgD.midi_global_delegado_id === currentUser.id)
+    } catch(e){}
+    if (!esAdminDaw && !esDelegadoDaw) return
+  }
+
+  // 3. Si el dispositivo tiene loopMIDI "keynonia", lo escucha y transmite las notas
   try {
     var acceso = await obtenerAccesoMidi()
     var dawInput = null
@@ -9493,6 +9578,7 @@ function ensVivo(){
 }
 function ensPlay(){
   if(ens.tocando || !ensListo()) return
+  kxLog('modo_ensayo', (typeof repCancionId !== 'undefined' ? repCancionId : null), {})
   var p = ensSrc.play()
   ens.tocando = true; ensArrancarTimer()
   if(p && p.catch) p.catch(function(){ ens.tocando = false; ensPararTimer(); ensRender() })
@@ -10878,6 +10964,150 @@ aplicarNavegacionPendiente()
 </div>
 
 <!-- MENÚ DESPLEGABLE 3 PUNTOS -->
+<!-- DROPDOWN OPCIONES CONTROL MIDI -->
+<div class="dropdown-menu" id="control-opciones-menu">
+  <div class="dropdown-item" id="control-opcion-configurar" onclick="abrirConfigurarControlador()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Configurar
+  </div>
+  <div class="dropdown-item" id="control-opcion-delegar" style="display:none" onclick="abrirDelegarControl()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    <span id="control-opcion-delegar-txt">Delegar Control</span>
+  </div>
+</div>
+
+<!-- MENÚ OPCIONES DEMO (Global / Individual) -->
+<div class="dropdown-menu" id="control-opciones-demo-menu">
+  <div class="dropdown-item" onclick="document.getElementById('control-opciones-demo-menu').classList.remove('active');abrirConfigurarControladorDemo()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    Configurar
+  </div>
+  <div class="dropdown-item" id="control-opcion-delegar-demo" style="display:none" onclick="document.getElementById('control-opciones-demo-menu').classList.remove('active');abrirDelegarControlDemo()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Delegar
+  </div>
+</div>
+
+<!-- MODAL DELEGAR CONTROL DEMO -->
+<div class="modal-overlay" id="modal-delegar-demo">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title">Delegar Control MIDI</div>
+    <p style="font-size:.85rem;color:var(--text2);line-height:1.6;margin-bottom:8px">Delega control MIDI Global para todo el Grupo a un Participante</p>
+    <p style="font-size:.8rem;color:var(--accent);font-weight:600;margin-bottom:20px">Función disponible solo en el Plan Pro</p>
+    <button class="btn-confirm" onclick="cerrarModal('modal-delegar-demo');abrirPanel('panel-suscripcion')" style="width:100%;margin-bottom:10px">Ver Planes</button>
+    <button class="btn-cancel" onclick="cerrarModal('modal-delegar-demo')" style="width:100%">Cerrar</button>
+  </div>
+</div>
+
+
+<!-- MODAL CONFIGURAR CONTROLADOR MIDI -->
+<div class="modal-overlay" id="modal-configurar-midi">
+  <div class="modal" style="max-width:420px">
+
+    <!-- PANTALLA 1: elegir dispositivo -->
+    <div id="config-midi-pantalla-dispositivos">
+      <div class="modal-title" style="text-align:left;margin-bottom:14px">Añadir Controlador MIDI</div>
+      <div id="config-midi-lista-dispositivos"></div>
+      <div id="config-midi-sin-dispositivos" style="display:none;color:var(--text2);font-size:.85rem;text-align:center;padding:20px 0">
+        No se encontraron dispositivos MIDI conectados.
+      </div>
+      <div style="display:flex;justify-content:center;margin-top:18px">
+        <span style="color:var(--text);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarConfigurarMidi()">Cancelar</span>
+      </div>
+    </div>
+
+    <!-- PANTALLA 2: asignar botones subir/bajar -->
+    <div id="config-midi-pantalla-botones" style="display:none">
+      <div class="modal-title" style="text-align:left;margin-bottom:4px">Configurar dispositivo MIDI</div>
+      <div style="color:var(--text2);font-size:.78rem;margin-bottom:16px" id="config-midi-dispositivo-nombre"></div>
+
+      <div class="config-midi-fila">
+        <button class="config-midi-boton" id="config-midi-btn-subir" onclick="escucharBotonMidi('subir')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+        <div class="config-midi-texto">
+          <div id="config-midi-estado-subir">Selecciona el Botón Arriba y luego presiona en tu dispositivo MIDI qué botón físico ocuparás para subir entre secciones en el Reproductor.</div>
+        </div>
+      </div>
+
+      <div class="config-midi-fila">
+        <button class="config-midi-boton" id="config-midi-btn-bajar" onclick="escucharBotonMidi('bajar')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+        </button>
+        <div class="config-midi-texto">
+          <div id="config-midi-estado-bajar">Selecciona el Botón Abajo y luego presiona en tu dispositivo MIDI qué botón físico ocuparás para bajar entre secciones en el Reproductor.</div>
+        </div>
+      </div>
+
+      <div class="config-midi-fila">
+        <button class="config-midi-boton" id="config-midi-btn-siguiente" onclick="escucharBotonMidi('siguiente')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+        <div class="config-midi-texto">
+          <div id="config-midi-estado-siguiente">Selecciona el Botón Siguiente y luego presiona en tu dispositivo MIDI qué botón físico ocuparás para pasar a la siguiente canción del Repertorio.</div>
+        </div>
+      </div>
+
+      <div class="config-midi-fila">
+        <button class="config-midi-boton" id="config-midi-btn-anterior" onclick="escucharBotonMidi('anterior')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <div class="config-midi-texto">
+          <div id="config-midi-estado-anterior">Selecciona el Botón Anterior y luego presiona en tu dispositivo MIDI qué botón físico ocuparás para volver a la canción anterior del Repertorio.</div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:center;gap:32px;margin-top:20px">
+        <span style="color:var(--text);cursor:pointer;font-weight:600;font-size:.9rem" onclick="cerrarConfigurarMidi()">Cancelar</span>
+        <span style="color:var(--accent);cursor:pointer;font-weight:600;font-size:.9rem" onclick="guardarConfiguracionMidi()">Listo</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- PANEL DELEGAR CONTROL MIDI GLOBAL -->
+<div class="panel" id="panel-delegar-control">
+  <div class="panel-header">
+    <button class="panel-back" onclick="cerrarPanel('panel-delegar-control')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver
+    </button>
+    <span class="panel-title">Delegar Control</span>
+  </div>
+  <div class="panel-body">
+    <div class="guia-section">
+      <h3>Controlador MIDI (Global)</h3>
+      <p>Elige a un miembro de tu organización para que también pueda usar y configurar el Controlador MIDI Global, además de ti.</p>
+    </div>
+    <div id="delegar-actual-wrap" style="display:none;margin-bottom:16px">
+      <label class="form-label">Delegado actual</label>
+      <div class="config-midi-dispositivo" style="cursor:default">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a6 6 0 0 1 12 0v2"/></svg>
+        <span id="delegar-actual-nombre" style="flex:1"></span>
+        <span style="color:#e74c3c;cursor:pointer;font-weight:600;font-size:.78rem" onclick="quitarDelegado()">Quitar</span>
+      </div>
+    </div>
+    <label class="form-label">Elegir delegado</label>
+    <div id="delegar-lista-miembros"></div>
+    <div id="delegar-sin-miembros" style="display:none;color:var(--text2);font-size:.85rem;text-align:center;padding:20px 0">
+      No hay otros miembros en tu organización todavía.
+    </div>
+  </div>
+</div>
+
+
+<!-- MODAL: solo admin puede configurar MIDI Global -->
+<div class="modal-overlay" id="modal-solo-admin-midi">
+  <div class="modal" style="text-align:center">
+    <div class="modal-title">Solo Administradores y Delegados pueden configurar esta opción.</div>
+    <button class="btn-confirm" style="width:100%;margin-top:18px" onclick="cerrarModal('modal-solo-admin-midi')">Entendido</button>
+  </div>
+</div>
+
+
+
 <div class="dropdown-menu" id="dropdown-menu">
   <div class="dropdown-item dropdown-item-admin" onclick="editarRepActual()">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
