@@ -3342,6 +3342,56 @@ document.addEventListener('click', function() {
   if (menu2) menu2.classList.remove('active')
 })
 
+// ── Precios en moneda local (solo referencia; el cobro es en CLP) ──
+var KX_MONEDA_REGION = { CL:'CLP', US:'USD', MX:'MXN', AR:'ARS', CO:'COP', PE:'PEN', BR:'BRL', UY:'UYU', BO:'BOB', PY:'PYG', ES:'EUR', DE:'EUR', FR:'EUR', IT:'EUR', PT:'EUR', GB:'GBP', CA:'CAD', CR:'CRC', GT:'GTQ', DO:'DOP', PA:'USD', EC:'USD', SV:'USD', PR:'USD' }
+var KX_TASA_RESPALDO = { USD:0.00105, EUR:0.00097, GBP:0.00083, CAD:0.00145, MXN:0.019, ARS:1.5, COP:4.3, PEN:0.0039, BRL:0.0058, UYU:0.042, BOB:0.0073, PYG:8.2, CRC:0.53, GTQ:0.0081, DOP:0.063 }
+var _kxTasas = null
+function kxMonedaLocal() {
+  try {
+    var loc = (navigator.language || 'es-CL')
+    var m = loc.match(/[-_]([A-Za-z]{2})$/)
+    var reg = m ? m[1].toUpperCase() : ''
+    if (!reg) { var tz = (Intl.DateTimeFormat().resolvedOptions().timeZone || ''); if (/Santiago|Punta_Arenas/.test(tz)) reg = 'CL' }
+    return KX_MONEDA_REGION[reg] || (reg ? 'USD' : 'CLP')
+  } catch (e) { return 'CLP' }
+}
+function kxPrecioLocal(clp) {
+  var mon = kxMonedaLocal()
+  if (mon === 'CLP') return ''
+  var tasa = (_kxTasas && _kxTasas[mon]) || KX_TASA_RESPALDO[mon]
+  if (!tasa) { mon = 'USD'; tasa = (_kxTasas && _kxTasas.USD) || KX_TASA_RESPALDO.USD }
+  var v = clp * tasa * 1.08   // margen para no recibir menos del monto en CLP
+  v = (mon === 'USD' || mon === 'EUR' || mon === 'GBP' || mon === 'CAD') ? Math.ceil(v * 100) / 100 : Math.ceil(v)
+  try { return new Intl.NumberFormat(navigator.language || 'es', { style: 'currency', currency: mon, maximumFractionDigits: (v % 1 ? 2 : 0) }).format(v) } catch (e) { return mon + ' ' + v }
+}
+function kxLocalSpan(clp, suf) { return '<span class="kx-loc" data-clp="' + clp + '" data-suf="' + (suf || '') + '"></span>' }
+function kxActualizarPreciosLocales() {
+  var pintar = function() {
+    document.querySelectorAll('.kx-loc').forEach(function(e) {
+      var t = kxPrecioLocal(Number(e.dataset.clp))
+      e.textContent = t ? ' · ≈ ' + t + e.dataset.suf : ''
+    })
+  }
+  pintar()
+  if (_kxTasas || kxMonedaLocal() === 'CLP') return
+  fetch('https://open.er-api.com/v6/latest/CLP').then(function(r){ return r.json() }).then(function(j){
+    if (j && j.rates) { _kxTasas = j.rates; pintar() }
+  }).catch(function(){})
+}
+window.kxComenzarPro = async function() {
+  var o = (orgs || []).find(function(x){ return x.activa })
+  if (!o) { iniciarSuscripcion('36723486083944b8bd60a7eb31699e56', 'Comenzar gratis — 3 meses'); return }
+  var info = null
+  try { var r = await supabase.rpc('org_plan_info', { p_org: o.id }); info = r.data } catch (e) {}
+  if (info && info.exenta) { showToast('Tu cuenta no necesita un plan de pago.'); return }
+  if (info && info.prueba_usada) { iniciarSuscripcion('36723486083944b8bd60a7eb31699e56', 'Suscribirse — $2.000 / mes'); return }
+  var r2 = await supabase.rpc('activar_prueba_pro', { p_org: o.id })
+  if (r2.error) { showToast('No se pudo activar: ' + r2.error.message, '#e74c3c'); return }
+  showToast('✓ Plan Pro activado por 3 meses, sin tarjeta')
+  try { await cargarOrganizacionesReales() } catch (e) {}
+  actualizarPanelSuscripcion()
+}
+
 function actualizarPanelSuscripcion() {
   var body = document.getElementById('suscripcion-body')
   if (!body) return
@@ -3426,47 +3476,43 @@ function actualizarPanelSuscripcion() {
     }
     var c = document.getElementById('subs-cards')
     if (!c) return
+    var basico =
+      '<div class="plan-card">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Básico</div>' + badge('green','Gratis') + '</div>' +
+        '<div class="plan-price" style="font-size:2.3rem">$0</div>' +
+        '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">para siempre</div>' +
+        '<hr class="plan-divider">' + featBasico() +
+        (esPro ? '<button class="plan-btn plan-btn-secondary" disabled>Incluido</button>' : '<button class="plan-btn plan-btn-active">Plan activo ✓</button>') +
+      '</div>'
+    var pro
     if (p === 'mes') {
-      c.innerHTML =
-        '<div class="plan-cards-wrap">' +
-          '<div class="plan-card">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Básico</div>' + badge('orange','Oferta') + '</div>' +
-            tachado('$3.990 CLP / mes') +
-            '<div class="plan-price">$2.990 <span class="plan-price-sub">CLP / mes</span></div>' +
-            '<hr class="plan-divider">' + featBasico() + porMusico('3','997','',false) +
-            btnB('Suscribirse — $2.990 / mes', 'ede534c518e24701ac988f4e9cf9fe4a') + notaLtd() +
-          '</div>' +
-          '<div class="plan-card destacado">' +
-            '<div class="plan-badge">Recomendado</div>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','3 meses gratis') + '</div>' +
-            '<div class="plan-price" style="font-size:2.3rem">$0</div>' +
-            '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">costo cero <span style="color:var(--text);font-weight:600">/ 3 meses</span></div>' +
-            '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">desde el mes 4: <strong style="color:var(--text)">$3.990 CLP</strong> al mes</div>' +
-            '<hr class="plan-divider">' + featPro() + porMusico('15','266','',false) +
-            btnP('Comenzar gratis — 3 meses', '36723486083944b8bd60a7eb31699e56') +
-            '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">Luego $3.990/mes · Cancela cuando quieras</div>' +
-          '</div>' +
-        '</div>' + soporteBtn()
+      pro =
+        '<div class="plan-card destacado">' +
+          '<div class="plan-badge">Recomendado</div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','3 meses gratis') + '</div>' +
+          '<div class="plan-price" style="font-size:2.3rem">$0</div>' +
+          '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">3 meses sin registrar tarjeta</div>' +
+          '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">desde el mes 4: <strong style="color:var(--text)">$2.000 CLP</strong> al mes' + kxLocalSpan(2000, '/mes') + '</div>' +
+          '<hr class="plan-divider">' + featPro() +
+          (esPro ? (esSuscrito ? '<button class="plan-btn plan-btn-secondary" onclick="window.open(\'' + urlPortal + '\', \'_blank\')">Gestionar</button>' : '<button class="plan-btn plan-btn-active">Plan activo ✓</button>')
+                 : '<button class="plan-btn plan-btn-primary" onclick="kxComenzarPro()">Comenzar gratis — 3 meses</button>') +
+          '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">En el mes 4 registras tu tarjeta y pagas con Mercado Pago · Cancela cuando quieras</div>' +
+        '</div>'
     } else {
-      c.innerHTML =
-        '<div class="plan-cards-wrap">' +
-          '<div class="plan-card">' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Básico</div>' + badge('green','58% OFF') + '</div>' +
-            tachado('$35.880 CLP / año') +
-            '<div class="plan-price">$14.990 <span class="plan-price-sub">CLP / año</span></div>' +
-            '<hr class="plan-divider">' + featBasico() + porMusico('3','416','',true) +
-            btnB('Suscribirse — $14.990 / año', 'de01e8db79564843a3591326dc0b12f7') + notaLtd() +
-          '</div>' +
-          '<div class="plan-card destacado">' +
-            '<div class="plan-badge">Recomendado</div>' +
-            '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','52% OFF') + '</div>' +
-            tachado('$47.880 CLP / año') +
-            '<div class="plan-price">$22.990 <span class="plan-price-sub">CLP / año</span></div>' +
-            '<hr class="plan-divider">' + featPro() + porMusico('15','128','',true) +
-            btnP('Suscribirse — $22.990 / año', 'e783875699b54b08a1179084a576171e') + notaLtd() +
-          '</div>' +
-        '</div>' + soporteBtn()
+      pro =
+        '<div class="plan-card destacado">' +
+          '<div class="plan-badge">Recomendado</div>' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','Anual') + '</div>' +
+          '<div class="plan-price">$23.000 <span class="plan-price-sub">CLP / año</span></div>' +
+          '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">' + kxLocalSpan(23000, '/año').replace(/^ · /,'') + '</div>' +
+          '<hr class="plan-divider">' + featPro() +
+          (esPro && esSuscrito ? '<button class="plan-btn plan-btn-secondary" onclick="window.open(\'' + urlPortal + '\', \'_blank\')">Gestionar</button>'
+            : '<button class="plan-btn plan-btn-primary" onclick="iniciarSuscripcion(\'e783875699b54b08a1179084a576171e\',\'Suscribirse — $23.000 / año\')">Suscribirse — $23.000 / año</button>') +
+        '</div>'
     }
+    c.innerHTML = '<div class="plan-cards-wrap">' + basico + pro + '</div>' + soporteBtn() +
+      '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:6px">El cobro se realiza en pesos chilenos (CLP). Los precios en otra moneda son referenciales.</div>'
+    kxActualizarPreciosLocales()
   }
   window.switchPeriodoSubs('mes')
 
@@ -12060,3 +12106,4 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
 
 <!-- build 2026-11-25e -->
 <!-- build 2026-11-25f planes -->
+<!-- build 2026-11-25g precios -->
