@@ -1779,6 +1779,7 @@ let esSuscrito = false
 let esPro = false        // suscrito con plan Pro
 let orgsExtra = 0        // orgs adicionales compradas (Plan Organizaciones)
 let tieneAcceso = false  // suscrito O miembro de una org
+var _kxPlanInfo = null, _kxPlanInfoOrg = null, _kxPeriodoSubs = 'mes', _kxSubPersonal = false
 var _kxOnboardingVisto = false, _kxInvPend = [], _kxInvPosponida = false, _kxInvLog = false
 var accesoVerificado = false     // true cuando tieneAcceso ya se calculó con datos reales del servidor
 var repertoriosCacheOrgId = null  // organización a la que pertenece repertoriosCache
@@ -2180,6 +2181,7 @@ async function cargarPerfil() {
   }
 
   esSuscrito = !!(profileData && profileData.suscripcion_activa)
+  _kxSubPersonal = esSuscrito
   esPro = esSuscrito && (profileData?.plan_nivel === 'pro')
   orgsExtra = (profileData?.orgs_extra) || 0
   kxFmtUser = Array.isArray(profileData && profileData.formato_acordes) ? profileData.formato_acordes : null
@@ -3389,9 +3391,25 @@ window.kxComenzarPro = async function() {
   if (r2.error) { showToast('No se pudo activar: ' + r2.error.message, '#e74c3c'); return }
   showToast('✓ Plan Pro activado por 3 meses, sin tarjeta')
   try { await cargarOrganizacionesReales() } catch (e) {}
+  _kxPlanInfoOrg = null
   actualizarPanelSuscripcion()
 }
 
+function kxPagoNota() {
+  return '<div style="font-size:.7rem;color:var(--text2);text-align:center;margin-top:6px;line-height:1.5">En el mes 4 registras tu tarjeta y pagas con Mercado Pago. Cancela cuando quieras.</div>' +
+    '<div style="text-align:center;margin-top:8px"><button class="plan-btn plan-btn-secondary" onclick="kxWhatsAppPago()">Comunícate con soporte para gestionar tu pago</button>' +
+    '<div style="font-size:.65rem;color:var(--text2);margin-top:4px">¿Sin Mercado Pago o sin tarjeta? Coordinamos tu pago por WhatsApp</div></div>'
+}
+async function kxRefrescarPlanInfo() {
+  try {
+    var o = (orgs || []).find(function(x){ return x.activa })
+    if (!o || _kxPlanInfoOrg === o.id) return
+    _kxPlanInfoOrg = o.id
+    var r = await supabase.rpc('org_plan_info', { p_org: o.id })
+    _kxPlanInfo = r.data || null
+    if (_kxPlanInfo) window.switchPeriodoSubs && window.switchPeriodoSubs(_kxPeriodoSubs)
+  } catch (e) { _kxPlanInfoOrg = null }
+}
 function actualizarPanelSuscripcion() {
   var body = document.getElementById('suscripcion-body')
   if (!body) return
@@ -3422,7 +3440,7 @@ function actualizarPanelSuscripcion() {
       '<div style="font-size:.68rem;color:var(--text2);text-align:center;margin-top:4px">keynonia.soporte@gmail.com</div>' +
     '</div>' +
     '<p class="plan-contacto">¿Dudas? Escríbenos a <strong>keynonia.soporte@gmail.com</strong></p>' +
-    (esSuscrito
+    (_kxSubPersonal
       ? '<div style="text-align:center;padding-bottom:16px"><button onclick="solicitarCancelacionSuscripcion()" style="background:none;border:none;color:var(--text2);font-size:.75rem;cursor:pointer;text-decoration:underline;font-family:\'Poppins\',sans-serif;padding:8px 16px;opacity:.7">Cancelar suscripción</button></div>'
       : '')
 
@@ -3437,21 +3455,35 @@ function actualizarPanelSuscripcion() {
       n + ' personas · ' + (equiv ? 'equiv. ' : '') + '<strong>$' + clp + ' CLP</strong>/persona/mes</div>'
   }
   function featBasico() {
-    return '<ul class="plan-features"><li>Editor de canciones con acordes</li><li>Catálogo global con canciones ilimitadas</li>' +
-      '<li>Repertorio en vivo sincronizado</li><li>Control MIDI (DAW + Individual)</li><li>Tú + 2 personas (3 en total)</li></ul>'
+    return '<ul class="plan-features"><li class="plan-feat-plus">Acceso libre a todas las funciones</li>' +
+      '<li>Disponible para 3 personas: tú + 2 personas</li></ul>'
   }
   function featPro() {
-    return '<ul class="plan-features"><li>Editor de canciones con acordes</li>' +
-      '<li>Catálogo global con canciones ilimitadas</li>' +
-      '<li class="plan-feat-plus">Importación de canciones con IA</li>' +
-      '<li>Repertorio en vivo sincronizado</li>' +
-      '<li>Control MIDI completo (DAW, Individual, Global y Delegado)</li>' +
-      '<li class="plan-feat-plus">Hasta 15 personas</li>' +
-      '<li class="plan-feat-plus">Asignar cantante por canción</li>' +
-      '<li class="plan-feat-plus">Tono personal por cantante</li>' +
-      '<li class="plan-feat-plus">Links personalizados por canción</li></ul>'
+    var f = [
+      'Todo lo del plan Básico, sin límite de 3 personas',
+      'Hasta 15 personas en tu organización',
+      'Editor de canciones con acordes',
+      'Catálogo global con canciones ilimitadas',
+      'Importación de canciones con IA',
+      'Repertorio en vivo sincronizado en tiempo real',
+      'Modo DAW: control MIDI completo (Ableton, Reaper y más)',
+      'Control MIDI Individual, Global y Delegado',
+      'Mapas MIDI descargables para tu DAW',
+      'Modo ensayo con audio, marcas por acorde y seguir acordes',
+      'Asignar cantante por canción',
+      'Tono personal por cantante y aviso de tonos completos',
+      'Cambio de tonalidad, grados (números y romanos) y formato de acordes',
+      'Transpose Piano con visualizador de nota',
+      'Diagramas de acordes de guitarra y piano',
+      'Anotaciones sobre la canción',
+      'Links personalizados y enlaces adicionales por repertorio',
+      'Notificar a tus músicos con el repertorio y mensaje',
+      'Duplicar y editar repertorios',
+      'Canciones y artistas de la comunidad'
+    ]
+    return '<ul class="plan-features">' + f.map(function(t, i){ return '<li' + (i < 2 ? ' class="plan-feat-plus"' : '') + '>' + t + '</li>' }).join('') + '</ul>'
   }
-  function soporteBtn() { return '<div style="text-align:center;margin:14px 0 4px"><button class="plan-btn plan-btn-secondary" style="max-width:360px" onclick="kxWhatsAppPago()">Comunícate con soporte para gestionar tu pago</button><div style="font-size:.65rem;color:var(--text2);margin-top:4px">¿Sin tarjeta? Coordinamos tu pago manual por WhatsApp</div></div>' }
+  function soporteBtn() { return '<div style="text-align:center;margin:8px 0 4px"><button class="plan-btn plan-btn-secondary" onclick="kxWhatsAppPago()">Comunícate con soporte para gestionar tu pago</button></div>' }
   function notaLtd() { return '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">Oferta por tiempo limitado</div>' }
   function btnB(txt, planId) {
     if (esSuscrito && !esPro) return '<button class="plan-btn plan-btn-active">Plan activo ✓</button>'
@@ -3465,8 +3497,10 @@ function actualizarPanelSuscripcion() {
   }
 
   window.switchPeriodoSubs = function(p) {
+    _kxPeriodoSubs = p
     var bM = document.getElementById('subs-toggle-mes')
     var bA = document.getElementById('subs-toggle-ano')
+    if (!bM || !bA) return
     if (p === 'mes') {
       bM.style.background='var(--accent)'; bM.style.color='#fff'
       bA.style.background='transparent';   bA.style.color='var(--text2)'
@@ -3476,45 +3510,63 @@ function actualizarPanelSuscripcion() {
     }
     var c = document.getElementById('subs-cards')
     if (!c) return
+    var I = _kxPlanInfo || {}
+    var exenta = !!I.exenta, proAct = !!I.pro_activo && !exenta
+    var basicoBtn = exenta ? '<button class="plan-btn plan-btn-secondary" disabled>Incluido</button>'
+                  : proAct ? '<button class="plan-btn plan-btn-secondary" disabled>Incluido</button>'
+                  : '<button class="plan-btn plan-btn-active">Plan activo ✓</button>'
     var basico =
       '<div class="plan-card">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Básico</div>' + badge('green','Gratis') + '</div>' +
         '<div class="plan-price" style="font-size:2.3rem">$0</div>' +
         '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">para siempre</div>' +
-        '<hr class="plan-divider">' + featBasico() +
-        (esPro ? '<button class="plan-btn plan-btn-secondary" disabled>Incluido</button>' : '<button class="plan-btn plan-btn-active">Plan activo ✓</button>') +
+        '<hr class="plan-divider">' + featBasico() + basicoBtn +
       '</div>'
-    var pro
-    if (p === 'mes') {
-      pro =
-        '<div class="plan-card destacado">' +
-          '<div class="plan-badge">Recomendado</div>' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','3 meses gratis') + '</div>' +
-          '<div class="plan-price" style="font-size:2.3rem">$0</div>' +
-          '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">3 meses sin registrar tarjeta</div>' +
-          '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">desde el mes 4: <strong style="color:var(--text)">$2.000 CLP</strong> al mes' + kxLocalSpan(2000, '/mes') + '</div>' +
-          '<hr class="plan-divider">' + featPro() +
-          (esPro ? (esSuscrito ? '<button class="plan-btn plan-btn-secondary" onclick="window.open(\'' + urlPortal + '\', \'_blank\')">Gestionar</button>' : '<button class="plan-btn plan-btn-active">Plan activo ✓</button>')
-                 : '<button class="plan-btn plan-btn-primary" onclick="kxComenzarPro()">Comenzar gratis — 3 meses</button>') +
-          '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:2px">En el mes 4 registras tu tarjeta y pagas con Mercado Pago · Cancela cuando quieras</div>' +
-        '</div>'
+    var accion
+    if (exenta) {
+      accion = '<button class="plan-btn plan-btn-active">Plan vitalicio de cortesía ✓</button>' +
+               '<div style="font-size:.68rem;color:var(--text2);text-align:center;margin-top:4px">Activado para siempre. No necesitas pagar nada.</div>'
+    } else if (proAct) {
+      var hasta = I.prueba_hasta ? new Date(I.prueba_hasta).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', year: 'numeric' }) : ''
+      accion = (_kxSubPersonal
+        ? '<button class="plan-btn plan-btn-secondary" onclick="window.open(\'' + urlPortal + '\', \'_blank\')">Gestionar mi suscripción</button>'
+        : '<button class="plan-btn plan-btn-active">Plan Pro activado ✓</button>' +
+          (I.prueba_activa && hasta ? '<div style="font-size:.68rem;color:var(--text2);text-align:center;margin-top:4px">Prueba gratis hasta el ' + hasta + '</div>' : '')) +
+        (!_kxSubPersonal && I.prueba_activa ? kxPagoNota() : '')
     } else {
-      pro =
-        '<div class="plan-card destacado">' +
-          '<div class="plan-badge">Recomendado</div>' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + badge('green','Anual') + '</div>' +
-          '<div class="plan-price">$23.000 <span class="plan-price-sub">CLP / año</span></div>' +
-          '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">' + kxLocalSpan(23000, '/año').replace(/^ · /,'') + '</div>' +
-          '<hr class="plan-divider">' + featPro() +
-          (esPro && esSuscrito ? '<button class="plan-btn plan-btn-secondary" onclick="window.open(\'' + urlPortal + '\', \'_blank\')">Gestionar</button>'
-            : '<button class="plan-btn plan-btn-primary" onclick="iniciarSuscripcion(\'e783875699b54b08a1179084a576171e\',\'Suscribirse — $23.000 / año\')">Suscribirse — $23.000 / año</button>') +
-        '</div>'
+      var etiqueta = (p === 'mes') ? (I.prueba_usada ? 'Suscribirse — $2.000 / mes' : 'Comenzar gratis — 3 meses') : 'Suscribirse — $23.000 / año'
+      var fn = (p === 'mes') ? 'kxComenzarPro()' : 'iniciarSuscripcion(\'e783875699b54b08a1179084a576171e\',\'Suscribirse — $23.000 / año\')'
+      accion = '<button class="plan-btn plan-btn-primary" onclick="' + fn + '">' + etiqueta + '</button>' + (p === 'mes' ? kxPagoNota() : soporteBtn())
     }
-    c.innerHTML = '<div class="plan-cards-wrap">' + basico + pro + '</div>' + soporteBtn() +
-      '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:6px">El cobro se realiza en pesos chilenos (CLP). Los precios en otra moneda son referenciales.</div>'
+    var cabecera
+    if (exenta) {
+      cabecera = '<div class="plan-price" style="font-size:1.6rem">Para siempre</div>' +
+                 '<div style="font-size:.75rem;color:var(--text2);margin-top:-4px">Cortesía de Keynonia</div>'
+    } else if (p === 'mes') {
+      cabecera =
+        '<div style="background:linear-gradient(135deg,#1DB89A,#14917a);color:#fff;border-radius:12px;padding:12px 10px;text-align:center;box-shadow:0 4px 14px rgba(29,184,154,.35)">' +
+          '<div style="font-size:1.05rem;font-weight:800;letter-spacing:.02em;line-height:1.2">3 MESES GRATIS</div>' +
+          '<div style="font-size:.82rem;font-weight:700;margin-top:2px">SIN REGISTRAR TARJETA</div>' +
+        '</div>' +
+        '<div class="plan-price" style="font-size:2.3rem;text-align:center">$0</div>' +
+        '<div style="font-size:.78rem;color:var(--text2);text-align:center;margin-top:-4px">Desde el mes 4: <strong style="color:var(--text)">$2.000 CLP</strong> al mes' + kxLocalSpan(2000, '/mes') + '</div>'
+    } else {
+      cabecera =
+        '<div class="plan-price">$23.000 <span class="plan-price-sub">CLP / año</span></div>' +
+        '<div style="font-size:.72rem;color:var(--text2);margin-top:2px">Equivale a $1.917 al mes' + kxLocalSpan(23000, '/año') + '</div>'
+    }
+    var pro =
+      '<div class="plan-card destacado">' +
+        '<div class="plan-badge">Recomendado</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px"><div class="plan-name">Pro</div>' + (exenta ? badge('green','Vitalicio') : badge('green', p === 'mes' ? 'Prueba gratis' : 'Anual')) + '</div>' +
+        cabecera + '<hr class="plan-divider">' + featPro() + accion +
+      '</div>'
+    c.innerHTML = '<div class="plan-cards-wrap">' + basico + pro + '</div>' +
+      (exenta ? '' : '<div style="font-size:.65rem;color:var(--text2);text-align:center;margin-top:6px">El cobro se realiza en pesos chilenos (CLP). Los precios en otra moneda son referenciales.</div>')
     kxActualizarPreciosLocales()
   }
-  window.switchPeriodoSubs('mes')
+  window.switchPeriodoSubs(_kxPeriodoSubs)
+  kxRefrescarPlanInfo()
 
 }
 
@@ -12107,3 +12159,4 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
 <!-- build 2026-11-25e -->
 <!-- build 2026-11-25f planes -->
 <!-- build 2026-11-25g precios -->
+<!-- build 2026-11-25h tarjetas -->
