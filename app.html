@@ -2701,24 +2701,14 @@ window.renombrarOrganizacion = async function(orgId, orgNombreActual) {
 window.eliminarOrganizacion = async function(orgId, orgNombre) {
   if (!await confirmar(`¿Eliminar la organización "${orgNombre}"?\n\nSe borrarán todos sus repertorios, canciones y miembros. Esta acción no se puede deshacer.`, 'Eliminar')) return
 
-  // 1. Obtener IDs de repertorios de esta org
-  const { data: reps } = await supabase.from('repertorios').select('id').eq('organizacion_id', orgId)
-  if (reps && reps.length > 0) {
-    const repIds = reps.map(r => r.id)
-    await supabase.from('repertorio_canciones').delete().in('repertorio_id', repIds)
-  }
-
-  // 2. Borrar en orden
-  await supabase.from('repertorios').delete().eq('organizacion_id', orgId)
-  await supabase.from('mis_canciones').delete().eq('organizacion_id', orgId)
-  await supabase.from('invitaciones').delete().eq('organizacion_id', orgId)
-  await supabase.from('miembros').delete().eq('organizacion_id', orgId)
-  const { error } = await supabase.from('organizaciones').delete().eq('id', orgId)
-
-  if (error) { showToast('Error al eliminar: ' + error.message, '#e74c3c'); return }
+  // Todo se borra en una sola operación en el servidor (atómica: o se borra todo o nada)
+  const { data: ok, error } = await supabase.rpc('eliminar_organizacion', { p_id: orgId })
+  if (error || !ok) { showToast('Error al eliminar: ' + ((error && error.message) || 'no se pudo eliminar'), '#e74c3c'); return }
 
   showToast('✓ Organización eliminada')
+  orgs = orgs.filter(function(o){ return o.id !== orgId })
   await cargarOrganizacionesReales()
+  if (orgs.length === 0) { location.reload(); return }
   actualizarVisibilidadPorRol()
 }
 
@@ -12032,4 +12022,5 @@ iniciarTour = function() { try { verificarTerminos() } catch(e) {} };
 </html>
 
 
-<!-- build 2026-11-25d -->
+
+<!-- build 2026-11-25e -->
